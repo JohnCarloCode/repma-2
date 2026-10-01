@@ -1,2 +1,11 @@
-// Tables land here in sub-task 1.3 (database.md §4-§5).
-export {};
+export * from './enums.js';
+export * from './authUsers.js';
+export * from './tenants.js';
+export * from './categories.js';
+export * from './products.js';
+export * from './productSizes.js';
+export * from './userProfiles.js';
+export * from './assortmentItems.js';
+export * from './availabilityEvents.js';
+export * from './replenishmentLists.js';
+export * from './replenishmentListItems.js';

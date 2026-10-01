@@ -1,10 +1,14 @@
-import { PACKAGE_NAME } from 'shared';
+import { app } from './app.js';
+import { env } from './config/env.js';
 
-// Placeholder bootstrap — replaced by the Express app in sub-task 1.5.
-export function describeService(): string {
-  return `api (depends on "${PACKAGE_NAME}")`;
+const server = app.listen(env.PORT, () => {
+  console.log(`api listening on port ${env.PORT}`);
+});
+
+function shutdown(signal: string): void {
+  console.log(`${signal} received, shutting down`);
+  server.close(() => process.exit(0));
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
-  console.log(describeService());
-}
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

@@ -1,13 +1,12 @@
-import 'dotenv/config';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
+import { env } from '../config/env.js';
 import * as schema from './schema/index.js';
 
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
-  throw new Error('DATABASE_URL is not set');
-}
-
-const queryClient = postgres(connectionString);
+const queryClient = postgres(env.DATABASE_URL);
 
 export const db = drizzle(queryClient, { schema });
+
+export async function pingDatabase(client = queryClient): Promise<void> {
+  await client`select 1`;
+}

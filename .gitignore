@@ -38,8 +38,6 @@ coverage/
 .idea/
 *.swp
 
-# Supabase local
-.supabase/
 
 # Misc
 *.local

@@ -11,14 +11,18 @@
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:bootstrap": "tsx scripts/db-bootstrap.ts"
+    "db:bootstrap": "tsx scripts/db-bootstrap.ts",
+    "db:seed": "tsx scripts/db-seed.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.119.0",
+    "cookie": "^2.0.2",
     "cors": "^2.8.6",
     "dotenv": "^18.0.5",
     "drizzle-orm": "^0.45.3",
     "express": "^5.2.1",
     "helmet": "^8.3.0",
+    "jose": "^6.2.17",
     "pino": "^10.3.1",
     "pino-http": "^11.0.0",
     "postgres": "^3.4.9",

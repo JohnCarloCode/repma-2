@@ -22,6 +22,13 @@
       "when": 1790876942322,
       "tag": "0002_security_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794674789028,
+      "tag": "0003_deny_by_default_empty_guc",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { randomUUID } from 'node:crypto';
 import postgres from 'postgres';
+import { AVAILABILITY_EVENT_TYPES, REPLENISHMENT_STATUSES, ROLES } from 'shared';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 // Integration suite for sub-task 1.3: proves the migration applies cleanly
@@ -32,6 +33,12 @@ describe('schema migration (1.3)', () => {
     expect(byName.user_role).toEqual(['platform_admin', 'manager', 'employee']);
     expect(byName.availability_event_type).toEqual(['out_of_stock', 'restock']);
     expect(byName.replenishment_status).toEqual(['draft', 'processing', 'done']);
+    // packages/shared mirrors the DB enums exactly (database.md §5).
+    expect(byName).toEqual({
+      user_role: [...ROLES],
+      availability_event_type: [...AVAILABILITY_EVENT_TYPES],
+      replenishment_status: [...REPLENISHMENT_STATUSES],
+    });
   });
 
   it('creates all 9 tables in the public schema', async () => {

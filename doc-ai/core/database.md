@@ -279,7 +279,7 @@ COMMIT;
 ```
 
 - `set_config(..., true)` is the parameterizable equivalent of `SET LOCAL`: the value dies with the transaction, which makes it **safe with connection pooling** (no reused connection carries someone else's context).
-- Policies read the context with `current_setting('app.…', true)` (*missing_ok*): if the context is not set, it returns `NULL`, every comparison is `false` and the result is **deny-by-default**.
+- Policies read the context with `nullif(current_setting('app.…', true), '')` (*missing_ok*): if the context is not set it is `NULL` — including on a pooled connection that already ran a context transaction, where Postgres returns `''` instead of `NULL` (bug 001) — every comparison is `false` and the result is **deny-by-default**.
 - Who sets what: store users always carry their own `tenant_id`; the Platform Admin carries that of the store being operated on (`X-Tenant-Id` header validated by the API) or none on platform routes. See `architecture.md` §5.2.
 
 Compatibility note: this pattern requires the connection to hold the full transaction (pooling in *session* or *transaction* mode; never *statement*).
@@ -288,12 +288,12 @@ Compatibility note: this pattern requires the connection to hold the full transa
 
 RLS with `ENABLE` + **`FORCE`** on all 9 tables (FORCE subjects even an owner without `BYPASSRLS`). No table has a universal permissive policy: without context there are no rows.
 
-Abbreviations: `uid() = current_setting('app.user_id', true)::uuid`, `rol() = current_setting('app.role', true)`, `tid() = current_setting('app.tenant_id', true)::uuid` (expressed inline in the actual policies).
+Abbreviations: `uid() = nullif(current_setting('app.user_id', true), '')::uuid`, `rol() = current_setting('app.role', true)`, `tid() = nullif(current_setting('app.tenant_id', true), '')::uuid` (expressed inline in the actual policies; §7.2 explains the `nullif`).
 
 | Table | SELECT | INSERT / UPDATE | DELETE |
 |---|---|---|---|
 | tenants | `rol() = 'platform_admin' OR id = tid()` (a store sees its own record) | only `rol() = 'platform_admin'` | no policy (never deleted) |
-| user_profiles | `rol() = 'platform_admin' OR id = uid() OR tenant_id = tid() OR role = 'platform_admin'` (own row, same-store members, every platform admin) | only `rol() = 'platform_admin'` | no policy ¹ |
+| user_profiles | `rol() = 'platform_admin' OR id = uid() OR tenant_id = tid() OR (role = 'platform_admin' AND uid() IS NOT NULL)` (own row, same-store members, every platform admin) | only `rol() = 'platform_admin'` | no policy ¹ |
 | categories, products, product_sizes | any authenticated context: `uid() IS NOT NULL` | only `rol() = 'platform_admin'` | no policy (soft delete) |
 | assortment_items | `tenant_id = tid()` | `tenant_id = tid()` (USING and WITH CHECK) | `tenant_id = tid()` (RF-44: only unreferenced items — the RESTRICT FKs enforce it) |
 | availability_events | `tenant_id = tid()` | INSERT: `tenant_id = tid() AND created_by = uid()`; **no UPDATE policy** | **no policy** → immutable event log |

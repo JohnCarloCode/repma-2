@@ -1,10 +1,11 @@
 import { pgEnum } from 'drizzle-orm/pg-core';
+import { AVAILABILITY_EVENT_TYPES, REPLENISHMENT_STATUSES, ROLES } from 'shared';
 
 // database.md §5 — closed, stable domains. A new value is a conscious migration
-// (`ALTER TYPE … ADD VALUE`); the same literals are mirrored as typed constants
-// in packages/shared (sub-task 1.10) so API, web and DB share one source.
-export const userRole = pgEnum('user_role', ['platform_admin', 'manager', 'employee']);
+// (`ALTER TYPE … ADD VALUE`); the literals come from packages/shared so API,
+// web and DB share one source.
+export const userRole = pgEnum('user_role', ROLES);
 
-export const availabilityEventType = pgEnum('availability_event_type', ['out_of_stock', 'restock']);
+export const availabilityEventType = pgEnum('availability_event_type', AVAILABILITY_EVENT_TYPES);
 
-export const replenishmentStatus = pgEnum('replenishment_status', ['draft', 'processing', 'done']);
+export const replenishmentStatus = pgEnum('replenishment_status', REPLENISHMENT_STATUSES);

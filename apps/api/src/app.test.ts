@@ -13,6 +13,11 @@ describe('GET /api/v1/health', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ status: 'ok' });
   });
+
+  it('is limited per IP under the read family (RNF-07)', async () => {
+    const res = await request(app).get('/api/v1/health');
+    expect(res.headers['ratelimit-limit']).toBe('100');
+  });
 });
 
 describe('health handler (RNF-10)', () => {

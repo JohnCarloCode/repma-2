@@ -213,9 +213,9 @@ Shared schema (AD-01): the tenant is a column with an RLS policy on every tenant
 
 1. `authenticate` validates the Supabase JWT (HttpOnly cookie takes priority, `Bearer` as fallback) verifying the signature locally against JWKS (AD-20) and loads `user_profiles` (inactive user or store → 401). Loading the profile establishes the **identity context** `{ userId, role, tenantId }`: for store users `tenantId` is always their own store — which is also what lets the API verify that store's `is_active` under RLS on any route, since the `tenants` SELECT policy allows a store to see its own row (`database.md` §7.3); for the Platform Admin it is empty.
 2. `tenantContext` resolves the **active tenant**. An endpoint's tenant scope is an **explicit per-router declaration, never an inference**: tenant-scoped routers (`availability`, `replenishment`, `home`) mount `tenantContext`; global routers (`auth`, `tenants`, `users`, `catalog`) do not mount it and never resolve an **active** tenant — store users still carry their identity `tenantId` from step 1, and for the Platform Admin it stays empty. With the middleware mounted:
-   - `manager`/`employee` → always their `tenant_id` (a different `X-Tenant-Id` header is a 403; no ambiguity is possible).
-   - `platform_admin` → requires `X-Tenant-Id` (validating that the tenant exists and is active); no header → 400.
-3. The `{ userId, role, tenantId }` context is stored in `AsyncLocalStorage` — available at any layer without passing it as parameters.
+   - `manager`/`employee` → always their `tenant_id` (a different `X-Tenant-Id` header is the uniform 403 `FORBIDDEN` of §6; no ambiguity is possible).
+   - `platform_admin` → requires `X-Tenant-Id` (validating that the tenant exists and is active); no header → 400 `TENANT_REQUIRED`; a malformed id, an unknown store or an inactive one → one 400 `INVALID_TENANT` (the client cannot tell which — the selector's stored choice is simply no longer usable).
+3. The `{ userId, role, tenantId }` context is stored in `AsyncLocalStorage` — available at any layer without passing it as parameters. `authenticate` runs the rest of the request under the identity context (what global routers use); `tenantContext` replaces it with the active tenant on tenant-scoped routers.
 4. `db/withTenantContext(fn)` opens a transaction and sets the context with transaction scope:
    ```sql
    BEGIN;
@@ -244,7 +244,7 @@ Summary (full policies in `database.md` §7):
 
 ## 6. Authorization (RBAC)
 
-A single module (`packages/shared/permissions.ts`, consumed by `core/authz` and by the UI) defines permissions and the matrix. No one writes `role === 'x'` outside of it.
+A single module (`packages/shared/src/permissions.ts`, consumed by `core/authz` and by the UI) defines permissions and the matrix. No one writes `role === 'x'` outside of it.
 
 ```ts
 // permissions as typed constants: 'resource:action'
@@ -297,7 +297,7 @@ All routes: `authenticate` + per-user rate limit + `authorize` (login and health
 | Family | Endpoints | Permission |
 |---|---|---|
 | Health | `GET /health` (liveness + DB ping) | public |
-| Auth | `POST /auth/login`, `POST /auth/logout`, `GET /auth/me` (user + role + tenant + permissions) | public login with strict rate limit |
+| Auth | `POST /auth/login`, `POST /auth/logout`, `GET /auth/me` (user + role + store + permissions — shape below) | login public with strict rate limit; logout/me authenticated only (no permission) |
 | Tenants | `GET/POST /tenants`, `GET/PATCH /tenants/:id` (PATCH includes `is_active`) | `tenant:manage` |
 | Users | `GET/POST /users`, `GET/PATCH/DELETE /users/:id` (creation = Supabase Auth admin + profile, transactional-compensated; PATCH optionally carries a new `password` — a write-only reset via Supabase Auth admin, RF-11) | `user:manage` |
 | Catalog | `GET /categories`, `GET /products` (embeds each product's sizes; filters `categoryId`, `search`, `isActive` + pagination; `search` matches product name + size SKU) | `catalog:read` |
@@ -314,6 +314,8 @@ The Availability, Replenishment, and Home routes are tenant-scoped (§5.2). One 
 
 Why these endpoint shapes (each parameter has a real consumer — never symmetry):
 
+- **Auth** (RF-01/02/03): `GET /auth/me` → `{ user: { id, email, fullName }, role, store: { id, name } | null, permissions }` — exactly what the shell shows (user menu name + role label, the store name for store roles; `store` is null for the Platform Admin, whose tenant comes from the selector) plus the guards' input (`permissions` = `rolePermissions[role]`, §6); typed as `AuthSession` in `shared`. `POST /auth/login` (body `loginBody` from `shared`) answers 200 with that same session and sets the cookie — never a token in the body. Wrong credentials, a deactivated user, a user of a deactivated store or a user without a profile all get one uniform `401 INVALID_CREDENTIALS` (`design/pages/login.md`). `POST /auth/logout` → 204 clearing the cookie (RF-03); it does not revoke the Supabase session. Limits: login per IP (login family) pre-auth; logout per user as a write, me per user as a read.
+
 - `GET /home/summary`: see RF-41. Guarded by `availability:read` (Home's route guard); every store role also holds `catalog:read` and `replenishment:read`, so it exposes nothing its holder couldn't already read. **Any future narrowing of `replenishment:read` must revisit this guard**, or the summary would leak counts its holder can no longer list.
 - `GET /replenishment-lists`: `status` (multi, comma-separated) + per-list `itemCount`/`doneCount` serve Home's open-work block (`status=draft,processing&pageSize=7`, "6/14" fractions) and the `/replenishment` cards; `search` (name, `ILIKE`) and `from`/`to` back that page's filter band; `productCount` (`COUNT(DISTINCT product_id)`) is the only card figure not composable client-side, since items reference sizes, not products (`database.md` §4.9). All ride the existing `(tenant_id, created_at DESC)` index.
 
@@ -321,8 +323,8 @@ Why these endpoint shapes (each parameter has a real consumer — never symmetry
 
 ## 8. Non-functional requirements
 
-- **Security**: HttpOnly cookie `SameSite=Lax` `Secure` in prod; helmet with CSP (`img-src` for Storage); CORS allowlist with credentials; body ≤100 kb, images ≤5 MB; rate limit on **all** families, keyed per authenticated user (reads 100/min, writes 30/min, shop-floor writes — flag events RF-20 + item autosave RF-28/RF-40 — 120/min; the public routes per IP — login 10/min, health under the read limit — RNF-07: store staff share one NAT'd IP); Zod whitelist validation on body/query/params; forced RLS (§5.3); `trust proxy`.
-- **Errors**: typed `AppError` + central handler; Zod errors are mapped to 400 with per-field issues; unexpected errors → opaque 500 + structured log (pino) with request id.
+- **Security**: HttpOnly cookie `SameSite=Lax` `Secure` in prod (one `repma_session` cookie whose value is the JSON `{ accessToken, refreshToken }`, AD-12/AD-23); helmet with CSP (`img-src` for Storage); CORS allowlist with credentials; body ≤100 kb, images ≤5 MB; rate limit on **all** families, keyed per authenticated user (reads 100/min, writes 30/min, shop-floor writes — flag events RF-20 + item autosave RF-28/RF-40 — 120/min; the public routes per IP — login 10/min, health under the read limit — RNF-07: store staff share one NAT'd IP); Zod whitelist validation on body/query/params; forced RLS (§5.3); `trust proxy`.
+- **Errors**: typed `AppError` + central handler; Zod errors are mapped to 400 with per-field issues; unexpected errors → opaque 500 + structured log (pino) with request id; credentials (`Cookie`, `Authorization`, `Set-Cookie`) are redacted from request logs.
 - **Config**: `config/env.ts` validates with Zod at startup (fail-fast). Variables: `DATABASE_URL` (`repma_api` role), `SUPABASE_URL` (from which the JWKS endpoint is derived, AD-20), `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY` (password login and token refresh, AD-23 — never used for data), `PORT`, `FRONTEND_URLS`, `NODE_ENV`.
 - **Testing** (pyramid):
   - Unit (Vitest): services with fake repos, permission matrix, mappers, utils. Fast, no network.

@@ -139,7 +139,7 @@
 
 ## Phase 5 — Home (S)
 
-**Objective:** the store landing that summarizes both worlds without ever connecting them (DP-06): figures card + three bounded evidence blocks.
+**Objective:** the store landing that summarizes both worlds without ever connecting them (DP-06): KPI strip + three bounded evidence blocks.
 **Scope:** RF-25, RF-41; DP-06, DP-07(Home).
 **Starting state:** Phase 4 closed. Verify: `npm run check`; lists + availability flows work locally.
 **Manual setup:** none.

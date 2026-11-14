@@ -142,7 +142,7 @@ Selector change invalidates all tenant-scoped queries (`../shared/layout.md`); t
 
 ## Edge cases
 - More than 10 affected products: the block shows 10 and "View all (N)" states the true **product** total from the availability query's envelope (never the card's `outOfStock` figure, which counts sizes) — never paginate inside Home. Same rule for open lists: 7 shown, "View all (N)" covers the rest; there `openLists` (RF-41) and the envelope total agree, both counting lists.
-- Figures card vs. the blocks below: all are server-derived and invalidated together after every mutation here; a transient mismatch between refetches is acceptable and self-heals.
+- KPI strip vs. the blocks below: all are server-derived and invalidated together after every mutation here; a transient mismatch between refetches is acceptable and self-heals.
 - All queries failing (e.g. tenant deactivated mid-session → 401/403): route-level `<ErrorState>` instead of a broken page.
 - A newly created list is `draft` and empty (RF-30, RF-27), so it enters the table at the top row with "—" for progress and increments `openLists` while leaving `pendingItems` unchanged; creating it records no availability events — no invalidation of availability queries is needed.
 - Checking an item done on a list's detail decrements `pendingItems` here on the next invalidation; deleting an unchecked item does the same — the figure counts rows, both agree by construction.

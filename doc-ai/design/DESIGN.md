@@ -457,4 +457,4 @@ Size-run tiles never shrink below 44px; they wrap.
 - ❌ Don't use red for anything that isn't an alert, or the accent for status.
 
 ## Known Gaps
-- Per-tenant accent configuration is proposed in `features/001-tenant-theming` (written against the previous token set): with this document it reduces to injecting one `--color-accent` per tenant. Until it ships, the accent is set in the theme file.
+- Per-tenant accent configuration is proposed in `features/001-tenant-theming`: with this document it reduces to injecting one `--color-accent` per tenant. Until it ships, the accent is set in the theme file.

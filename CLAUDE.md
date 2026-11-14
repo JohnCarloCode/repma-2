@@ -17,6 +17,7 @@ REPMA is a multi-tenant availability & replenishment platform: a Platform Admin 
 | `doc-ai/core/database.md` | You touch the schema, RLS, indexes or the seed |
 | `doc-ai/core/plan/` | You need the phased build plan: `plan.md` is the roadmap/tracker (phases checked off as they close), `journal.md` the session-by-session execution diary, `prompts_plan.md` the prompts that create the plan and execute its phases |
 | `doc-ai/design/DESIGN.md` | You touch UI: design system, tokens, tone |
+| `doc-ai/design/prototype/` | You need to SEE the validated visuals (clickable prototype; reference only — DESIGN.md wins) |
 | `doc-ai/design/shared/` | You touch the app shell (`layout.md`) or shared UI patterns (`components.md`) |
 | `doc-ai/design/pages/README.md` | Page index → open only the `.md` of the page you're touching |
 | `doc-ai/features/README.md` | Feature index → open only the feature you're working on |

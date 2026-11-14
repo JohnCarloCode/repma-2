@@ -42,6 +42,6 @@ Reminder: the app's UI language is English (RNF-19), same as the page docs and t
 
 ## Cross-cutting (lives in `../shared/`, not here)
 
-- [layout.md](../shared/layout.md) — shell: flush sidebar spine (no topbar on tablet/desktop; fixed mobile header hosts the drawer trigger), navigation by permission, Platform Admin store selector
+- [layout.md](../shared/layout.md) — shell: full-height sidebar (no topbar on tablet/desktop; fixed mobile header hosts the drawer trigger), navigation by permission, Platform Admin store selector
 - [components.md](../shared/components.md) — shared patterns: paginated table, loading/empty/error states, toasts, badges
 - [product-picker.md](../shared/product-picker.md) — visual product & size selector (images + category navigation), used by every add-product flow

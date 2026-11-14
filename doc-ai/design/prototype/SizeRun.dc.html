@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+  .repma-theme, :root {
+    --color-accent: #8E1B3B;
+    --color-accent-hover: color-mix(in oklab, var(--color-accent) 85%, white);
+    --color-accent-active: color-mix(in oklab, var(--color-accent) 80%, black);
+    --color-accent-bright: color-mix(in oklab, var(--color-accent) 55%, white);
+    --color-accent-soft: color-mix(in oklab, var(--color-accent) 22%, transparent);
+    --on-accent: #FFFFFF;
+    --canvas: #121212; --surface: #1E1E1E; --surface-hover: #252525; --surface-raised: #2C2C2E;
+    --border: #2C2C2E; --border-strong: #3A3A3C;
+    --text: #FFFFFF; --text-secondary: #98989D; --text-disabled: #5A5A5E;
+    --alert: #FF453A; --alert-soft: #3A1C1C; --live: #32D74B; --live-soft: #16301C;
+    --warning: #FFD60A; --warning-soft: #332B0A; --info: #64D2FF; --info-soft: #0E2A36;
+    --mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  button:disabled { pointer-events: none; }
+  .repma-tile > span { transition: background-color 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out; }
+  .repma-tile:hover > span { color: var(--color-accent-bright) !important; border-color: var(--color-accent-bright) !important; }
+  @keyframes runTipIn { from { opacity: 0; transform: translate(-50%, 4px) } to { opacity: 1; transform: translate(-50%, 0) } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important } }
+</style>
+</helmet>
+<div role="group" aria-label="{{ label }}" style="display:flex; flex-wrap:wrap; align-items:center; gap:8px; font-family:'Inter', system-ui, sans-serif">
+  <sc-for list="{{ items }}" as="p" hint-placeholder-count="6">
+    <span style="position:relative; display:inline-flex">
+
+      <sc-if value="{{ p.isAction }}">
+        <button class="repma-tile" type="button" onClick="{{ p.onClick }}" onMouseEnter="{{ p.onEnter }}" onMouseLeave="{{ p.onLeave }}" onFocus="{{ p.onEnter }}" onBlur="{{ p.onLeave }}" aria-label="{{ p.aria }}" style="display:inline-flex; align-items:center; justify-content:center; min-width:44px; height:44px; padding:0; margin:0; border:none; background:none; cursor:pointer">
+          <span style="display:inline-flex; align-items:center; justify-content:center; gap:{{ p.gap }}; box-sizing:border-box; min-width:44px; height:44px; padding:{{ p.pad }}; border-radius:8px; background:{{ p.bg }}; color:{{ p.fg }}; border:{{ p.border }}; font-size:14px; font-weight:{{ p.weight }}; font-variant-numeric:tabular-nums; font-family:var(--mono); white-space:nowrap; transition:background-color 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out"><sc-if value="{{ p.hasDot }}"><span aria-hidden="true" style="width:6px; height:6px; flex:none; border-radius:9999px; background:var(--alert)"></span></sc-if>{{ p.label }}</span>
+        </button>
+      </sc-if>
+
+      <sc-if value="{{ p.isToggle }}">
+        <button class="repma-tile" type="button" onClick="{{ p.onClick }}" onMouseEnter="{{ p.onEnter }}" onMouseLeave="{{ p.onLeave }}" onFocus="{{ p.onEnter }}" onBlur="{{ p.onLeave }}" disabled="{{ p.disabled }}" aria-pressed="{{ p.pressed }}" aria-label="{{ p.aria }}" style="display:inline-flex; align-items:center; justify-content:center; min-width:44px; height:44px; padding:0; margin:0; border:none; background:none; cursor:{{ p.cursor }}">
+          <span style="display:inline-flex; align-items:center; justify-content:center; gap:{{ p.gap }}; box-sizing:border-box; min-width:44px; height:44px; padding:{{ p.pad }}; border-radius:8px; background:{{ p.bg }}; color:{{ p.fg }}; border:{{ p.border }}; font-size:14px; font-weight:{{ p.weight }}; font-variant-numeric:tabular-nums; font-family:var(--mono); white-space:nowrap; transition:background-color 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out"><sc-if value="{{ p.hasDot }}"><span aria-hidden="true" style="width:6px; height:6px; flex:none; border-radius:9999px; background:var(--alert)"></span></sc-if>{{ p.label }}</span>
+        </button>
+      </sc-if>
+
+      <sc-if value="{{ p.isStatic }}">
+        <span tabIndex="0" onMouseEnter="{{ p.onEnter }}" onMouseLeave="{{ p.onLeave }}" onFocus="{{ p.onEnter }}" onBlur="{{ p.onLeave }}" aria-label="{{ p.aria }}" style="display:inline-flex; align-items:center; justify-content:center; min-width:44px; height:44px">
+          <span style="display:inline-flex; align-items:center; justify-content:center; gap:{{ p.gap }}; box-sizing:border-box; min-width:44px; height:44px; padding:{{ p.pad }}; border-radius:8px; background:{{ p.bg }}; color:{{ p.fg }}; border:{{ p.border }}; font-size:14px; font-weight:{{ p.weight }}; font-variant-numeric:tabular-nums; font-family:var(--mono); white-space:nowrap"><sc-if value="{{ p.hasDot }}"><span aria-hidden="true" style="width:6px; height:6px; flex:none; border-radius:9999px; background:var(--alert)"></span></sc-if>{{ p.label }}</span>
+        </span>
+      </sc-if>
+
+      <sc-if value="{{ p.tipOpen }}">
+        <span role="tooltip" style="position:absolute; bottom:46px; left:50%; transform:translateX(-50%); z-index:40; display:flex; flex-direction:column; gap:2px; padding:6px 10px; border-radius:8px; background:var(--surface-raised); color:var(--text); font-size:12px; font-weight:500; white-space:nowrap; pointer-events:none; animation:runTipIn 120ms ease-out">
+          <span>{{ p.tip }}</span>
+          <sc-if value="{{ p.hasHint }}"><span style="color:var(--text-secondary); font-weight:400">{{ p.hint }}</span></sc-if>
+        </span>
+      </sc-if>
+
+    </span>
+  </sc-for>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:520,&quot;height&quot;:120},&quot;tiles&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;Array&lt;{key?:string;label:string;bg?:string;fg?:string;border?:string;weight?:number;kind?:'action'|'toggle'|'static';disabled?:boolean;pressed?:boolean;aria?:string;tip?:string;hint?:string;onClick?:(e:MouseEvent)=&gt;void}&gt;&quot;},&quot;label&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Size run&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+/* <SizeRun> — the run-tile primitive (DESIGN.md §Size run).
+   Two consumers, one component: /availability + Home lines, and the ProductPicker's
+   size selector. It owns tile geometry (44x44px — visual size IS the hit area,
+   no invisible extension; 8px gap, wrap-never-scroll) and the tooltip; the CONSUMER passes each tile's
+   tone, so the out-of-stock mark and the elapsed-figure scale (DP-07) stay
+   defined exactly once, in its owner. */
+class Component extends DCLogic {
+  static DEMO = [
+    { key: 'a', label: '38', bg: 'var(--surface-raised)', fg: 'var(--text)', border: 'none', weight: 500, kind: 'static', tip: '38 · CAL-RUN-001-38 · available' },
+    { key: 'b', label: '39', bg: 'var(--surface-raised)', fg: 'var(--text)', border: 'none', weight: 500, kind: 'static', tip: '39 · CAL-RUN-001-39 · available' },
+    { key: 'c', label: '40', bg: 'transparent', fg: 'var(--text)', border: '1px dashed var(--border-strong)', weight: 500, dot: true, kind: 'static', tip: '40 · CAL-RUN-001-40 · out 5 h' },
+    { key: 'd', label: '41', bg: 'var(--surface-raised)', fg: 'var(--text)', border: 'none', weight: 500, kind: 'static', tip: '41 · CAL-RUN-001-41 · available' },
+    { key: 'e', label: '42', bg: 'transparent', fg: 'var(--text)', border: '1px dashed var(--border-strong)', weight: 500, dot: true, kind: 'static', tip: '42 · CAL-RUN-001-42 · out 2 d' },
+    { key: 'f', label: '43', bg: 'transparent', fg: 'var(--text)', border: '1px dashed var(--border-strong)', weight: 500, dot: true, kind: 'static', tip: '43 · CAL-RUN-001-43 · out 9 d' }
+  ];
+
+  state = { tip: -1 };
+
+  renderVals() {
+    const self = this;
+    const tiles = (this.props.tiles && this.props.tiles.length ? this.props.tiles : Component.DEMO);
+    return {
+      label: this.props.label || 'Size run',
+      items: tiles.map(function (p, i) {
+        const kind = p.kind || 'action';
+        return {
+          label: p.label,
+          bg: p.bg || 'transparent',
+          fg: p.fg || 'var(--text)',
+          border: p.border || 'none',
+          weight: p.weight || 500,
+          // The out-of-stock mark: leading 6px dot inside the tile, tighter padding.
+          hasDot: !!p.dot,
+          pad: p.pad || (p.dot ? '0 12px' : '0 14px'),
+          gap: p.dot ? '2px' : '0px',
+          cursor: p.disabled ? 'not-allowed' : 'pointer',
+          disabled: !!p.disabled,
+          pressed: !!p.pressed,
+          aria: p.aria || p.label,
+          isAction: kind === 'action',
+          isToggle: kind === 'toggle',
+          isStatic: kind === 'static',
+          tip: p.tip || '',
+          hint: p.hint || '',
+          hasHint: !!p.hint,
+          tipOpen: self.state.tip === i && !!p.tip,
+          onEnter: function () { self.setState({ tip: i }); },
+          onLeave: function () { self.setState(function (s) { return { tip: s.tip === i ? -1 : s.tip }; }); },
+          onClick: function (e) { if (p.onClick) p.onClick(e); }
+        };
+      })
+    };
+  }
+}
+
+</script>
+</body>
+</html>

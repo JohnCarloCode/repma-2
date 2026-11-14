@@ -20,7 +20,7 @@ Standard list screen skeleton (../shared/layout.md, DESIGN.md §Screen Skeletons
 | Store | tenant name | "—" for `platform_admin` (RN-01) |
 | Status | `is_active` | "Active" / `badge-inactive` "Inactive" |
 
-Row actions (icon-button-ivory): "Edit", "Delete". **Delete is hidden on the current admin's own row** (RF-12; compare row id with session user id); Edit stays available — RF-12 only forbids self-delete and self-deactivate, so the admin can still edit their own profile — with the `is_active` toggle disabled inside the modal.
+Row actions (`icon-button`): "Edit", "Delete". **Delete is hidden on the current admin's own row** (RF-12; compare row id with session user id); Edit stays available — RF-12 only forbids self-delete and self-deactivate, so the admin can still edit their own profile — with the `is_active` toggle disabled inside the modal.
 
 ### Filter band
 - Search ("Search users…" — matches name and email, RF-09) + store select ("All stores" default, options from `GET /tenants`). Both in URL, per ../shared/components.md.

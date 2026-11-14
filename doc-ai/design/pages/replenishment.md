@@ -15,29 +15,29 @@ Page title: "Replenishment", subtitle "`<store>` · N lists" from the lists enve
 
 ## Content — the list card
 
-One card per list, on `{component.card}` (white on the ash floor, soft `{rounded.md}` radius, no border, no shadow — DESIGN.md §Elevation). The whole card is the navigation target: click or `Enter` → `/replenishment/:id`. It is a single focusable element with an accessible name (the list name), which is what replaces the table's row click.
+One card per list, on `{components.card}` (`{colors.surface}` on the canvas, `{rounded.md}` radius, 1px `{colors.border}`, no shadow — DESIGN.md §Elevation). The whole card is the navigation target: click or `Enter` → `/replenishment/:id`. It is a single focusable element with an accessible name (the list name), which is what replaces the table's row click.
 
 | Slot | Content | Notes |
 |---|---|---|
 | Top left | Status badge | `badge-status-draft` "Draft" / `-processing` "In progress" / `-done` "Done" per `../shared/components.md` labels |
-| Top right | Delete action | `icon-button-ivory`, gated; `stopPropagation` so it never opens the list — same rule as `<DataTable>` row actions |
-| Title | List name | `{typography.h2}` (Inter Tight 20/400), truncated at 2 lines |
-| Size line | `productCount` + `itemCount` | `{typography.caption}` in `{colors.muted}`, tabular-nums: "8 products · 14 sizes". Singular forms at 1 ("1 product · 1 size"). An empty list reads "Empty" |
+| Top right | Delete action | `icon-button`, gated; `stopPropagation` so it never opens the list — same rule as `<DataTable>` row actions |
+| Title | List name | `{typography.h2}` (Inter 18/600), truncated at 2 lines |
+| Size line | `productCount` + `itemCount` | `{typography.caption}` in `{colors.text-secondary}`, tabular-nums: "8 products · 14 sizes". Singular forms at 1 ("1 product · 1 size"). An empty list reads "Empty" |
 | Progress line | `doneCount` of `itemCount` | **While the list is open** (`draft` or `processing`) **and has items**: the same compact fraction the detail page uses — "6/14", `tabular-nums`, caption treatment (one format for one datum, `../shared/components.md` §`<ProgressBar>`). Omitted on `done` (the work is finished) and on empty lists (the size line already reads "Empty") — the same rule as Home's open-work table, which shows the fraction for every open list with items (`home.md`) |
-| — | Hairline | 1px `{colors.hairline}` rule separating identity from provenance |
+| — | Hairline | 1px `{colors.border}` rule separating identity from provenance |
 | Creator | Creator's name | `{typography.caption}`; "—" if the user was deleted (RN-09: history survives) |
 | Age | `created_at` | Date convention from `../shared/components.md`: relative under 24h ("14 minutes ago", "4 h ago"), the absolute `dd/mm/yyyy HH:mm` beyond it |
-| Bottom right | Destination arrow | `{component.icon-button-ink}` — ink-filled 32px square, sharp corners, white chevron — on the card's last row, baseline-aligned with the provenance text on its left. Same control as the trailing column of Home's open-work table (`../shared/components.md` §`<DataTable>`) |
+| Bottom right | Destination arrow | `{components.icon-button}` with a chevron — 32px `{colors.surface-raised}` square, `{rounded.sm}` — on the card's last row, baseline-aligned with the provenance text on its left. Same control as the trailing column of Home's open-work table (`../shared/components.md` §`<DataTable>`) |
 
 The card carries no product imagery: a list has none, and the design system has no decorative surface to spend on one (DESIGN.md §Color — color is rationed, the data is the imagery).
 
 The **destination arrow** does not add an action: the whole card already resolves to `/replenishment/:id`, and the arrow is rendered **inside that same card link** rather than as a sibling button — one tab stop, one accessible name (the list name), no destination announced twice. It makes the exit visible instead of merely discoverable, which on a card matters more than on a table row: a card has no row-shaped affordance to suggest it leads anywhere.
 
-Interaction states carry no lift and no shadow — there are none in the product (DESIGN.md §Elevation). Hovering the card puts the garnet link underline under the list name, a pointer cursor on the card, **and fills the arrow garnet** (`{component.icon-button-ink-hover}`, white chevron kept) — the two garnet marks appear together because they belong to the same single link. `:focus-visible` draws the standard garnet focus outline on the card itself. The delete button keeps its own hover and focus, independent of the card's, and hovering it does not light the arrow: they are different targets and must never read as one.
+Interaction states carry no lift and no shadow — there are none in the product (DESIGN.md §Elevation). Hovering the card turns its border `{colors.border-strong}`, underlines the list name in `{colors.accent-bright}`, shows a pointer cursor, **and turns the arrow's chevron `{colors.accent-bright}`** — the two accent marks appear together because they belong to the same single link. `:focus-visible` draws the standard `{colors.accent-bright}` focus ring on the card itself. The delete button keeps its own hover and focus, independent of the card's, and hovering it does not light the arrow: they are different targets and must never read as one.
 
 ## Filters
 
-Standard filter band (`../shared/components.md` §Filter band): white controls on the dark `filter-band` surface, state in the URL, any change resets to page 1, and the band stacks on mobile with the search full-width on top.
+Standard filter band (`../shared/components.md` §Filter band): standard controls on the accent filter band, state in the URL, any change resets to page 1, and the band stacks on mobile with the search full-width on top.
 
 | Control | Options | Query param |
 |---|---|---|

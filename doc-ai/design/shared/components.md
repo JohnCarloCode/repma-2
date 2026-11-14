@@ -21,11 +21,11 @@ Both are deliberate and for the same underlying reason: the platform-admin CRUD 
 Title (display token, per DESIGN.md §Typography) + optional primary action button (right-aligned, permission-gated). One primary action max per screen. There is no topbar at tablet width and above (`./layout.md`), so this is the only header on the screen there; at mobile width the shell's **fixed mobile header** sits above it and hosts the drawer trigger (`./layout.md` — No topbar · Mobile header).
 
 - `<PageHeader>` carries **no navigation trigger at any width** — the hamburger belongs to the shell's mobile header, not to the page.
-- Optional **subtitle**: one `{typography.body}` line in `{colors.muted}` directly under the title — the store name (store zone; platform pages drop it) plus the result set's headline count from the list envelope's `total` ("Centro Store · 42 products", "6 stores on the platform"). It renders only once the data is there (no skeleton of its own) and reflects the active filters, so it always describes what the list below actually holds. Each page doc states its exact wording; pages without one simply omit it.
+- Optional **subtitle**: one `{typography.body}` line in `{colors.text-secondary}` directly under the title — the store name (store zone; platform pages drop it) plus the result set's headline count from the list envelope's `total` ("Centro Store · 42 products", "6 stores on the platform"). It renders only once the data is there (no skeleton of its own) and reflects the active filters, so it always describes what the list below actually holds. Each page doc states its exact wording; pages without one simply omit it.
 - Detail pages use their own header (entity name + badge + actions) instead of `<PageHeader>`; their back arrow is the first item of the row.
 
 ### Filter band
-Search input + selects on the dark `filter-band` surface (#3b1322, the sidebar's hover tone — DESIGN.md §Surfaces & Borders). The controls themselves stay white (`text-input` geometry unchanged); any text directly on the band (toggle labels, a "Clear" tertiary action) uses the on-sidebar tones, and focus on the band is the spine's 2px `on-sidebar` outline. Behavior:
+Search input + selects on the `{components.filter-band}`: an `{colors.accent-hover}` band, `{rounded.sm}`, 16px padding — the one branded band of each list screen (DESIGN.md). The controls keep their normal `{colors.surface}` fill with a 1px `{colors.border-strong}` border, 44px high; toggles sit inside a control-styled box so their label never sits directly on the accent. Focus is the standard `{colors.accent-bright}` ring. Behavior:
 - Search debounced 300ms; resets to page 1 on change.
 - **Filter and page state live in the URL** (query params) — shareable, survives refresh and back navigation.
 - **Responsive**: desktop lays the controls out inline; on mobile the band stacks — search full-width on top, selects wrapping below it. Same rule on every page that uses the band.
@@ -33,9 +33,9 @@ Search input + selects on the dark `filter-band` surface (#3b1322, the sidebar's
 
 ### `<DataTable>`
 - Column defs with header, cell renderer, alignment (numeric columns right-aligned, tabular-nums).
-- Row click navigates to detail where a detail route exists; row action buttons (icon-button-ivory) stop propagation.
-- **Group header rows** (optional): a full-width `{colors.surface-soft}` row in `body-medium` naming the group of the rows beneath it — the items table on `/replenishment/:id` is the consumer (product groups by default, category groups with its toggle — see `../pages/replenishment-detail.md`). A group whose rows are all filtered out renders no header row.
-- **Destination affordance** (optional): where a row — or a card — resolves to exactly one place and that exit should be visible rather than merely discoverable, it carries an `{component.icon-button-ink}`: ink-filled square, white chevron, garnet on hover. It sits in the last column of a table row (Home's open-work table) or the bottom-right corner of a card (`/replenishment` list cards), and is rendered **inside that row's or card's own link**, never as a sibling button: one tab stop, one accessible name, no destination duplicated for assistive tech. It is a signpost for a target that already existed, never a second action, so it never coexists with an action pointing elsewhere — a delete button on the same card stays a separate target with its own hover, and hovering one never lights the other.
+- Row click navigates to detail where a detail route exists; row action buttons (`icon-button`) stop propagation.
+- **Group header rows** (optional): a full-width `{colors.surface-raised}` row in `body-medium` naming the group of the rows beneath it — the items table on `/replenishment/:id` is the consumer (product groups by default, category groups with its toggle — see `../pages/replenishment-detail.md`). A group whose rows are all filtered out renders no header row.
+- **Destination affordance** (optional): where a row — or a card — resolves to exactly one place and that exit should be visible rather than merely discoverable, it carries an `{components.icon-button}` with a chevron: `{colors.surface-raised}` square, `{colors.accent-bright}` chevron on hover. It sits in the last column of a table row (Home's open-work table) or the bottom-right corner of a card (`/replenishment` list cards), and is rendered **inside that row's or card's own link**, never as a sibling button: one tab stop, one accessible name, no destination duplicated for assistive tech. It is a signpost for a target that already existed, never a second action, so it never coexists with an action pointing elsewhere — a delete button on the same card stays a separate target with its own hover, and hovering one never lights the other.
 - **Bounded (unpaginated) use**: the same geometry serves summary blocks that show a capped set instead of a page — all three Home blocks (open work, out of stock, recent activity). Everything is identical except that `<Pagination>` is replaced by a tertiary "View all" **bottom-right, right-aligned under the last row** — stating the true total ("View all (9)") when the set truncates. The count applies to bounded **work** sets (open lists, out-of-stock products); a teaser of an unbounded feed — Home's recent activity — carries no count, because a feed's total bounds no work. The header row does not render on its own: an empty result replaces the whole table with its `<EmptyState>`.
 - Sorting out of scope for the MVP (spec defines no sort params).
 
@@ -73,17 +73,17 @@ Search input + selects on the dark `filter-band` surface (#3b1322, the sidebar's
 
 ## `<ProgressBar>`
 
-Visual per DESIGN.md `progress-bar` (sharp 10px `surface-strong` track, garnet fill, animated width). Behavior:
+Visual per DESIGN.md `progress-bar` (8px `{colors.surface-raised}` pill track, `{colors.accent-bright}` fill, animated width). Behavior:
 
 - Renders as a labelled block, never a bare bar: the **"Progress"** label with the **compact fraction `0/4`** (`tabular-nums`) on the same line, and the track full-width beneath it. The fraction is the strict `done/total` form — no unit, no "done", no percentage: the label already says what it is, and the numbers are read at a glance on a shop floor.
-- The consumer places that block inside a `{component.card}` (see `pages/replenishment-detail.md`) — the component owns the label, fraction and bar, not the container.
+- The consumer places that block inside a `{components.card}` (see `pages/replenishment-detail.md`) — the component owns the label, fraction and bar, not the container.
 - The fraction is never decorative: the bar alone never carries the information (accessibility: `role="progressbar"` with `aria-valuenow/min/max` and the fraction as accessible text).
 - Driven by already-loaded data; updates immediately on the mutation's optimistic state, reconciled on refetch.
 - Not rendered when the set is empty (`0/0` is noise, not progress).
 
 ## `<SizeRun>`
 
-Renders a product's sizes as one row of **sharp 44px tiles** (visual per DESIGN.md §Size run — a tile is a button, so it has no radius). Behavior:
+Renders a product's sizes as one row of **44px tiles** with `{rounded.sm}` corners (visual per DESIGN.md §Size run — a tile is a button, so it takes the button radius). Behavior:
 
 - Receives the product's sizes in `position` order with each one's `is_available` and latest-event timestamp; derives each elapsed figure and its band per DP-07 at render time (nothing is precomputed server-side). The band affects **only the figure's weight** — every out-of-stock tile renders the same mark.
 - Tiles are buttons where the consumer passes an action, plain spans where it does not — so the same component serves the read-only case without a variant of its own.
@@ -97,7 +97,7 @@ The visual product & size selector used by every "add a product to X" flow (asso
 
 ## Badges
 
-Semantic pills defined in DESIGN.md (badges keep the pill dialect — they name a state, they are not buttons, §Shape): `badge-out-of-stock` (renders **"Out of stock"** plus its elapsed figure in the same uniform out-of-stock mark as a run tile — dotted outline + amber dot, no fill; used on `/availability/:id`, where the subject is one size and there is no run to carry the state), `badge-status-draft/-processing/-done` (list states), `badge-inactive` (deactivated products/stores/users). Always icon-or-text + color, never color alone.
+Semantic pills defined in DESIGN.md (badges keep the pill dialect — they name a state, they are not buttons, §Shape): `badge-out-of-stock` (renders **"Out of stock"** plus its elapsed figure in the same uniform out-of-stock mark as a run tile — dashed outline + red `{colors.alert}` dot, no fill; used on `/availability/:id`, where the subject is one size and there is no run to carry the state), `badge-status-draft/-processing/-done` (list states), `badge-inactive` (deactivated products/stores/users). Always icon-or-text + color, never color alone.
 
 ## Data conventions
 

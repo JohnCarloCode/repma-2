@@ -11,10 +11,10 @@ Detail of one assortment item — a **product size** in this store's assortment:
 
 Detail screen skeleton (DESIGN.md §Screen Skeletons): header → summary card → related table.
 
-- **Header**: back `icon-button-ivory` (→ `/availability`, preserving list URL state) on the left; on the right, the flag action for the current state (gated `availability:flag`): **"Mark out of stock"** when available, **"Mark restocked"** when out of stock — preceded, **only while the history is empty**, by a ghost **"Remove from assortment"** (`button-secondary`, gated `assortment:manage`, RF-44; the trigger stays a ghost because the header already carries a filled action — the danger fill belongs to its confirm modal, DESIGN.md §Buttons). Nothing else — the item's identity lives in the summary card.
+- **Header**: back `icon-button` (→ `/availability`, preserving list URL state) on the left; on the right, the flag action for the current state (gated `availability:flag`): **"Mark out of stock"** when available, **"Mark restocked"** when out of stock — preceded, **only while the history is empty**, by a ghost **"Remove from assortment"** (`button-secondary`, gated `assortment:manage`, RF-44; the trigger stays a ghost because the header already carries a filled action — the danger fill belongs to its confirm modal, DESIGN.md §Buttons). Nothing else — the item's identity lives in the summary card.
 - **Summary card**, stacked top to bottom:
   1. **"Product name — size label"** (h1, e.g. "Runner Sneaker — 42") + size SKU caption, with `badge-inactive` "Inactive" beside the name if the product or the size is inactive (RN-08).
-  2. **Availability state**: `badge-out-of-stock` rendering **"Out of stock"** plus its elapsed figure in the uniform out-of-stock mark — dotted outline + amber dot, no aging fill; the figure's weight is the only thing age changes (DP-07) — or plain **"Available"**.
+  2. **Availability state**: `badge-out-of-stock` rendering **"Out of stock"** plus its elapsed figure in the uniform out-of-stock mark — dashed outline + red dot, no aging fill; the figure's weight is the only thing age changes (DP-07) — or plain **"Available"**.
   3. **"since `<date of the latest event>`"** — or "no events recorded" when the history is empty.
   4. **Category**.
 

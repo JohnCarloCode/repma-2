@@ -13,7 +13,7 @@ Detail of one replenishment list: metadata (name, status, notes), its item set (
 
 Detail screen skeleton (DESIGN.md §Screen Skeletons), top to bottom:
 
-1. **Back arrow** (`icon-button-ivory`) to `/replenishment` — the first item of the header row, per `../shared/components.md`.
+1. **Back arrow** (`icon-button`) to `/replenishment` — the first item of the header row, per `../shared/components.md`.
 2. **List name** — the page's identity, right after the arrow.
 3. **"Delete list"** — a **filled `button-danger`**, right-aligned at the end of the header row.
 4. **Progress card**.
@@ -28,33 +28,33 @@ Sidebar keeps "Replenishment" active per `../shared/layout.md`.
 
 | Position | Element | Notes |
 |---|---|---|
-| 1 | **Back arrow** | `icon-button-ivory` → `/replenishment`, preserving that page's URL state. First item of the row at every width (`../shared/components.md`) |
+| 1 | **Back arrow** | `icon-button` → `/replenishment`, preserving that page's URL state. First item of the row at every width (`../shared/components.md`) |
 | 2 | **Name** | Inline editable text (click-to-edit input, saves on blur) — the page's title, `{typography.display}` |
 | 3 | **Status** | Badge (`badge-status-draft/-processing/-done`, labels per `../shared/components.md`) + adjacent select with the three statuses — any transition allowed, no state machine (RF-30). Stays in the header: it is the list's state, not an action on it |
 | 4 | **"Delete list"** | **Filled `button-danger`** (error fill, white text — not a tertiary text action), right-aligned at the end of the row, gated by `replenishment:manage`. Always behind the confirm modal (DESIGN.md §Buttons) |
 
-Beneath the header row, one **meta line** in `{typography.caption}` / `{colors.muted}`: "Created `<date>` · `<creator>`" — the date per `../shared/components.md` conventions, the creator "—" if deleted (RN-09). It is the card-grid provenance (`replenishment.md`) restated where the card no longer is; it never repeats the status, which the badge beside the name already carries.
+Beneath the header row, one **meta line** in `{typography.caption}` / `{colors.text-secondary}`: "Created `<date>` · `<creator>`" — the date per `../shared/components.md` conventions, the creator "—" if deleted (RN-09). It is the card-grid provenance (`replenishment.md`) restated where the card no longer is; it never repeats the status, which the badge beside the name already carries.
 
 On **mobile** the row wraps in that same order: back arrow + name on the first line, status and "Delete list" below it, the delete full-width — the order never changes, only the wrapping.
 
-Why the delete is filled here: this page has **no primary action** — the name saves on blur, the status saves on change, items autosave (RF-28) — so nothing competes with it and the screen still keeps one loudest voice (DESIGN.md `icon-button-ink`, "one loudest voice"). Deleting a list is also the one irreversible act on the page, and a text link is the wrong weight for it: it should be found deliberately, not discovered by accident.
+Why the delete is filled here: this page has **no primary action** — the name saves on blur, the status saves on change, items autosave (RF-28) — so nothing competes with it and the screen still keeps one loudest voice (DESIGN.md §Buttons: one primary per screen). Deleting a list is also the one irreversible act on the page, and a text link is the wrong weight for it: it should be found deliberately, not discovered by accident.
 
-**Progress card** (below the header, above the notes card): a `{component.card}` — white surface, `{rounded.md}`, 24px padding: **the same dress as the Notes card beneath it**, so the two summary blocks read as one pair of panels instead of a floating bar plus a card. It holds, in this order:
+**Progress card** (below the header, above the notes card): a `{components.card}` — `{colors.surface}`, `{rounded.md}`, 20px padding: **the same dress as the Notes card beneath it**, so the two summary blocks read as one pair of panels instead of a floating bar plus a card. It holds, in this order:
 
 1. **"Progress"** (label, `body-medium`) on the left, with the fraction **`0/4`** right-aligned on the same line (`tabular-nums`) — done items / total items, strictly `done/total`: no unit, no "done", no percentage (`../shared/components.md` §`<ProgressBar>`).
-2. The **`<ProgressBar>`** track full-width beneath it (10px, DESIGN.md `progress-bar`).
+2. The **`<ProgressBar>`** track full-width beneath it (8px, DESIGN.md `progress-bar`).
 
 Updates immediately when a check is toggled and when items are added/removed. The whole card is hidden when the list has no items. At 100%, if the list status is not `done`, the hint lives **inside this card, under the bar**: "All items done." + tertiary action "Mark list as done" → the same status `PATCH` as the header select (suggestion only, never automatic — RF-30/RF-40).
 
 **Summary card**: "Notes" — editable textarea (saves on blur) / plain text without `replenishment:manage`.
 
-**Filter band** (above the items table; visuals and responsive stacking per `../shared/components.md` §Filter band — the dark `filter-band` surface, search + selects inline on desktop, stacked on mobile):
+**Filter band** (above the items table; visuals and responsive stacking per `../shared/components.md` §Filter band — the accent filter band, search + selects inline on desktop, stacked on mobile):
 
 | Control | Behavior |
 |---|---|
 | Search ("Search by product or SKU…") | Debounced 300ms; matches product name and size SKU. **Client-side** over the loaded items — no refetch. |
 | Category select ("All categories") | Client-side filter by the item's product category. |
-| Group by category (toggle, off by default) | Off: the table renders in the endpoint's own order — **grouped by product** (RF-26), with product-name header rows (`surface-soft`, `body-medium`). On: regroups the same set under category header rows; within a category, items keep their product order (a product's sizes stay adjacent). Pure view-state — URL param, no API. There is no flat, insertion-ordered view. |
+| Group by category (toggle, off by default) | Off: the table renders in the endpoint's own order — **grouped by product** (RF-26), with product-name header rows (`{colors.surface-raised}`, `body-medium`). On: regroups the same set under category header rows; within a category, items keep their product order (a product's sizes stay adjacent). Pure view-state — URL param, no API. There is no flat, insertion-ordered view. |
 
 Filter and group state live in the URL (shared convention). Filtering/grouping only changes what is shown, never the underlying set.
 
@@ -66,7 +66,7 @@ Filter and group state live in the URL (shared convention). Filtering/grouping o
 | Product | Product name | `body-medium` |
 | Size | Size label + size SKU (caption, muted) | |
 | Requested quantity | `quantity_requested` | Numeric input, min 1, right-aligned tabular-nums; **autosaves on blur/enter** when valid and changed (`PATCH …/items/:itemId`); plain number without `replenishment:manage` |
-| — | Remove row (icon-button-ivory) | Editors only; deletes immediately (`DELETE …/items/:itemId`) — no confirm; the toast offers "Undo" (see Flows) |
+| — | Remove row (`icon-button`) | Editors only; deletes immediately (`DELETE …/items/:itemId`) — no confirm; the toast offers "Undo" (see Flows) |
 
 On mobile the collapsible-column rules apply as elsewhere, but the Done checkbox and the group header rows are never collapsed — they are the shop-floor essentials.
 

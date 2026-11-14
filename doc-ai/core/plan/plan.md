@@ -230,7 +230,7 @@
 **Manual setup:** none.
 
 - [ ] **9.1 Landing** (M) — **first write `design/pages/landing.md`** and register it in the pages index (its doc is pending — the reading-list rule); then build `/`: public pitch with visible demo credentials and CTA to `/login`, replacing the interim redirect (DP-01 complete; authenticated visitors still route to their role home). Tests.
-- [ ] **9.2 README + docs** (S) — setup from scratch (tools, `supabase start`, migrate/bootstrap/seed, dev), demo credentials (database.md §9), architecture pointers, commands (RNF-16), deploy notes. Update the pending Commands block in `CLAUDE.md`.
+- [ ] **9.2 README + docs** (S) — setup from scratch (tools, `supabase start`, migrate/bootstrap/seed, dev), demo credentials (database.md §9), architecture pointers, commands (RNF-16), deploy notes. Bring the Commands block in `CLAUDE.md` up to date (seed, deploy).
 - [ ] **9.3 Final audit** (M) — executable where possible: a test enumerating every router → its limiter family (RNF-07); Zod-schema presence per endpoint (RNF-08); dependency rules of architecture §3.2 checked (lint rule or documented review); endpoint/route surface diffed against architecture §7 and the pages index; accessibility pass per DESIGN §Accessibility (focus, aria, contrast, reduced motion) with fixes; stale interims sweep (none may remain). Fix everything found.
 
 **Deliverable:** the finished MVP: a recruiter opens `/`, reads the pitch, logs in with the shown credentials and tours a coherent product.

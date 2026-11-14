@@ -37,7 +37,7 @@ One full-width `{components.kpi-strip}` built from one `GET /home/summary` call 
 
 - Each figure: the value at `{typography.kpi}` (JetBrains Mono 32px bold) in `{colors.text}`, its `{typography.caption}` label beneath in `{colors.text-secondary}` (sentence case, no trailing colon). Below 744px the three figures stack and the rules turn horizontal. Only "Sizes out of stock" may take `{colors.accent-bright}` — it is the figure this page is about (DESIGN.md §KPI cards: at most one highlighted value per screen).
 - The figures, in reading order: `openLists` (open replenishment lists), `pendingItems` (unchecked items across **all** open lists — the walking work still to do), `outOfStock` (sizes currently flagged). All three are counts, never quantities (RN-05).
-- A zero renders as "0" — an honest zero across this card *is* the good state; no figure is ever replaced or hidden.
+- A zero renders as "0" — an honest zero across this strip *is* the good state; no figure is ever replaced or hidden.
 - The KPI strip is the page's one featured moment: three plain readouts, no icons, no deltas, no sparklines.
 - The escalated-aging count ("N waiting more than a week") is **not** in the KPI strip: aging is a per-product signal and lives on each evidence line (DP-07), where the product it points at is right there to act on.
 
@@ -65,7 +65,7 @@ Up to **7 open lists** — status `draft` or `processing`, most recent first (`c
 - `done` lists never appear here: the block answers "what work is open", and a finished list is not open work. They stay reachable from `/replenishment`.
 - Ordering is `created_at DESC`, the same order `/replenishment` lists in — it reuses the existing index (`../../core/database.md` §Indexes) and keeps the two screens telling one story.
 - Gated `replenishment:read` — held by every store role (`core/spec.md` §2); without it the block and its query do not render, the same discipline as the recent-activity block below (`activity:read`).
-- **Why a table, when what this replaced was deliberately "lines, not a table"**: the original filler table listed the *most recent* lists with no datum that carried a decision — structure around nothing. This one earns the structure: each row now holds three facts read *down* the columns ("which of these is furthest along", "how many are still drafts", "where do I go"), and that comparison is what a table is for. The bound is what keeps it a summary rather than a second copy of `/replenishment` — 7 rows, no pagination, and a stated total when it truncates.
+- **Why a table**: each row holds facts read *down* the columns ("which is furthest along", "how many are still drafts", "where do I go") — that comparison is what a table is for. The 7-row bound with a stated total keeps it a summary, not a second `/replenishment`.
 
 ### Out-of-stock evidence
 First 10 **products** from `GET /availability?outOfStock=true&pageSize=10` (a page of products, AD-22), in the **same bounded-table dress as the block above** — header row, 1px borders, "View all" bottom-right. The cells' content is what `/availability` teaches: the same `<SizeRun>` component, same uniform out-of-stock mark, same weight-graded elapsed figure, same tile interactions — so the two pages teach one reading:
@@ -121,7 +121,7 @@ The page closes with the store's four latest availability events — the line th
 ## States
 - Greeting header: no loading state — session, store and date are already client-side when the route mounts.
 - KPI strip pending: one value-sized `{colors.surface-raised}` skeleton block per figure inside the strip (per `../shared/components.md` `<LoadingState>`) — never a spinner, never a placeholder "0".
-- Summary query failed: the card is replaced by one muted line ("Could not load the store summary") with a retry affordance; the rest of the page still renders on its own queries rather than the page failing whole.
+- Summary query failed: the strip is replaced by one muted line ("Could not load the store summary") with a retry affordance; the rest of the page still renders on its own queries rather than the page failing whole.
 - Open-work table pending: `<LoadingState>` skeleton rows at the table's own geometry (`../shared/components.md`), header row included — it is a table, so it loads like one.
 - No open replenishment work: the `<EmptyState>` replaces the **whole table, header row included** — "No open replenishment work." + "New list" if permitted. A lone header row over nothing is chrome around an absence. Same line when every list is `done` — the store has lists, none of them open; "View all" still leads to them.
 - Evidence block empty: positive empty state — "Nothing out of stock" (success framing, not a generic "no data").

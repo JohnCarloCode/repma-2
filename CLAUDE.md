@@ -40,4 +40,9 @@ REPMA is a multi-tenant availability & replenishment platform: a Platform Admin 
 
 ## Commands
 
-_(pending: will be filled in once the monorepo exists — `dev`, `build`, `test`, `typecheck`, `lint` from the root, RNF-16)_
+From the root (RNF-16):
+
+- `npm run dev` — api + web · `npm run build` · `npm start`
+- `npm run check` — lint + typecheck + test: **the green criterion** (integration tests need `supabase start`)
+- `npm run test` / `typecheck` / `lint` individually
+- DB (local): `supabase start` → `npm run db:migrate -w api` → `npm run db:bootstrap -w api` (`db:generate -w api` creates a Drizzle migration)

@@ -88,7 +88,7 @@ At **mobile width (< 744px)** the sidebar is off-canvas, so the shell pins a **m
 - A slim **fixed** band (56px), full width, `{colors.surface}` with a 1px `{colors.border}` bottom edge, no radius, no shadow — the same surface as the sidebar; glyphs in `{colors.text}`.
 - Its only content is the **hamburger** on the left (label "Open menu", `aria-expanded`, 44px hit area), which opens the navigation drawer. No wordmark, no page title, no actions — the page's own header sits right below and already carries the name.
 - Because the band is fixed, **the content area starts below its height** — the product's only vertical offset, mobile-only.
-- Page headers **no longer host the drawer trigger** at any width (`./components.md`).
+- Page headers **never host the drawer trigger** at any width (`./components.md`).
 - It sits at `{layers.shell}` — **below the dialog band** (DESIGN.md §Elevation · Layering). Any open dialog (modal, confirm, ProductPicker sheet) covers it completely: the fixed band must never remain visible or tappable above a scrim.
 
 ## Route guards

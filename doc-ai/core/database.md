@@ -123,8 +123,6 @@ The model is `Category → Product → Size → Assortment`. The evolution origi
 
 ### 4.5 `product_sizes` — global catalog (sellable units)
 
-> Formerly named `product_variants` — renamed so the docs and future code say "size", the term users think in.
-
 | Column | Type | Null | Notes |
 |---|---|---|---|
 | id | uuid | PK | |

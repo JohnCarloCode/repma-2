@@ -44,7 +44,7 @@
 - [x] **1.14 `tenantContext` + `authorize` middlewares** (M) — explicit per-router mounting (§5.2): store user with foreign `X-Tenant-Id` → 403; platform_admin without header on a tenant-scoped route → 400, with header → validated active tenant; AsyncLocalStorage carrying the context; `authorize(permission)` → uniform 403 (§6). Tests for every branch.
 - [x] **1.15 CI** (M) — GitHub Actions on every PR: npm cache → lint → typecheck → **supabase local stack + migrations + bootstrap + seed** → tests (isolation suite included — red build on any failure) → build (RNF-15, RNF-13, AD-11). Verify: green run on a PR.
 - [x] **1.16 Dockerfile** (S) — multi-stage: build workspaces → slim runtime image (API, which will serve `web/dist` from Phase 2) (RNF-14); `docker build` step added to CI. docker-compose is deliberately not built (architecture lists it as optional; no requirement demands it). Verify: `docker build .` succeeds in CI.
-- [ ] **1.17 Production deploy wiring** (S agent + Manual 1-B/1-C) — deploy workflow on merge to `main`: run migrations against prod using `MIGRATIONS_DATABASE_URL` (CI-only secret, validated by the migration script itself) → trigger Render deploy hook; separate **manually-triggered** (`workflow_dispatch`) seed workflow using `MIGRATIONS_DATABASE_URL` + `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` secrets. The API env schema never mentions the admin URL; Render never carries it.
+- [x] **1.17 Production deploy wiring** (S agent + Manual 1-B/1-C) — deploy workflow on merge to `main`: run migrations against prod using `MIGRATIONS_DATABASE_URL` (CI-only secret, validated by the migration script itself) → trigger Render deploy hook; separate **manually-triggered** (`workflow_dispatch`) seed workflow using `MIGRATIONS_DATABASE_URL` + `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` secrets. The API env schema never mentions the admin URL; Render never carries it.
 
 ### Manual setup 1-B — Supabase cloud project (during 1.17, in this order)
 
@@ -63,7 +63,7 @@
 
 **Deliverable:** a deployed API whose `/health` proves the DB path through `repma_api`; a local stack reproducible with `supabase start` + `db:migrate` + `db:bootstrap` + `db:seed`; the isolation suite red-flagging any RLS regression in CI.
 **Tests that must pass:** isolation suites A+B, auth middleware/endpoints/refresh/tenantContext integration, env/validate/limiter units, matrix snapshot.
-**Closing criterion:** `npm run check` green locally and in CI; prod `/health` 200; all manual verifications above done. — [ ]
+**Closing criterion:** `npm run check` green locally and in CI; prod `/health` 200; all manual verifications above done. — [x]
 
 ---
 

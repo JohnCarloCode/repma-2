@@ -329,7 +329,7 @@ REPMA is an internal B2B multi-tenant availability & replenishment tool: stores 
 The brand is **one token: `{colors.accent}`** (default garnet `#8E1B3B`). All accent tones (`accent-hover`, `accent-active`, `accent-bright`, `accent-soft`) are derived from it with CSS `color-mix()`, so the whole product re-brands by changing a single value.
 
 Implementation contract (visual only, no runtime feature implied):
-- The accent lives as **one CSS custom property** (`--color-accent`) in the single theme file; derived tones are custom properties computed from it. Components consume only the derived variables — never a literal hex.
+- The accent lives as **one CSS custom property** (`--color-accent`) in the single theme file (`apps/web/src/styles/theme.css`, which maps every token of this document to Tailwind); derived tones are custom properties computed from it. Components consume only the derived variables — never a literal hex.
 - Two roles, never swapped: **`accent` fills** (primary button, logo tile, accent badges — always with `{colors.on-accent}` text) and **`accent-bright` strokes/text** (links, focus ring, active nav icon, progress fill, chart line, highlighted KPI). A dark garnet is unreadable as text on `#121212`; that is why `accent-bright` exists.
 - Contrast is verified for the default (on-accent on accent ≈ 8.9:1; accent-bright on surface ≈ 5.5:1). **Whoever changes the accent must re-check both ratios** (§Accessibility).
 
@@ -362,7 +362,7 @@ Each semantic tone has a `-soft` pair for backgrounds; text on a soft background
 - **Wordmark**: "REPMA" in Inter 14px semibold, letter-spacing 0.14em, next to the 32px `logo-tile` (accent fill, white "R").
 
 ### Iconography
-**Material Symbols Rounded**, one configuration product-wide: `opsz 20, wght 400, FILL 0, GRAD 0` (outlined). Shipped as a subset — only the glyphs below are loaded; adding an icon means adding it to the subset **and** to this list.
+**Material Symbols Rounded**, one configuration product-wide: `opsz 20, wght 400, FILL 0, GRAD 0` (outlined). Shipped as a subset — only the glyphs below are loaded; adding an icon means adding it to the subset **and** to this list (subset = `apps/web/src/styles/icons.json` + `npm run icons -w web`, which regenerates the self-hosted font).
 - Navigation: `home`, `list_alt` (Replenishment), `inventory_2` (Availability), `history` (Activity), `menu_book` (Catalog), `storefront` (Stores), `group` (Users), `category` (Global catalog).
 - Chrome: `menu`, `close`, `chevron_left` / `chevron_right`, `expand_less` / `expand_more`, `logout`, `person`, `lock`, `search`, `space_dashboard`.
 - Actions & feedback: `add`, `edit`, `delete`, `remove`, `check`, `check_circle`, `block` (retire), `restart_alt` (reactivate), `refresh` (retry), `arrow_back`, `swap_vert`, `error`, `warning`, `info`, `image`.

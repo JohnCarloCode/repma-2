@@ -27,7 +27,7 @@ Title (display token, per DESIGN.md §Typography) + optional primary action butt
 ### Filter band
 Search input + selects on the `{components.filter-band}`: an `{colors.accent-hover}` band, `{rounded.sm}`, 16px padding — the one branded band of each list screen (DESIGN.md). The controls keep their normal `{colors.surface}` fill with a 1px `{colors.border-strong}` border, 44px high; toggles sit inside a control-styled box so their label never sits directly on the accent. Focus is the standard `{colors.accent-bright}` ring. Behavior:
 - Search debounced 300ms; resets to page 1 on change.
-- **Filter and page state live in the URL** (query params) — shareable, survives refresh and back navigation.
+- **Filter and page state live in the URL** (query params) — shareable, survives refresh and back navigation. The page is `page`; each filter is its own param named after the API param it feeds (`search`, `from`, …); an empty filter and page 1 are left out of the URL. Every filter change — and "Clear filters" — drops `page`. Implemented once as `useListParams` (`apps/web/src/components/list/`).
 - **Responsive**: desktop lays the controls out inline; on mobile the band stacks — search full-width on top, selects wrapping below it. Same rule on every page that uses the band.
 - Detail pages may reuse the band to filter an **already-loaded set client-side** (e.g. replenishment list items): same visuals and URL-state convention, no refetch — filtering only changes what is shown, never the underlying set.
 
@@ -37,17 +37,18 @@ Search input + selects on the `{components.filter-band}`: an `{colors.accent-hov
 - **Group header rows** (optional): a full-width `{colors.surface-raised}` row in `body-medium` naming the group of the rows beneath it — the items table on `/replenishment/:id` is the consumer (product groups by default, category groups with its toggle — see `../pages/replenishment-detail.md`). A group whose rows are all filtered out renders no header row.
 - **Destination affordance** (optional): where a row — or a card — resolves to exactly one place and that exit should be visible rather than merely discoverable, it carries an `{components.icon-button}` with a chevron: `{colors.surface-raised}` square, `{colors.accent-bright}` chevron on hover. It sits in the last column of a table row (Home's open-work table) or the bottom-right corner of a card (`/replenishment` list cards), and is rendered **inside that row's or card's own link**, never as a sibling button: one tab stop, one accessible name, no destination duplicated for assistive tech. It is a signpost for a target that already existed, never a second action, so it never coexists with an action pointing elsewhere — a delete button on the same card stays a separate target with its own hover, and hovering one never lights the other.
 - **Bounded (unpaginated) use**: the same geometry serves summary blocks that show a capped set instead of a page — all three Home blocks (open work, out of stock, recent activity). Everything is identical except that `<Pagination>` is replaced by a tertiary "View all" **bottom-right, right-aligned under the last row** — stating the true total ("View all (9)") when the set truncates. The count applies to bounded **work** sets (open lists, out-of-stock products); a teaser of an unbounded feed — Home's recent activity — carries no count, because a feed's total bounds no work. The header row does not render on its own: an empty result replaces the whole table with its `<EmptyState>`.
+- **Below 744px** (DESIGN.md §Responsive Behavior: tables become card lists) the header row is hidden and each row stacks as a block, one line per cell, labelled with its column header.
 - Sorting out of scope for the MVP (spec defines no sort params).
 
 ### `<Pagination>`
 - Driven by API response `{ items, page, pageSize, total }` (default 20, max 100).
-- **Empty-page recovery (RF-36)**: after a delete leaves the current page empty and `page > 1`, refetch on `page - 1`.
+- **Empty-page recovery (RF-36)**: after a delete leaves the current page empty and `page > 1`, refetch on `page - 1`. The same rule covers a stale or shared URL pointing past the end: an empty page `> 1` moves to the last page that holds rows (`min(page - 1, ceil(total / pageSize))`, at least 1) in one step, replacing the history entry so Back never returns to the empty page.
 
 ## Async states — one component each, used everywhere
 
 | Component | When | Behavior |
 |---|---|---|
-| `<LoadingState>` | query pending | Skeleton rows matching table geometry (lists) or skeleton cards (Home/detail), with shimmer (DESIGN.md §Motion). No spinners inside tables. |
+| `<LoadingState>` | query pending | Static `{colors.surface-raised}` skeleton rows matching table geometry (lists) or skeleton cards (Home/detail). No shimmer — DESIGN.md §Motion lets nothing but the live dot loop — and no spinners inside tables. |
 | `<EmptyState>` | success + 0 items | Icon + one-line explanation + primary action if the user has permission for it. Distinguish "no data yet" from "no results for these filters" (offer "Clear filters"). |
 | `<ErrorState>` | query error | Inline card + "Retry" (refetches). Never a blank screen. |
 
@@ -99,9 +100,17 @@ The visual product & size selector used by every "add a product to X" flow (asso
 
 Semantic pills defined in DESIGN.md (badges keep the pill dialect — they name a state, they are not buttons, §Shape): `badge-out-of-stock` (renders **"Out of stock"** plus its elapsed figure in the same uniform out-of-stock mark as a run tile — dashed outline + red `{colors.alert}` dot, no fill; used on `/availability/:id`, where the subject is one size and there is no run to carry the state), `badge-status-draft/-processing/-done` (list states), `badge-inactive` (deactivated products/stores/users). Always icon-or-text + color, never color alone.
 
+## `<Tooltip>`
+
+Short text label for an element whose own text is hidden (the collapsed sidebar's nav items, avatar and tenant tile — `./layout.md` §Collapse / expand). Visual: DESIGN.md `components.tooltip` with the floating-layer border (§Elevation).
+
+- Shown on pointer hover **and** keyboard focus; hidden on leave/blur and on Escape. `content = null` disables it (same trigger, labels visible).
+- Placed to the right of the trigger, vertically centered; portalled to the document root at `{layers.popover}` so a scrolling ancestor (the nav list) never clips it.
+- Supplementary only: the trigger keeps its own accessible name (e.g. the visually hidden label), so the tooltip is not wired as `aria-describedby` and is never announced twice. Never put information in a tooltip that is not otherwise available.
+
 ## Data conventions
 
-- Dates: relative for < 24h ("2 h ago"), otherwise `dd/mm/yyyy HH:mm`. Always render from `timestamptz` in the browser's timezone.
+- Dates: relative for < 24h ("14 min ago" under an hour, whole hours "2 h ago" beyond), otherwise `dd/mm/yyyy HH:mm`. Always render from `timestamptz` in the browser's timezone.
 - Quantities (replenishment `quantity_requested` only): tabular-nums, right-aligned. Availability events carry no quantities (RN-06) — the app NEVER shows a current stock quantity.
 - Where the subject **is** a single size (`/availability/:id`, replenishment list items, activity rows), name it "Nike Air Max — 42" (product name — size label), with the size SKU where SKU is shown. Products with a single size labeled "One size" omit the label.
 - Where the subject is a **product with its run** (`/availability`, Home), the product is named once and the sizes are the tiles — never repeat the product name per size.

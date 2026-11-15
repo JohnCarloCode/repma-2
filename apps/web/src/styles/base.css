@@ -1,0 +1,68 @@
+/* Base styles (DESIGN.md §Overview, §Elevation, §Accessibility, §Motion). The app ships dark
+ * (<html class="repma-dark">); the light value set exists as tokens (.repma-light, theme.css). */
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: var(--color-canvas);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* No shadows. None. Depth = surface step + 1px border. */
+  *,
+  ::before,
+  ::after {
+    box-shadow: none;
+  }
+
+  /* Focus is always visible: the accent-bright ring. */
+  :focus-visible {
+    outline: 2px solid var(--color-accent-bright);
+    outline-offset: 2px;
+  }
+
+  /* Every figure that is data stacks in columns. */
+  .font-mono {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* One icon configuration product-wide: opsz 20, wght 400, FILL 0, GRAD 0 (baked into the subset). */
+  .icon {
+    font-family: 'Material Symbols Rounded';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 20px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    direction: ltr;
+    font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :root {
+      --transition-duration-fast: 0ms;
+      --transition-duration-base: 0ms;
+    }
+
+    *,
+    ::before,
+    ::after {
+      transition-duration: 0ms !important;
+      animation-duration: 0ms !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
+}

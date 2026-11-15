@@ -1,7 +1,7 @@
 # Login — `/login`
 
 > Guard: public · Zone: public
-> API: `POST /api/v1/auth/login`, `GET /api/v1/auth/me` (session bootstrap after success)
+> API: `POST /api/v1/auth/login` (its 200 body is the session — same shape as `GET /api/v1/auth/me`)
 
 ## Purpose
 Single entry point to the application (DP-01: everything is behind login, no signup, no password recovery). Used by every role: platform_admin, manager, employee. Authenticates via email/password and establishes the HttpOnly cookie session (RF-01) — the page never sees or stores a token (AD-12).
@@ -34,7 +34,7 @@ Form (single column, per DESIGN.md §Forms):
 ### Successful login
 1. Submit → client-side Zod validation → `POST /api/v1/auth/login` (`credentials: include`).
 2. On 200 the API sets the HttpOnly session cookie (RF-01, RNF-03); the response body carries no token the page needs.
-3. The client refreshes the auth context (`GET /auth/me`, RF-02 — user, role, store, effective permissions) and redirects:
+3. The client stores the session from the 200 body as its auth context (the `GET /auth/me` shape, RF-02 — user, role, store, effective permissions; architecture §7 — no second request) and redirects:
    - **return-to-intended-URL first**: if the guard that sent the user here preserved an intended URL (`../shared/layout.md` §Route guards, rule 1), navigate there — provided the fresh session's permissions allow it; otherwise fall through to the role home.
    - **platform_admin** → `/platform/tenants`.
    - **manager / employee** → `/home`.

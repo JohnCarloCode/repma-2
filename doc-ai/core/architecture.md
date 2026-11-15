@@ -158,11 +158,13 @@ helmet → cors(allowlist) → json(100kb) → /api/v1 router
   → JSON | AppError → central errorHandler (404 handler included)
 ```
 
+After `/api/v1`, the API serves `apps/web/dist` (RNF-11, `core/http/web.ts`; mounted only when the build exists — in dev Vite serves the web): static files, then `index.html` for any other GET outside `/api` (SPA fallback), so unknown `/api/*` routes still reach the JSON 404. Cache: `assets/*` (content-hashed by Vite) `max-age=1y, immutable`; `index.html` `no-cache`. Same origin (in dev too, via Vite's `/api` proxy), so the session cookie is first-party and the CORS allowlist (`FRONTEND_URLS`) is not on the path of the app's own requests.
+
 ### 3.4 Frontend
 
 - **React 19 + Vite + TypeScript**, React Router, TanStack Query (server state; no additional global store — session state lives in a context fed by `GET /auth/me`), Tailwind CSS v4 + Headless UI, UI in English.
 - **Guards by permission, not by role**: `shared` exports the same permission matrix the API uses; `<RequirePermission p="catalog:manage">` decides routes and action visibility. The API remains the authority (the UI guard is UX, not security).
-- **Active store**: for manager/employee it is implicit (their store). The Platform Admin has a store selector; the choice is sent as the `X-Tenant-Id` header on tenant-scoped calls (§5.2).
+- **Active store**: for manager/employee it is implicit (their store). The Platform Admin has a store selector; the choice is sent as the `X-Tenant-Id` header on tenant-scoped calls (§5.2). Every tenant-scoped call goes through `useStoreScope()` (`apps/web/src/tenant/activeStore.ts`): its query key is `['store', storeId, …]` and its request options carry `X-Tenant-Id` only for a selected store — so store roles never send it and switching store can drop the previous store's cache by prefix.
 - Uniform pattern per feature: `api.ts` (typed fetch) → `hooks.ts` (React Query with invalidation) → `components/` (presentation).
 
 Route map:
@@ -298,12 +300,12 @@ All routes: `authenticate` + per-user rate limit + `authorize` (login and health
 |---|---|---|
 | Health | `GET /health` (liveness + DB ping) | public |
 | Auth | `POST /auth/login`, `POST /auth/logout`, `GET /auth/me` (user + role + store + permissions — shape below) | login public with strict rate limit; logout/me authenticated only (no permission) |
-| Tenants | `GET/POST /tenants`, `GET/PATCH /tenants/:id` (PATCH includes `is_active`) | `tenant:manage` |
+| Tenants | `GET/POST /tenants`, `GET/PATCH /tenants/:id` (PATCH includes `is_active`; `GET /tenants` filter `search` + pagination, `search` matches the store name — `ILIKE` substring —, ordered by name, inactive stores included; items `{ id, name, slug, isActive, createdAt }`, typed as `Tenant` in `shared`) | `tenant:manage` |
 | Users | `GET/POST /users`, `GET/PATCH/DELETE /users/:id` (creation = Supabase Auth admin + profile, transactional-compensated; PATCH optionally carries a new `password` — a write-only reset via Supabase Auth admin, RF-11) | `user:manage` |
 | Catalog | `GET /categories`, `GET /products` (embeds each product's sizes; filters `categoryId`, `search`, `isActive` + pagination; `search` matches product name + size SKU) | `catalog:read` |
 | | `POST/PATCH /categories/:id?`, `POST/PATCH /products/:id?` (POST requires ≥1 size), `POST /products/:id/sizes`, `PATCH /products/:id/sizes/:sizeId` (no delete — sizes are soft-deactivated via `is_active`), `POST /products/:id/image` (multipart 5MB → Storage) | `catalog:manage` |
 | Availability | `GET /availability` (assortment **grouped by product** with the full size run nested and each size's latest-event timestamp for aging — AD-22, DP-07; a page is a page of products; filters `outOfStock=true`, `search`, `categoryId`, `productId` (one or more ids — the `/catalog` cross-reference, RF-18); `search` matches product name + size SKU), `GET /availability/:id` (one size), `GET /availability/:id/events` | `availability:read` |
-| | `GET /availability/events` (store-wide feed, reverse chronological, optional `from`/`to` — RF-23; its consumers are the Activity page, RF-42, and Home's recent-activity block, RF-25) | `activity:read` |
+| | `GET /availability/events` (store-wide feed, reverse chronological — `created_at DESC`, id as tiebreaker —, optional `from`/`to` — RF-23: ISO 8601 timestamps with an explicit offset, both bounds **inclusive** on `created_at`, an inverted range simply matches nothing; the client maps calendar days to local start/end-of-day timestamps; items `{ id, type, createdAt, authorName, item: { id, productName, sizeLabel } }` — `authorName` null for a deleted author, RN-09 —, typed as `AvailabilityFeedEvent` in `shared`; its consumers are the Activity page, RF-42, and Home's recent-activity block, RF-25) | `activity:read` |
 | | `POST /availability` (add a catalog size to the assortment via `sizeId`), `DELETE /availability/:id` (remove an unreferenced item — no events, no list lines, RF-44/RN-13; otherwise 409) | `assortment:manage` |
 | | `POST /availability/:id/events` (`type` `out_of_stock` \| `restock` — the whole payload, RN-06; the API derives the new `is_available` flag; an event matching the current state → 409, RN-14) | `availability:flag` |
 | Replenishment | `GET /replenishment-lists` (paginated; filters `status` — one or more of `draft,processing,done` —, `search` on name, and `from`/`to` on `created_at`; each list carries `itemCount`, `productCount` and `doneCount`), `GET /replenishment-lists/:id` | `replenishment:read` |

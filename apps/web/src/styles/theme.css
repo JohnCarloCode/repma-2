@@ -1,0 +1,145 @@
+/*
+ * REPMA design tokens — the single theme file (DESIGN.md front matter → CSS custom properties).
+ * Every token lives here once; Tailwind utilities are generated from these variables
+ * (bg-surface, text-text-secondary, rounded-md, p-card, z-dialog, duration-fast, ease-standard…).
+ * The brand is ONE variable, --color-accent; every accent tone is derived from it with color-mix().
+ * Components consume variables/utilities only — never a literal hex.
+ * The token smoke test (src/styles/theme.test.ts) checks this file against DESIGN.md.
+ */
+
+@theme static {
+  /* Only REPMA tokens exist: drop Tailwind's default palette, type scale, radii, shadows, eases. */
+  --color-*: initial;
+  --text-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+  --text-shadow-*: initial;
+  --ease-*: initial;
+  --font-*: initial;
+  --breakpoint-*: initial;
+
+  /* ── Colors — DARK theme (default) ─────────────────────────────────────── */
+  --color-accent: #8e1b3b;
+  --color-accent-hover: color-mix(in oklab, var(--color-accent) 85%, white);
+  --color-accent-active: color-mix(in oklab, var(--color-accent) 80%, black);
+  --color-accent-bright: color-mix(in oklab, var(--color-accent) 55%, white);
+  --color-accent-soft: color-mix(in oklab, var(--color-accent) 22%, transparent);
+  --color-on-accent: #ffffff;
+
+  --color-canvas: #121212;
+  --color-surface: #1e1e1e;
+  --color-surface-hover: #252525;
+  --color-surface-raised: #2c2c2e;
+  --color-border: #2c2c2e;
+  --color-border-strong: #3a3a3c;
+  --color-scrim: rgba(0, 0, 0, 0.6);
+
+  --color-text: #ffffff;
+  --color-text-secondary: #98989d;
+  --color-text-disabled: #5a5a5e;
+
+  --color-alert: #ff453a;
+  --color-alert-soft: #3a1c1c;
+  --color-live: #32d74b;
+  --color-live-soft: #16301c;
+  --color-warning: #ffd60a;
+  --color-warning-soft: #332b0a;
+  --color-info: #64d2ff;
+  --color-info-soft: #0e2a36;
+
+  /* ── Typography ────────────────────────────────────────────────────────── */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+
+  --text-kpi: 32px; /* use with font-mono */
+  --text-kpi--font-weight: 700;
+  --text-kpi--line-height: 1.1;
+  --text-display: 24px;
+  --text-display--font-weight: 600;
+  --text-display--line-height: 1.25;
+  --text-h2: 18px;
+  --text-h2--font-weight: 600;
+  --text-h2--line-height: 1.3;
+  --text-body: 14px;
+  --text-body--font-weight: 400;
+  --text-body--line-height: 1.5;
+  --text-body-medium: 14px;
+  --text-body-medium--font-weight: 500;
+  --text-label: 12px;
+  --text-label--font-weight: 500;
+  --text-label--letter-spacing: 0.02em;
+  --text-caption: 12px;
+  --text-caption--font-weight: 400;
+  --text-data: 13px; /* use with font-mono */
+  --text-data--font-weight: 500;
+
+  /* ── Shape ─────────────────────────────────────────────────────────────── */
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-full: 9999px;
+
+  /* ── Spacing (named; Tailwind's 4px multiplier stays for p-2/p-4…).
+   * Note: max-w-* resolves --spacing-* before --container-*, so max-w-sm = 8px. */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-base: 16px;
+  --spacing-card: 20px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-xxl: 48px;
+
+  /* ── Breakpoints (DESIGN.md §Responsive Behavior): mobile < 744px ≤ tablet < 1280px ≤ desktop.
+   * The shell reads the same widths in JS (components/shell/useShellLayout.ts). */
+  --breakpoint-tablet: 744px;
+  --breakpoint-desktop: 1280px;
+
+  /* ── Layers — the one z-index scale (z-shell, z-dialog…) ───────────────── */
+  --z-index-base: 0;
+  --z-index-sticky: 10;
+  --z-index-shell: 100;
+  --z-index-shell-overlay: 110;
+  --z-index-shell-panel: 120;
+  --z-index-sheet-scrim: 130;
+  --z-index-sheet: 140;
+  --z-index-popover: 200;
+  --z-index-dialog-scrim: 900;
+  --z-index-dialog: 910;
+  --z-index-toast: 1000;
+
+  /* ── Motion ────────────────────────────────────────────────────────────── */
+  --transition-duration-fast: 120ms;
+  --transition-duration-base: 200ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --default-transition-duration: var(--transition-duration-fast);
+  --default-transition-timing-function: var(--ease-standard);
+}
+
+/* LIGHT theme — same names, different values; the accent itself never changes here. */
+@layer base {
+  .repma-light {
+    color-scheme: light;
+
+    --color-canvas: #f4f4f6;
+    --color-surface: #ffffff;
+    --color-surface-hover: #f2f2f4;
+    --color-surface-raised: #eaeaed;
+    --color-border: #e3e3e7;
+    --color-border-strong: #c4c4ca;
+    --color-text: #1c1c1e;
+    --color-text-secondary: #62626a;
+    --color-text-disabled: #a1a1a8;
+    --color-alert: #d70015;
+    --color-alert-soft: #fde9ea;
+    --color-live: #1a7f37;
+    --color-live-soft: #e5f4ea;
+    --color-warning: #8a5a00;
+    --color-warning-soft: #fff3d1;
+    --color-info: #0a6a9c;
+    --color-info-soft: #e2f1f9;
+    --color-accent-hover: color-mix(in oklab, var(--color-accent) 88%, black);
+    --color-accent-bright: color-mix(in oklab, var(--color-accent) 92%, black);
+    --color-accent-soft: color-mix(in oklab, var(--color-accent) 12%, transparent);
+  }
+}

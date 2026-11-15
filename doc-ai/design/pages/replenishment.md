@@ -26,7 +26,7 @@ One card per list, on `{components.card}` (`{colors.surface}` on the canvas, `{r
 | Progress line | `doneCount` of `itemCount` | **While the list is open** (`draft` or `processing`) **and has items**: the same compact fraction the detail page uses — "6/14", `tabular-nums`, caption treatment (one format for one datum, `../shared/components.md` §`<ProgressBar>`). Omitted on `done` (the work is finished) and on empty lists (the size line already reads "Empty") — the same rule as Home's open-work table, which shows the fraction for every open list with items (`home.md`) |
 | — | Hairline | 1px `{colors.border}` rule separating identity from provenance |
 | Creator | Creator's name | `{typography.caption}`; "—" if the user was deleted (RN-09: history survives) |
-| Age | `created_at` | Date convention from `../shared/components.md`: relative under 24h ("14 minutes ago", "4 h ago"), the absolute `dd/mm/yyyy HH:mm` beyond it |
+| Age | `created_at` | Date convention from `../shared/components.md`: relative under 24h ("14 min ago", "4 h ago"), the absolute `dd/mm/yyyy HH:mm` beyond it |
 | Bottom right | Destination arrow | `{components.icon-button}` with a chevron — 32px `{colors.surface-raised}` square, `{rounded.sm}` — on the card's last row, baseline-aligned with the provenance text on its left. Same control as the trailing column of Home's open-work table (`../shared/components.md` §`<DataTable>`) |
 
 The card carries no product imagery: a list has none, and the design system has no decorative surface to spend on one (DESIGN.md §Color — color is rationed, the data is the imagery).

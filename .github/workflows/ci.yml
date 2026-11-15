@@ -1,0 +1,81 @@
+# CI on every PR (RNF-15, AD-11): lint → typecheck → local Supabase stack +
+# migrations + bootstrap + seed (RNF-13) → tests, RLS isolation suites
+# included (RNF-01: any failure turns the build red) → build. The production
+# image build (RNF-14) runs as a parallel job: it needs no Supabase stack.
+# Also called by deploy.yml (workflow_call), so the merged commit on `main`
+# passes this same pipeline before it is migrated and deployed.
+name: CI
+
+on:
+  pull_request:
+  workflow_call:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      # Root postinstall builds packages/shared.
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm run typecheck
+
+      - uses: supabase/setup-cli@v3
+        with:
+          version: 2.119.0
+
+      # Only what the tests use: Postgres, Auth (GoTrue) and the Kong gateway
+      # in front of it (+ PostgREST). Uses supabase/config.toml as committed.
+      - name: Start local Supabase stack
+        run: >-
+          supabase start
+          -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+
+      # Non-secret local-stack values only; the repma_api password is a
+      # throwaway that exists for the lifetime of this job.
+      - name: Write apps/api/.env
+        run: |
+          eval "$(supabase status -o env)"
+          cat > apps/api/.env <<ENV
+          DATABASE_URL=postgresql://repma_api:ci-throwaway-password@127.0.0.1:54322/postgres
+          MIGRATIONS_DATABASE_URL=${DB_URL}
+          REPMA_API_PASSWORD=ci-throwaway-password
+          SUPABASE_URL=${API_URL}
+          SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}
+          SUPABASE_ANON_KEY=${ANON_KEY}
+          PORT=3000
+          FRONTEND_URLS=http://localhost:5173
+          NODE_ENV=test
+          ENV
+
+      - run: npm run db:migrate -w api
+      - run: npm run db:bootstrap -w api
+      - run: npm run db:seed -w api
+
+      - run: npm test
+
+      - run: npm run build
+
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - run: docker build -t repma-api .

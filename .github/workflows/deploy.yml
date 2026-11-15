@@ -1,0 +1,48 @@
+# Deploy on merge to `main` (AD-11, RNF-15): the merged commit runs the full CI
+# pipeline (ci.yml, reused) → production migrations from the runner (the image
+# carries neither drizzle-kit nor the migrations) → Render deploy hook.
+# MIGRATIONS_DATABASE_URL is a CI-only secret: never on Render, never in the
+# API env schema (architecture §8).
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+# One deploy at a time, never cancelled mid-migration; a newer push waits.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    needs: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # drizzle.config.ts refuses to run without MIGRATIONS_DATABASE_URL.
+      - name: Migrate production database
+        run: npm run db:migrate -w api
+        env:
+          MIGRATIONS_DATABASE_URL: ${{ secrets.MIGRATIONS_DATABASE_URL }}
+
+      # Render's auto-deploy is off: this hook is the only deploy trigger.
+      - name: Trigger Render deploy
+        run: curl -fsS -X POST "$RENDER_DEPLOY_HOOK_URL" > /dev/null
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}

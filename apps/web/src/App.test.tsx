@@ -95,7 +95,7 @@ describe('route guards & redirects', () => {
     async (role) => {
       server.use(authMe(sessionFor(role)));
       renderAt('/no/such/page', <AppRoutes />);
-      await waitFor(() => expect(location()).toHaveTextContent('/activity'));
+      await waitFor(() => expect(location()).toHaveTextContent('/availability'));
     },
   );
 
@@ -120,8 +120,8 @@ describe('/unauthorized', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Unauthorized access' })).toBeInTheDocument();
     expect(screen.getByText("You don't have permission to view this page.")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('link', { name: 'Go to Activity' }));
-    expect(await screen.findByRole('heading', { name: 'Activity' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('link', { name: 'Go to Availability' }));
+    expect(await screen.findByRole('heading', { name: 'Availability' })).toBeInTheDocument();
   });
 
   it('without a session: the link signs in', async () => {

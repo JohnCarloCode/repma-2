@@ -56,27 +56,48 @@ export function EmptyState({ icon, title, action }: { icon: string; title: strin
   );
 }
 
-/** Query error: inline card with the API message and "Retry" (refetches) — never a blank screen. */
-export function ErrorState({ message, onRetry }: { message?: ReactNode; onRetry: () => void }) {
+/**
+ * Query error: inline card with the API message and "Retry" (refetches) — never a blank screen.
+ * A page can name the failure (`title`) and swap Retry for its own way out (`action`), e.g. a
+ * detail's 404 "Item not found" + a link back to its list.
+ */
+export function ErrorState({
+  title = 'Data could not be loaded',
+  message,
+  onRetry,
+  action,
+}: {
+  title?: string;
+  message?: ReactNode;
+  onRetry?: () => void;
+  action?: ReactNode;
+}) {
   return (
     <div role="alert" className={centeredClass}>
       <span className="icon text-alert" aria-hidden>
         error
       </span>
       <div>
-        <p className="text-body-medium text-text">Data could not be loaded</p>
+        <p className="text-body-medium text-text">{title}</p>
         {message && <p className="mt-xs text-text-secondary">{message}</p>}
       </div>
-      <button
-        type="button"
-        onClick={onRetry}
-        className="inline-flex h-[44px] items-center gap-sm rounded-sm border border-border-strong px-base text-body-medium text-text transition-colors hover:bg-surface-hover"
-      >
-        <span className="icon" aria-hidden>
-          refresh
-        </span>
-        Retry
-      </button>
+      {action ??
+        (onRetry && (
+          <button
+            type="button"
+            onClick={onRetry}
+            className={secondaryButtonClass}
+          >
+            <span className="icon" aria-hidden>
+              refresh
+            </span>
+            Retry
+          </button>
+        ))}
     </div>
   );
 }
+
+/** `button-secondary` geometry, shared by Retry and a page's own error action. */
+export const secondaryButtonClass =
+  'inline-flex h-[44px] items-center gap-sm rounded-sm border border-border-strong px-base text-body-medium text-text transition-colors hover:bg-surface-hover';

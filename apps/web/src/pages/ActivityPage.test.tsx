@@ -70,11 +70,17 @@ describe('/activity — feed (activity.md)', () => {
     expect(requests[0]!.headers.get('x-tenant-id')).toBeNull();
   });
 
-  it('rows have no destination yet (interim until 3.7 ships /availability/:id)', async () => {
+  it("a row opens its item's detail (/availability/:id)", async () => {
+    // The detail's own reads (registered first: `feed()` must win for `/availability/events`).
+    const notFound = () =>
+      HttpResponse.json({ error: { code: 'NOT_FOUND', message: 'Item not found' } }, { status: 404 });
+    server.use(http.get('*/api/v1/availability/:id', notFound), http.get('*/api/v1/availability/:id/events', notFound));
     feed();
     renderActivity();
     const cell = await screen.findByRole('cell', { name: 'Nike Air Max — 42' });
-    expect(cell.closest('tr')).not.toHaveAttribute('tabindex');
+    await userEvent.click(cell);
+    expect(location()).toBe('/availability/i1');
+    expect(await screen.findByText('Item not found')).toBeInTheDocument();
   });
 
   it('a manager sees the same store feed and header', async () => {

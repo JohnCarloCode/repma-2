@@ -29,7 +29,7 @@ const ordered = (from: string, to: string) => (from && to && from > to ? { from:
 
 /**
  * activity.md — the store-wide availability-events feed (RF-42/RF-23).
- * Interim until 3.7: rows have no destination (`/availability/:id` ships there).
+ * A row opens its item's detail (`/availability/:id`).
  */
 export function ActivityPage() {
   const scope = useStoreScope();
@@ -87,7 +87,9 @@ export function ActivityPage() {
         )
       ) : (
         <>
-          <DataTable label="Availability events" columns={columns} rows={data.items} rowKey={(event) => event.id} />
+          <DataTable label="Availability events" columns={columns} rows={data.items} rowKey={(event) => event.id}
+            rowHref={(event) => `/availability/${event.item.id}`}
+          />
           <Pagination data={data} onPageChange={list.setPage} />
         </>
       )}

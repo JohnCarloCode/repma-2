@@ -32,7 +32,7 @@ Each line has three zones, left to right:
 
 | Zone | Content | Notes |
 |---|---|---|
-| Product | Thumb (product image, 32px, placeholder if none) + product name (`body-medium`) + category (muted caption) | Clicking the product identity does nothing on its own — the tiles are the interactive surface |
+| Product | Thumb (product image, 32px; without one, a `surface-raised` placeholder with the name's initials, as in the prototype) + product name (`body-medium`) + category (muted caption) | Clicking the product identity does nothing on its own — the tiles are the interactive surface |
 | Size run | `<SizeRun>` (`../shared/components.md`, DESIGN.md §Size run): one **tile** per size the store carries, in `position` order — `{rounded.sm}` corners, like every button in the product (§Shape). Available tiles plain; every out-of-stock tile carries the same mark — dashed outline + red dot, no fill — whatever its age (DP-07). Tiles are **44×44px, visual size = hit area** — this page is worked on a tablet on the shop floor, so the run is sized for a fingertip and the product line is taller than a table row by design | Size SKU is not shown here (it lives on `/availability/:id` and in search) — a run of SKUs would be unreadable |
 | Aging | The oldest out-of-stock elapsed figure in that run ("6 d"), right-aligned, tabular-nums, weight-graded per DP-07 — the only place age is visible on this line | "—" when nothing in the run is out of stock. The list arrives sorted by this figure descending — the endpoint's default order (RF-18): the most neglected product first, fully available products after, by name |
 
@@ -64,7 +64,7 @@ Flagging (`availability:flag`) has no surface on this page: both flag actions li
 Defaults per `../shared/components.md`. Page-specific:
 
 - **Empty (no assortment yet)**: "No items in the assortment yet." + primary action "Add to assortment" if `assortment:manage`.
-- **Empty (filters)**: "No results for these filters." + "Clear filters". With "Only out of stock" on and zero results, this is good news — same component, message "No out-of-stock items."
+- **Empty (filters)**: "No results for these filters." + "Clear filters". With "Only out of stock" as the **only** active filter and zero results, this is good news — same component (check icon), message "No out-of-stock items."; combined with a search or category, zero results reads as the generic message (the search may be what matched nothing).
 - **Loading**: skeleton product lines matching the run geometry (a product line plus a row of 44px square blocks), not table rows — the skeleton must reserve the real tile height so the list does not jump when data lands.
 - **platform_admin without store selected**: picker state per `../shared/layout.md`.
 
@@ -80,7 +80,7 @@ Defaults per `../shared/components.md`. Page-specific:
 
 ### Open a size's detail
 
-1. Tap any tile → navigate to `/availability/:id`, preserving the list's URL state (filters + page) so the detail's back action returns to the same view.
+1. Tap any tile → navigate to `/availability/:id`, preserving the list's URL state (filters + page) so the detail's back action returns to the same view. Mechanism: every tile link carries router state `{ listSearch: location.search }` (`AvailabilityLinkState`, exported by the page); the detail's back action goes to `/availability` + `listSearch`, or plain `/availability` when the state is absent (deep link, or arriving from `/activity`).
 2. Flag actions happen there (RF-20); on return, the list's queries are stale-invalidated by the detail's mutations, so the tile and the line's aging figure reflect the new state without page-specific wiring here.
 
 ### Filter / paginate

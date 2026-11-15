@@ -6,6 +6,7 @@ import { MemoryRouter, useLocation, type InitialEntry } from 'react-router';
 import { rolePermissions, type AuthSession, type Role } from 'shared';
 import { AuthProvider } from '../auth/AuthContext';
 import { createQueryClient } from '../lib/queryClient';
+import { ToastProvider } from '../lib/toast';
 
 export function sessionFor(role: Role): AuthSession {
   return {
@@ -35,16 +36,18 @@ function LocationProbe() {
   );
 }
 
-/** Renders `ui` the way App does (QueryClient → router → AuthProvider) at `path` (a URL, or a location with state). */
+/** Renders `ui` the way App does (QueryClient → toasts → router → AuthProvider) at `path` (a URL, or a location with state). */
 export function renderAt(path: InitialEntry, ui: ReactNode, queryClient: QueryClient = createQueryClient()) {
   render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={[path]}>
-        <AuthProvider>
-          {ui}
-          <LocationProbe />
-        </AuthProvider>
-      </MemoryRouter>
+      <ToastProvider>
+        <MemoryRouter initialEntries={[path]}>
+          <AuthProvider>
+            {ui}
+            <LocationProbe />
+          </AuthProvider>
+        </MemoryRouter>
+      </ToastProvider>
     </QueryClientProvider>,
   );
   return { queryClient };

@@ -12,14 +12,15 @@ interface Home {
 /**
  * Each role's landing route — the one definition `*`, /login and /unauthorized
  * share (layout.md §Route guards rule 4). Interim: every role lands on
- * /activity until the real homes ship — store roles flip to /availability
- * (3.7) then /home "Go to Home" (5.3), the platform admin to
- * /platform/tenants "Go to stores" (7.5).
+ * /availability until the real homes ship — store roles flip to /home
+ * "Go to Home" (5.3), the platform admin to /platform/tenants "Go to stores"
+ * (7.5). Until then the admin lands like on any store route: the selected
+ * store's page, or the picker state with none selected.
  */
 export const ROLE_HOME: Readonly<Record<Role, Home>> = {
-  platform_admin: { path: '/activity', label: 'Go to Activity' },
-  manager: { path: '/activity', label: 'Go to Activity' },
-  employee: { path: '/activity', label: 'Go to Activity' },
+  platform_admin: { path: '/availability', label: 'Go to Availability' },
+  manager: { path: '/availability', label: 'Go to Availability' },
+  employee: { path: '/availability', label: 'Go to Availability' },
 };
 
 /** The role label the user menu shows under the name (layout.md §User menu). */

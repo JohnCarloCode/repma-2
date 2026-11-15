@@ -11,7 +11,7 @@ Detail of one assortment item — a **product size** in this store's assortment:
 
 Detail screen skeleton (DESIGN.md §Screen Skeletons): header → summary card → related table.
 
-- **Header**: back `icon-button` (→ `/availability`, preserving list URL state) on the left; on the right, the flag action for the current state (gated `availability:flag`): **"Mark out of stock"** when available, **"Mark restocked"** when out of stock — preceded, **only while the history is empty**, by a ghost **"Remove from assortment"** (`button-secondary`, gated `assortment:manage`, RF-44; the trigger stays a ghost because the header already carries a filled action — the danger fill belongs to its confirm modal, DESIGN.md §Buttons). Nothing else — the item's identity lives in the summary card.
+- **Header**: back `icon-button` (→ `/availability`, preserving list URL state — the `listSearch` router state the list's tiles carry, `availability.md` §Flows) on the left; on the right, the flag action for the current state (gated `availability:flag`): **"Mark out of stock"** when available, **"Mark restocked"** when out of stock — preceded, **only while the history is empty**, by a ghost **"Remove from assortment"** (`button-secondary`, gated `assortment:manage`, RF-44; the trigger stays a ghost because the header already carries a filled action — the danger fill belongs to its confirm modal, DESIGN.md §Buttons). Nothing else — the item's identity lives in the summary card.
 - **Summary card**, stacked top to bottom:
   1. **"Product name — size label"** (h1, e.g. "Runner Sneaker — 42") + size SKU caption, with `badge-inactive` "Inactive" beside the name if the product or the size is inactive (RN-08).
   2. **Availability state**: `badge-out-of-stock` rendering **"Out of stock"** plus its elapsed figure in the uniform out-of-stock mark — dashed outline + red dot, no aging fill; the figure's weight is the only thing age changes (DP-07) — or plain **"Available"**.
@@ -19,7 +19,7 @@ Detail screen skeleton (DESIGN.md §Screen Skeletons): header → summary card �
   4. **Category**.
 
   Product image thumb on the right of the card. This page is the one place where a lone badge carries the state, because its subject is a single size and there is no run to carry it (DESIGN.md §Badges). **No quantity figure** — nothing on this page computes or renders a unit count.
-- **Event history table** below, with `<Pagination>`.
+- **Event history table** below, under an h2 "Event history", with `<Pagination>`; the history page lives in the URL (`?page=N`, standing rule for list state).
 
 ## Content
 
@@ -55,7 +55,7 @@ Defaults per `../shared/components.md`. Page-specific:
 
 - **Empty history**: item added to the assortment and never flagged — the card shows "Available" with "no events recorded" in the date slot (no aging figure: there is nothing to age); the history table shows "No events yet. The item is available." + "Mark out of stock" if `availability:flag`. This is also the only state where "Remove from assortment" renders (RF-44).
 - **404 on `GET /availability/:id`** (bad id or another tenant's item, indistinguishable by design, RN-03): `<ErrorState>` "Item not found" + link "Back to availability".
-- **Flag pending**: the header action shows its pending state over the optimistic flip; the refetch reconciles (see Flows).
+- **Flag pending**: the header action shows its pending state over the optimistic flip — the swapped action renders disabled until the server answers, so one item never has two flags in flight from the same client; the refetch reconciles (see Flows). The empty state's "Mark out of stock" hides while the flip shows the item out of stock.
 
 ## Flows
 
@@ -63,7 +63,7 @@ Defaults per `../shared/components.md`. Page-specific:
 
 1. Click "Mark out of stock" (no confirm) → `POST /availability/:id/events` `{ type: "out_of_stock" }`. Optimistically flip the badge to "Out of stock" with a 0 elapsed figure (the mark is the same at any age — DP-07) and swap the header action.
 2. Success (201): toast "Marked as out of stock"; invalidate the item query, its events query, the `/availability` list, Home queries (summary + out-of-stock), and the store-wide feed (`GET /availability/events`, `/activity`).
-3. Error: revert the optimistic flip, error toast with the API message.
+3. Error: revert the optimistic flip, error toast with the API message; the same invalidations run, so a 409 settles on the state the other session recorded (Edge cases · Concurrent flags).
 
 ### Mark restocked
 

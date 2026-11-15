@@ -353,7 +353,7 @@ Each semantic tone has a `-soft` pair for backgrounds; text on a soft background
 **Every out-of-stock size wears exactly the same mark; only the elapsed figure says how long** (DP-07).
 
 - **The mark** (`{components.out-of-stock-mark}`): transparent fill, 1px **dashed** `border-strong` outline, white label and a 6px `alert` dot before it. Available sizes are flat `surface-raised` tiles with no outline and no dot — "here" and "missing" differ by fill, border style and the dot, so the run still reads in grayscale.
-- **The number**: the elapsed figure (mono, always rendered as text, e.g. `9 d`) escalates by band — fresh < 24h (regular, gray), attention 24h–7d (semibold, white), escalated > 7d (bold, `alert`). Units: `<1 h`, `5 h`, `9 d`, `3 w` — one unit, never compound. Thresholds live only in DP-07.
+- **The number**: the elapsed figure (mono, always rendered as text, e.g. `9 d`) escalates by band — fresh < 24h (regular, gray), attention 24h–7d (semibold, white), escalated > 7d (bold, `alert`). Units: `<1 h`, `5 h`, `9 d`, `3 w` — one unit, never compound, always floored: hours under a day, days under three weeks, weeks beyond. Thresholds live only in DP-07.
 - One definition of the mark and one of the figure scale exist; run tiles and `badge-out-of-stock` consume them. Restocked/available items carry neither.
 
 ## Typography
@@ -423,7 +423,7 @@ Pills with soft background + strong text of the same tone. List status: draft = 
 
 ### Alerts & feedback
 - **Alert box**: `alert-soft` background, `alert` text, 4px left border in `alert`.
-- **Toasts**: `surface` card with a 4px left border in the semantic tone; bottom-right (top on mobile).
+- **Toasts**: `surface` card with a 4px left border in the semantic tone; top-right stack (behavior: `shared/components.md` §Toasts).
 - **Empty / loading / error states**: centered in the card, gray text, one action. Loading uses `surface-raised` skeleton blocks, no spinners over data.
 
 ### Forms & modals

@@ -22,6 +22,12 @@ interface DataTableProps<T> {
    */
   rowHref?: (row: T) => string;
   /**
+   * What a row opens when it is not a route (e.g. `/catalog`'s product slide-over): the same
+   * interactive row (click / Enter, focusable, hover) calling back instead of navigating.
+   * `rowHref` wins when both are given.
+   */
+  onRowClick?: (row: T) => void;
+  /**
    * Group header rows (optional): the group a row belongs to. A full-width header row naming
    * the group is rendered before each run of consecutive rows sharing a `key` — the consumer
    * orders `rows` so a group's rows are adjacent. Headers derive from the rows given, so a
@@ -44,12 +50,22 @@ export function viewAllLabel(shown: number, total?: number): string {
 
 /**
  * components.md §`<DataTable>` (visual: DESIGN §Data Table): a card holding a
- * full-bleed table. A row with a destination navigates on click or Enter;
+ * full-bleed table. A row with a destination navigates on click or Enter (a
+ * row with `onRowClick` calls it instead);
  * buttons inside it (`<RowAction>`) stop propagation so they never also
  * navigate. Below 744px each row stacks into a card list (DESIGN §Responsive
  * Behavior), every cell labelled with its column header.
  */
-export function DataTable<T>({ label, columns, rows, rowKey, rowHref, group, viewAll }: DataTableProps<T>) {
+export function DataTable<T>({
+  label,
+  columns,
+  rows,
+  rowKey,
+  rowHref,
+  onRowClick,
+  group,
+  viewAll,
+}: DataTableProps<T>) {
   const navigate = useNavigate();
 
   const table = (
@@ -71,7 +87,7 @@ export function DataTable<T>({ label, columns, rows, rowKey, rowHref, group, vie
         <tbody className="max-tablet:block">
           {rows.map((row, index) => {
             const href = rowHref?.(row);
-            const open = href ? () => navigate(href) : undefined;
+            const open = href ? () => navigate(href) : onRowClick && (() => onRowClick(row));
             const rowGroup = group?.(row);
             const startsGroup = rowGroup && (index === 0 || group!(rows[index - 1]!).key !== rowGroup.key);
             return (

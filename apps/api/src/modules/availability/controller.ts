@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import {
+  addAssortmentItemBody,
   availabilityEventBody,
   availabilityEventFeedQuery,
   availabilityListQuery,
@@ -39,4 +40,19 @@ export async function recordEvent(req: Request, res: Response): Promise<void> {
   validate(emptyQuery, req.query);
   const { type } = validate(availabilityEventBody, req.body);
   res.status(201).json(await service.recordEvent(id, type));
+}
+
+// RF-19 — 201 with the new item (`AvailabilityItem`).
+export async function addItem(req: Request, res: Response): Promise<void> {
+  validate(emptyQuery, req.query);
+  const { sizeId } = validate(addAssortmentItemBody, req.body);
+  res.status(201).json(await service.addItem(sizeId));
+}
+
+// RF-44 — 204.
+export async function removeItem(req: Request, res: Response): Promise<void> {
+  const { id } = validate(idParams, req.params);
+  validate(emptyQuery, req.query);
+  await service.deleteItem(id);
+  res.status(204).end();
 }

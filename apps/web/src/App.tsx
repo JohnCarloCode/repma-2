@@ -9,6 +9,7 @@ import { ToastProvider } from './lib/toast';
 import { ActivityPage } from './pages/ActivityPage';
 import { AvailabilityDetailPage } from './pages/AvailabilityDetailPage';
 import { AvailabilityPage } from './pages/AvailabilityPage';
+import { CatalogPage } from './pages/CatalogPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { ReplenishmentDetailPage } from './pages/ReplenishmentDetailPage';
@@ -42,6 +43,9 @@ export function AppRoutes() {
           <Route path="/home" element={<HomePage />} />
           <Route path="/availability" element={<AvailabilityPage />} />
           <Route path="/availability/:id" element={<AvailabilityDetailPage />} />
+        </Route>
+        <Route element={<RouteGuard permission="assortment:manage" store />}>
+          <Route path="/catalog" element={<CatalogPage />} />
         </Route>
       </Route>
 

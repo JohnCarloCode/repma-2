@@ -35,7 +35,7 @@ function renderWithRouter(ui: React.ReactNode) {
 
 const location = () => screen.getByTestId('location').textContent;
 
-function table(onDelete = vi.fn(), rowHref?: (row: Item) => string) {
+function table(onDelete = vi.fn(), rowHref?: (row: Item) => string, onRowClick?: (row: Item) => void) {
   const columns: Column<Item>[] = [
     { header: 'Product', cell: (row) => row.name },
     { header: 'Quantity', cell: (row) => <span className="font-mono">{row.qty}</span>, align: 'right' },
@@ -45,7 +45,9 @@ function table(onDelete = vi.fn(), rowHref?: (row: Item) => string) {
       align: 'right',
     },
   ];
-  renderWithRouter(<DataTable label="Items" columns={columns} rows={items} rowKey={(row) => row.id} rowHref={rowHref} />);
+  renderWithRouter(
+    <DataTable label="Items" columns={columns} rows={items} rowKey={(row) => row.id} rowHref={rowHref} onRowClick={onRowClick} />,
+  );
   return { onDelete };
 }
 
@@ -94,6 +96,32 @@ describe('<DataTable> (components.md §DataTable)', () => {
     await user.keyboard('{Enter}');
     expect(onDelete).toHaveBeenLastCalledWith('b');
     expect(location()).toBe('/items');
+  });
+
+  it('onRowClick: the row calls back on click or Enter, focusable, without navigating; row actions stay apart', async () => {
+    const user = userEvent.setup();
+    const onRowClick = vi.fn();
+    const { onDelete } = table(vi.fn(), undefined, onRowClick);
+    const row = screen.getByRole('cell', { name: 'Nike Air Max — 42' }).closest('tr')!;
+    expect(row).toHaveAttribute('tabindex', '0');
+    await user.click(row);
+    expect(onRowClick).toHaveBeenLastCalledWith(items[0]);
+    screen.getByRole('cell', { name: 'Adidas Samba — 40' }).closest('tr')!.focus();
+    await user.keyboard('{Enter}');
+    expect(onRowClick).toHaveBeenLastCalledWith(items[1]);
+    await user.click(screen.getByRole('button', { name: 'Delete Nike Air Max — 42' }));
+    expect(onDelete).toHaveBeenCalledWith('a');
+    expect(onRowClick).toHaveBeenCalledTimes(2);
+    expect(location()).toBe('/items');
+  });
+
+  it('rowHref wins over onRowClick', async () => {
+    const user = userEvent.setup();
+    const onRowClick = vi.fn();
+    table(undefined, (row) => `/items/${row.id}`, onRowClick);
+    await user.click(screen.getByRole('cell', { name: 'Adidas Samba — 40' }));
+    expect(location()).toBe('/items/b');
+    expect(onRowClick).not.toHaveBeenCalled();
   });
 
   it('rows without a destination are inert', async () => {

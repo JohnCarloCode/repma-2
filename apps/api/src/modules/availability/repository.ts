@@ -17,6 +17,7 @@ import { availabilityEvents } from '../../db/schema/availabilityEvents.js';
 import { categories } from '../../db/schema/categories.js';
 import { productSizes } from '../../db/schema/productSizes.js';
 import { products } from '../../db/schema/products.js';
+import { replenishmentListItems } from '../../db/schema/replenishmentListItems.js';
 import { userProfiles } from '../../db/schema/userProfiles.js';
 import { type Tx, withTenantContext } from '../../db/withTenantContext.js';
 
@@ -107,7 +108,13 @@ export function listAssortment(
       .innerJoin(productSizes, eq(productSizes.id, assortmentItems.sizeId))
       .innerJoin(products, eq(products.id, productSizes.productId))
       .leftJoin(latest, eq(latest.itemId, assortmentItems.id))
-      .where(query.categoryId ? eq(products.categoryId, query.categoryId) : undefined)
+      .where(
+        and(
+          query.categoryId ? eq(products.categoryId, query.categoryId) : undefined,
+          // The `/catalog` cross-reference: exactly the products it renders (RF-18).
+          query.productId ? inArray(products.id, query.productId) : undefined,
+        ),
+      )
       .groupBy(products.id)
       .having(
         and(
@@ -283,5 +290,73 @@ export function listItemEvents(
       items: rows.map(({ createdAt, ...event }) => ({ ...event, createdAt: createdAt.toISOString() })),
       total: totalRow?.total ?? 0,
     };
+  });
+}
+
+// RF-19 — add a catalog size to the active store's assortment. Checked in
+// order: the size exists in the catalog (global, readable under RLS), its
+// product and the size itself are active (RN-08 — inactive ones admit no new
+// additions), the size is not assorted yet (RN-04: the UNIQUE
+// `(tenant_id, size_id)` via ON CONFLICT DO NOTHING, so a concurrent duplicate
+// lands on the same answer). The store is the request's, never the body's;
+// `is_available` takes its default `true` and no event is written (RF-19).
+// Returns the new item in the `GET /availability/:id` shape.
+export function addItem(
+  sizeId: string,
+): Promise<{ item: AvailabilityItem } | 'size_not_found' | 'product_inactive' | 'size_inactive' | 'duplicate'> {
+  const { tenantId } = requestContext.getStore()!; // withTenantContext fails closed without it
+  return withTenantContext(async (tx) => {
+    const [size] = await tx
+      .select({ sizeActive: productSizes.isActive, productActive: products.isActive })
+      .from(productSizes)
+      .innerJoin(products, eq(products.id, productSizes.productId))
+      .where(eq(productSizes.id, sizeId));
+    if (!size) return 'size_not_found';
+    if (!size.productActive) return 'product_inactive';
+    if (!size.sizeActive) return 'size_inactive';
+
+    const [row] = await tx
+      .insert(assortmentItems)
+      .values({ tenantId: tenantId!, sizeId })
+      .onConflictDoNothing({ target: [assortmentItems.tenantId, assortmentItems.sizeId] })
+      .returning({ id: assortmentItems.id });
+    if (!row) return 'duplicate';
+    return { item: (await selectItem(tx, row.id))! };
+  });
+}
+
+// RF-44 — remove an item only while nothing references it (RN-13). The row
+// is locked first (`FOR UPDATE`): a concurrent flag (`recordEvent` locks it
+// too) or list line (`addItem` in replenishment takes `FOR KEY SHARE`, as
+// does its FK check) waits for this transaction, then finds no item — so the
+// checks below cannot go stale before the DELETE. History is checked first:
+// an item with events is permanent. The RESTRICT FKs (database.md §4.6) stay
+// the structural backstop. Under RLS another store's item is no row (RN-03).
+export function deleteItem(id: string): Promise<'deleted' | 'not_found' | 'has_events' | 'on_list'> {
+  return withTenantContext(async (tx) => {
+    const [item] = await tx
+      .select({ sizeId: assortmentItems.sizeId })
+      .from(assortmentItems)
+      .where(eq(assortmentItems.id, id))
+      .for('update');
+    if (!item) return 'not_found';
+
+    const [event] = await tx
+      .select({ id: availabilityEvents.id })
+      .from(availabilityEvents)
+      .where(eq(availabilityEvents.assortmentItemId, id))
+      .limit(1);
+    if (event) return 'has_events';
+
+    // The composite FK `(tenant_id, size_id)`: RLS already pins the tenant.
+    const [line] = await tx
+      .select({ id: replenishmentListItems.id })
+      .from(replenishmentListItems)
+      .where(eq(replenishmentListItems.sizeId, item.sizeId))
+      .limit(1);
+    if (line) return 'on_list';
+
+    await tx.delete(assortmentItems).where(eq(assortmentItems.id, id));
+    return 'deleted';
   });
 }

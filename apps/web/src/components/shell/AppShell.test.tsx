@@ -43,12 +43,13 @@ describe('shell', () => {
     renderAt('/activity', <AppRoutes />);
 
     const nav = await mainNav();
-    // Shipped routes only (interim registry), in layout.md's order.
+    // Shipped routes only (interim registry), in layout.md's order; Catalog by permission (not employee).
     expect(within(nav).getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual([
       '/home',
       '/replenishment',
       '/availability',
       '/activity',
+      ...(role === 'employee' ? [] : ['/catalog']),
     ]);
     expect(within(nav).getByRole('link', { name: 'Home' })).not.toHaveAttribute('aria-current');
     expect(within(nav).getByRole('link', { name: 'Replenishment' })).not.toHaveAttribute('aria-current');

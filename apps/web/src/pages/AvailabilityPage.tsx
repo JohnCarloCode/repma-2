@@ -1,16 +1,21 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useLocation } from 'react-router';
-import type { AvailabilityProduct, Category, Page } from 'shared';
+import { hasPermission, type AvailabilityItem, type AvailabilityProduct, type Category, type Page } from 'shared';
+import { useSession } from '../auth/AuthContext';
 import { InactiveBadge } from '../components/InactiveBadge';
+import { ProductPicker, type AssortmentSelection } from '../components/ProductPicker';
 import { ProductThumb } from '../components/availability/ProductThumb';
 import { AgingFigure, SizeRun } from '../components/availability/SizeRun';
+import { primaryButtonClass } from '../components/buttons';
 import { FilterBand, SearchField, filterControlClass } from '../components/list/FilterBand';
 import { PageHeader } from '../components/list/PageHeader';
 import { Pagination } from '../components/list/Pagination';
 import { EmptyState, ErrorState } from '../components/list/states';
 import { useEmptyPageRecovery, useListParams } from '../components/list/useListParams';
 import { oldestOutage } from '../lib/aging';
-import { api } from '../lib/apiClient';
+import { ApiError, api } from '../lib/apiClient';
+import { useToast } from '../lib/toast';
 import { useStoreScope } from '../tenant/activeStore';
 
 /**
@@ -27,7 +32,7 @@ const cardClass = 'overflow-hidden rounded-md border border-border bg-surface';
 /**
  * availability.md — the store's assortment read by product, one line per
  * product carrying its size run and the oldest outage's elapsed figure (AD-22).
- * Interim until 6.3: no "Add to assortment" header action (the ProductPicker ships there).
+ * "Add to assortment" (`assortment:manage`) opens the ProductPicker's assortment flow.
  */
 export function AvailabilityPage() {
   const scope = useStoreScope();
@@ -36,6 +41,9 @@ export function AvailabilityPage() {
   const { page } = list;
   const { search, categoryId } = list.filters;
   const outOfStock = list.filters.outOfStock === 'true';
+  const canAdd = hasPermission(useSession()!, 'assortment:manage');
+  const [adding, setAdding] = useState(false);
+  const addToAssortment = useAddToAssortment();
 
   const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: scope.key('availability', 'list', { page, search, categoryId, outOfStock }),
@@ -63,6 +71,16 @@ export function AvailabilityPage() {
       <PageHeader
         title="Availability"
         subtitle={data && `${scope.store.name} · ${data.total} ${data.total === 1 ? 'product' : 'products'}`}
+        action={
+          canAdd && (
+            <button type="button" className={primaryButtonClass} onClick={() => setAdding(true)}>
+              <span className="icon" aria-hidden>
+                add
+              </span>
+              Add to assortment
+            </button>
+          )
+        }
       />
       <FilterBand>
         <SearchField
@@ -100,7 +118,11 @@ export function AvailabilityPage() {
         <ErrorState message={error.message} onRetry={() => void refetch()} />
       ) : data.items.length === 0 ? (
         !list.hasFilters ? (
-          <EmptyState icon="inventory_2" title="No items in the assortment yet." />
+          <EmptyState
+            icon="inventory_2"
+            title="No items in the assortment yet."
+            action={canAdd ? { label: 'Add to assortment', onClick: () => setAdding(true) } : undefined}
+          />
         ) : (
           <EmptyState
             icon={outOfStock && !search && !categoryId ? 'check_circle' : 'search'}
@@ -118,8 +140,62 @@ export function AvailabilityPage() {
           <Pagination data={data} onPageChange={list.setPage} />
         </>
       )}
+      {canAdd && (
+        <ProductPicker
+          flow="assortment"
+          open={adding}
+          onClose={() => setAdding(false)}
+          title="Add to assortment"
+          confirmLabel="Add to assortment"
+          pendingLabel="Adding…"
+          onConfirm={addToAssortment}
+        />
+      )}
     </main>
   );
+}
+
+/**
+ * availability.md §Flows · Add size to assortment — `POST /availability { sizeId }`, the picker's
+ * `onConfirm`. 201 → toast + invalidate the store's `availability` family (list, picker grid and
+ * its cross-reference); Home's figures can't change (the item starts available, RF-41). 409
+ * (RN-04) and a 400 on `sizeId` (RN-08: deactivated meanwhile) resolve to the inline message the
+ * picker shows on the size step, after a refetch that flips/removes the stale tile or card.
+ * Anything else toasts and rejects (the picker keeps the selection).
+ */
+function useAddToAssortment() {
+  const scope = useStoreScope();
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  return async ({ sizeId }: AssortmentSelection): Promise<string | void> => {
+    try {
+      await api.post<AvailabilityItem>('/availability', { sizeId }, scope.request);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        void queryClient.invalidateQueries({ queryKey: scope.key('availability') });
+        return 'This size is already in the assortment';
+      }
+      const field = err instanceof ApiError && err.status === 400 ? sizeIdMessage(err.details) : undefined;
+      if (field) {
+        void queryClient.invalidateQueries({ queryKey: ['products'] });
+        return field;
+      }
+      toast.error(err);
+      throw err;
+    }
+    toast.success('Added to assortment');
+    void queryClient.invalidateQueries({ queryKey: scope.key('availability') });
+  };
+}
+
+/**
+ * The API's `details` message on `sizeId` (unknown, inactive product or size — RN-08), if any.
+ * Shared with `/catalog`'s slide-over add.
+ */
+export function sizeIdMessage(details: unknown): string | undefined {
+  if (!Array.isArray(details)) return undefined;
+  const entry = details.find((d): d is { path: string; message: string } => d?.path === 'sizeId');
+  return entry?.message;
 }
 
 /** Three zones: identity, the run, the oldest outage's figure right-aligned on the run's first line. */

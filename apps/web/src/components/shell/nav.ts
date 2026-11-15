@@ -24,7 +24,7 @@ export const NAV: readonly NavSection[] = [
       { label: 'Replenishment', to: '/replenishment', icon: 'list_alt', permission: 'replenishment:read' },
       { label: 'Availability', to: '/availability', icon: 'inventory_2', permission: 'availability:read' },
       { label: 'Activity', to: '/activity', icon: 'history', permission: 'activity:read' },
-      { label: 'Catalog', to: '/catalog', icon: 'menu_book', permission: 'assortment:manage', pending: true }, // 6.5
+      { label: 'Catalog', to: '/catalog', icon: 'menu_book', permission: 'assortment:manage' },
     ],
   },
   {

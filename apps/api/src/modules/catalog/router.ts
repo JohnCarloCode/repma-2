@@ -6,8 +6,8 @@ import * as controller from './controller.js';
 
 // Global router (architecture.md §5.2): the catalog is global, so it never
 // mounts tenantContext. Mounted at the API root because the family spans
-// `/categories` and `/products` (architecture.md §7); `GET /products` ships
-// in plan 6.1, the writes (RF-14/16/17/37) in Phase 8.
+// `/categories` and `/products` (architecture.md §7); the writes
+// (RF-14/16/17/37) ship in Phase 8.
 export const catalogRouter = Router();
 
 catalogRouter.get(
@@ -16,4 +16,12 @@ catalogRouter.get(
   rateLimit('read', byUser),
   authorize('catalog:read'),
   controller.listCategories,
+);
+
+catalogRouter.get(
+  '/products',
+  authenticate,
+  rateLimit('read', byUser),
+  authorize('catalog:read'),
+  controller.listProducts,
 );

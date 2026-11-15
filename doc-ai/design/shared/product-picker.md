@@ -1,6 +1,6 @@
 # product-picker — Visual product & size selector
 
-> Shared component (`apps/web/src/components/ProductPicker.tsx`; replenishment flow built in plan 4.7, the assortment flow joins in 6.3). Replaces every select/combobox-based product selection. Visual tokens per `../DESIGN.md`; behavior conventions per `components.md`. UI copy is English (RNF-19).
+> Shared component (`apps/web/src/components/ProductPicker.tsx`; replenishment flow built in plan 4.7, assortment flow in 6.3). Replaces every select/combobox-based product selection. Visual tokens per `../DESIGN.md`; behavior conventions per `components.md`. UI copy is English (RNF-19).
 
 ## Purpose
 
@@ -73,4 +73,13 @@ Focus trap per `components.md` modals; grid cards and tiles are buttons (keyboar
 - Every open is a clean session (search, category, page, selection, quantity reset): the dialog unmounts its body on close.
 - Layout: `<Modal sheetOnMobile>` — full-screen sheet below 744px; from tablet up max-w 960px at a fixed `min(800px, 100dvh − 32px)` height. Inside: search → (category chips / rail 180px) + grid zone (`flex-1`, scrolls internally; 2 columns, 4 from desktop) → selection panel (capped at 45% of the body, scrolls internally) → actions ("Close", CTA). Cards: 96px-high image or initials placeholder, name (2 lines), "N sizes" / "One size", `badge-inactive` for an inactive product.
 - Quantity stepper: −/+ 44px `button-secondary` squares around a `text-input` (`inputMode=numeric`, right-aligned); valid = integer 1–9999 (the API's bounds); invalid → `aria-invalid` + caption "Enter a whole number from 1 to 9999." and the CTA disabled — nothing is sent.
-- **For 6.3 (assortment flow)** the component gains a flow switch rather than a rewrite: grid source `GET /products` (mapped onto the card/run shape, inactive excluded), no quantity field, close after a resolved confirm; the disabled-set/`onConfirm` contract is unchanged.
+## Implementation contract (assortment flow, plan 6.3)
+
+`<ProductPicker flow="assortment" open onClose title confirmLabel pendingLabel onConfirm />` — a discriminated `flow` prop on the same component (`flow` omitted = the replenishment flow above, unchanged).
+
+- Grid source: `GET /products?page&pageSize=24&search&categoryId&isActive=true` — global, no `X-Tenant-Id` — under the key `['products', { isActive: true, page, pageSize: 24, search, categoryId }]`. The cache keeps the API's `Product` shape; a `select` maps it onto the card/run shape (`AvailabilityProduct`, each size's `sizeId` = `id` = the catalog size id) with **inactive sizes dropped** — the card's size count and the run show active sizes only (RN-08). Inactive products never arrive (`isActive=true`).
+- **Disabled set (RN-04) — built by the picker, not passed in**: the consumer can't know which products are on screen, and the store's whole assortment can't be fetched in one page. One store-scoped `GET /availability?productId=<the grid page's ids>&pageSize=<their count>` per grid page (the RF-18 cross-reference `/catalog` also uses), key `scope.key('availability', 'picker', 'assorted', ids)` — under the `availability` family, so the consumer's invalidation after an add or a 409 refreshes it. Its sizes' `sizeId`s are the disabled set, captioned "Already in the assortment". It is UX only (the API is the authority, availability.md §Edge cases): while it loads, or if it fails, nothing is disabled and a duplicate falls to the 409 mapping. When every size of the selected product is disabled, the caption becomes "No sizes available to add".
+- No extra fields: a picked size alone enables the CTA.
+- `onConfirm({ sizeId, product, size }) => Promise<string | void>` (`AssortmentSelection`, no `quantity`). Same pending contract as the replenishment flow. Resolved with nothing → the picker **closes** (`onClose`). Resolved with a message → it stays open, the selection is kept and the message renders inline on the size step (`role="alert"`, under the run) until another product or size is picked — the consumer's mapping of 409/400 (availability.md §Flows). Rejected → the consumer has toasted; the selection is kept, no inline error.
+- Empty catalog (no filters): "No active products in the catalog."
+

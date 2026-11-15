@@ -133,7 +133,7 @@
 
 **Deliverable:** full shop-floor workflow on prod: create a list, add sizes via the picker, check lines off watching the bar, undo a removal, finish and mark done.
 **Tests:** list/items integration suites (RN-12/RN-04), all detail flow tests, picker tests.
-**Closing criterion:** `npm run check` + CI green; prod walkthrough done. — [ ]
+**Closing criterion:** `npm run check` + CI green; prod walkthrough done. — [x]
 
 ---
 
@@ -150,7 +150,7 @@
 
 **Deliverable:** manager/employee land on a live Home whose figures and blocks react to every flow built so far.
 **Tests:** summary integration; Home block/permission/empty-state suites.
-**Closing criterion:** `npm run check` + CI green; prod Home verified. — [ ]
+**Closing criterion:** `npm run check` + CI green; prod Home verified. — [x]
 
 ---
 
@@ -161,12 +161,12 @@
 **Starting state:** Phase 5 closed. Verify: `npm run check`; Home live locally.
 **Manual setup:** none.
 
-- [ ] **6.1 API `GET /products` + `productId` filter** (M) — `GET /products` per RF-15: paginated, filters `categoryId`/`search` (name + size SKU)/`isActive`, **sizes embedded**; `catalog:read`, read limiter. Plus the `productId` (one-or-more) filter on `GET /availability` (RF-18's `/catalog` cross-reference — built with its consumer). Integration tests.
-- [ ] **6.2 API assortment writes** (M) — `POST /availability` `{sizeId}` (starts available, no events; inactive product/size rejected RN-08; duplicate → 409 RN-04; `is_available` in body → validation error RF-22) and `DELETE /availability/:id` (only unreferenced — no events, no list lines; else clean 409, RF-44/RN-13). `assortment:manage`, write limiter. Tests incl. both RESTRICT paths.
-- [ ] **6.3 Picker assortment flow + `/availability` header action** (M) — "Add to assortment" primary on `/availability` (closes 3.6's interim) opening the **shared picker** in its assortment flow: grid source `GET /products`, inactive products/sizes never offered (RN-08), already-added tiles disabled (RN-04), **no extra fields, closes after confirm**; 409 mapped inline on the size step per `availability.md`. Tests.
-- [ ] **6.4 Detail removal** (S) — ghost "Remove from assortment" on `/availability/:id`, rendered only with `assortment:manage` **and** empty history; confirm modal; 409 → toast + refetch (action disappears if events appeared). Closes 3.7's interim. Tests.
-- [ ] **6.5 Sheet + `/catalog` list** (M) — the right-anchored **slide-over component** (`sheet`/`sheet-scrim` layers, ink left rule, Escape/scrim close) born here; `/catalog` per `catalog.md`: guard `assortment:manage`, products table (thumb, name, size count, category, status, "In assortment" via the **`productId` cross-reference** with `pageSize` = ids sent), filter band (search/category/`isActive` default Active), pagination; cross-reference failure degrades to "—" + retry without blocking. Nav gains "Catalog" (manager only by permission). Tests.
-- [ ] **6.6 `/catalog` slide-over & add flow** (M) — product detail slide-over from row data: image, description, **size list (a list, not a `<SizeRun>` — catalog.md)** with per-size status: "In assortment" + `/availability/:id` link, or "Add to assortment" → `POST /availability` direct (no picker on this page — its only add surface); inactive rules; 409/RN-08 handling. Tests.
+- [x] **6.1 API `GET /products` + `productId` filter** (M) — `GET /products` per RF-15: paginated, filters `categoryId`/`search` (name + size SKU)/`isActive`, **sizes embedded**; `catalog:read`, read limiter. Plus the `productId` (one-or-more) filter on `GET /availability` (RF-18's `/catalog` cross-reference — built with its consumer). Integration tests.
+- [x] **6.2 API assortment writes** (M) — `POST /availability` `{sizeId}` (starts available, no events; inactive product/size rejected RN-08; duplicate → 409 RN-04; `is_available` in body → validation error RF-22) and `DELETE /availability/:id` (only unreferenced — no events, no list lines; else clean 409, RF-44/RN-13). `assortment:manage`, write limiter. Tests incl. both RESTRICT paths.
+- [x] **6.3 Picker assortment flow + `/availability` header action** (M) — "Add to assortment" primary on `/availability` (closes 3.6's interim) opening the **shared picker** in its assortment flow: grid source `GET /products`, inactive products/sizes never offered (RN-08), already-added tiles disabled (RN-04), **no extra fields, closes after confirm**; 409 mapped inline on the size step per `availability.md`. Tests.
+- [x] **6.4 Detail removal** (S) — ghost "Remove from assortment" on `/availability/:id`, rendered only with `assortment:manage` **and** empty history; confirm modal; 409 → toast + refetch (action disappears if events appeared). Closes 3.7's interim. Tests.
+- [x] **6.5 Sheet + `/catalog` list** (M) — the right-anchored **slide-over component** (`sheet`/`sheet-scrim` layers, ink left rule, Escape/scrim close) born here; `/catalog` per `catalog.md`: guard `assortment:manage`, products table (thumb, name, size count, category, status, "In assortment" via the **`productId` cross-reference** with `pageSize` = ids sent), filter band (search/category/`isActive` default Active), pagination; cross-reference failure degrades to "—" + retry without blocking. Nav gains "Catalog" (manager only by permission). Tests.
+- [x] **6.6 `/catalog` slide-over & add flow** (M) — product detail slide-over from row data: image, description, **size list (a list, not a `<SizeRun>` — catalog.md)** with per-size status: "In assortment" + `/availability/:id` link, or "Add to assortment" → `POST /availability` direct (no picker on this page — its only add surface); inactive rules; 409/RN-08 handling. Tests.
 
 **Deliverable:** a manager browses the catalog, adds sizes from both surfaces (picker on `/availability`, slide-over on `/catalog`), and can undo a mistaken addition while it has no history.
 **Tests:** products/assortment-write integrations; both add-surface suites; removal suite.

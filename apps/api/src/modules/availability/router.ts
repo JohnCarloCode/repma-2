@@ -7,7 +7,7 @@ import * as controller from './controller.js';
 
 // Tenant-scoped router (architecture.md §5.2): every route mounts
 // tenantContext, in the §3.3 order authenticate → rateLimit → tenantContext →
-// authorize. The rest of the family (RF-19/44) ships in Phase 6.
+// authorize.
 export const availabilityRouter = Router();
 
 // RF-23 — MUST stay above `GET /:id` (architecture.md §7): Express matches in
@@ -29,6 +29,17 @@ availabilityRouter.get(
   tenantContext,
   authorize('availability:read'),
   controller.list,
+);
+
+// RF-19 — add a catalog size to the assortment. Assortment writes ride the
+// write limiter family (RNF-07).
+availabilityRouter.post(
+  '/',
+  authenticate,
+  rateLimit('write', byUser),
+  tenantContext,
+  authorize('assortment:manage'),
+  controller.addItem,
 );
 
 // Parameterised routes — below `/events` (see above).
@@ -60,4 +71,14 @@ availabilityRouter.post(
   tenantContext,
   authorize('availability:flag'),
   controller.recordEvent,
+);
+
+// RF-44 — remove an unreferenced item (RN-13).
+availabilityRouter.delete(
+  '/:id',
+  authenticate,
+  rateLimit('write', byUser),
+  tenantContext,
+  authorize('assortment:manage'),
+  controller.removeItem,
 );

@@ -8,7 +8,7 @@ const emptyPage = (pageSize = 20) => HttpResponse.json({ items: [], page: 1, pag
  * Defaults survive `resetHandlers`: `/activity` is the shell tests' generic
  * store route, `/home` the store roles' home and `/availability` the admin's
  * (redirect tests land on them), so their reads answer empty unless a test
- * overrides them.
+ * overrides them; `/products` is the assortment picker's grid.
  */
 export const server = setupServer(
   http.get('*/api/v1/home/summary', () => HttpResponse.json({ openLists: 0, pendingItems: 0, outOfStock: 0 })),
@@ -16,4 +16,5 @@ export const server = setupServer(
   http.get('*/api/v1/availability/events', () => emptyPage()),
   http.get('*/api/v1/availability', () => emptyPage()),
   http.get('*/api/v1/categories', () => emptyPage(100)),
+  http.get('*/api/v1/products', () => emptyPage(24)),
 );

@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useLocation, useParams } from 'react-router';
+import { useState } from 'react';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { hasPermission, type AvailabilityEventType, type AvailabilityItem, type AvailabilityItemEvent, type Page } from 'shared';
 import { useSession } from '../auth/AuthContext';
 import { InactiveBadge } from '../components/InactiveBadge';
+import { ConfirmModal } from '../components/Modal';
 import { ProductThumb } from '../components/availability/ProductThumb';
 import { AgingFigure, OUT_OF_STOCK_MARK, OutOfStockDot } from '../components/availability/SizeRun';
 import { DataTable, type Column } from '../components/list/DataTable';
@@ -32,8 +34,8 @@ const cardClass = 'rounded-md border border-border bg-surface';
 /**
  * availability-detail.md — one size of the store's assortment: its state
  * (exactly the latest event, RN-05), the immutable history behind it, and the
- * app's only flagging surface (RF-20). Never a quantity.
- * Interim until 6.4: no "Remove from assortment" action.
+ * app's only flagging surface (RF-20). Never a quantity. While the history is
+ * empty a manager can undo a mistaken addition (RF-44/RN-13).
  */
 export function AvailabilityDetailPage() {
   const { id = '' } = useParams();
@@ -41,6 +43,7 @@ export function AvailabilityDetailPage() {
   const session = useSession();
   const queryClient = useQueryClient();
   const toast = useToast();
+  const navigate = useNavigate();
   const listSearch = (useLocation().state as AvailabilityLinkState | null)?.listSearch ?? '';
   const history = useListParams([] as const);
   const { page } = history;
@@ -92,8 +95,40 @@ export function AvailabilityDetailPage() {
     },
   });
 
+  // RF-44: 204 → back to the list. Marked stale without an immediate refetch, so this
+  // (now gone) item isn't re-read on the way out; the list refetches as it mounts. Home is
+  // untouched: an item without events is available and counted by none of its figures.
+  // Any error (RN-13's 409s, a 404 if removed elsewhere) → API message toast + the
+  // item/history refetch: events that appeared hide the action; a 404 lands on "Item not found".
+  const [confirmingRemove, setConfirmingRemove] = useState(false);
+  const remove = useMutation({
+    mutationFn: () => api.delete(`/availability/${id}`, scope.request),
+    onSuccess: () => {
+      setConfirmingRemove(false);
+      toast.success('Removed from assortment');
+      void queryClient.invalidateQueries({ queryKey: scope.key('availability'), refetchType: 'none' });
+      void navigate(`/availability${listSearch}`);
+    },
+    onError: (error) => {
+      setConfirmingRemove(false);
+      toast.error(error);
+      void queryClient.invalidateQueries({ queryKey: scope.key('availability') });
+    },
+  });
+
+  // Actions follow a successfully read item only: after a failed refetch (e.g. the 404 of an
+  // item removed elsewhere) the cache keeps the old data, but the page shows the error state.
+  const current = item.isSuccess ? item.data : undefined;
   const canFlag = !!session && hasPermission(session, 'availability:flag');
-  const next: AvailabilityEventType | null = item.data ? (item.data.isAvailable ? 'out_of_stock' : 'restock') : null;
+  // Only with an empty history (both reads agree) and no flag in flight — the optimistic flip
+  // already stamps `latestEventAt`.
+  const canRemove =
+    !!session &&
+    hasPermission(session, 'assortment:manage') &&
+    current?.latestEventAt === null &&
+    events.data?.total === 0 &&
+    !flag.isPending;
+  const next: AvailabilityEventType | null = current ? (current.isAvailable ? 'out_of_stock' : 'restock') : null;
 
   const backLink = (
     <Link
@@ -115,21 +150,39 @@ export function AvailabilityDetailPage() {
     <main className="flex flex-col gap-lg">
       <header className="flex flex-wrap items-center justify-between gap-base">
         {backLink}
-        {canFlag && next && (
-          <button
-            type="button"
-            onClick={() => flag.mutate(next)}
-            disabled={flag.isPending}
-            aria-busy={flag.isPending}
-            className={primaryButtonClass}
-          >
-            <span className="icon" aria-hidden>
-              {FLAG[next].icon}
-            </span>
-            {FLAG[next].label}
-          </button>
-        )}
+        <div className="flex flex-wrap items-center gap-sm">
+          {canRemove && (
+            <button type="button" onClick={() => setConfirmingRemove(true)} className={secondaryButtonClass}>
+              Remove from assortment
+            </button>
+          )}
+          {canFlag && next && (
+            <button
+              type="button"
+              onClick={() => flag.mutate(next)}
+              disabled={flag.isPending}
+              aria-busy={flag.isPending}
+              className={primaryButtonClass}
+            >
+              <span className="icon" aria-hidden>
+                {FLAG[next].icon}
+              </span>
+              {FLAG[next].label}
+            </button>
+          )}
+        </div>
       </header>
+
+      <ConfirmModal
+        open={confirmingRemove}
+        onClose={() => setConfirmingRemove(false)}
+        title="Remove from assortment"
+        message={item.data ? `Remove “${sizeName(item.data.product.name, item.data.label)}” from the assortment?` : ''}
+        confirmLabel="Remove"
+        pendingLabel="Removing…"
+        pending={remove.isPending}
+        onConfirm={() => remove.mutate()}
+      />
 
       {item.isPending ? (
         <SummarySkeleton />

@@ -169,7 +169,7 @@ describe('/login redirects', () => {
       await openLogin();
       await signIn(`${role}@repma.test`, 'pw');
 
-      await waitFor(() => expect(location()).toHaveTextContent('/activity'));
+      await waitFor(() => expect(location()).toHaveTextContent('/availability'));
       expect(body).toEqual({ email: `${role}@repma.test`, password: 'pw' });
       expect(meCalls).toBe(1); // the bootstrap only
     },
@@ -194,8 +194,8 @@ describe('/login redirects', () => {
     await openLogin({ pathname: '/login', state: { from } });
 
     await signIn();
-    await waitFor(() => expect(location()).toHaveTextContent('/activity'));
-    expect(location().textContent).toBe('/activity');
+    await waitFor(() => expect(location()).toHaveTextContent('/availability'));
+    expect(location().textContent).toBe('/availability');
   });
 
   it.each(['manager', 'employee', 'platform_admin'] as const)(
@@ -204,7 +204,7 @@ describe('/login redirects', () => {
       server.use(authMe(sessionFor(role)));
       renderAt('/login', <AppRoutes />);
 
-      await waitFor(() => expect(location()).toHaveTextContent('/activity'));
+      await waitFor(() => expect(location()).toHaveTextContent('/availability'));
       expect(screen.queryByRole('heading', { name: 'Sign in' })).not.toBeInTheDocument();
       expect(screen.queryByLabelText('Email')).not.toBeInTheDocument();
     },

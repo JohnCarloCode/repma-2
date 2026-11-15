@@ -50,13 +50,16 @@ Search input + selects on the `{components.filter-band}`: an `{colors.accent-hov
 |---|---|---|
 | `<LoadingState>` | query pending | Static `{colors.surface-raised}` skeleton rows matching table geometry (lists) or skeleton cards (Home/detail). No shimmer — DESIGN.md §Motion lets nothing but the live dot loop — and no spinners inside tables. |
 | `<EmptyState>` | success + 0 items | Icon + one-line explanation + primary action if the user has permission for it. Distinguish "no data yet" from "no results for these filters" (offer "Clear filters"). |
-| `<ErrorState>` | query error | Inline card + "Retry" (refetches). Never a blank screen. |
+| `<ErrorState>` | query error | Inline card + "Retry" (refetches). Never a blank screen. A page may name the failure and swap Retry for its own way out where retrying cannot help — a detail's 404: "Item not found" + a link back to its list. |
 
 ## Toasts
 
 - Every mutation reports its outcome: success toast on success, error toast with the API message on failure (RF-36). **One documented exception**: the per-item autosave mutations on `/replenishment/:id` (add item, done check, quantity — RF-28/RF-40) are silent on success — the visible state change (the new row, the check, the bar, the disabled tile) is the feedback, and toasting every tap of a shop-floor session would be noise. Errors always toast, autosaved or not.
 - API errors arrive as `{ error: { code, message, details? } }`; the toast shows `message`. Validation errors (400 with `details`) render inline at the field level instead — the toast is only for non-field errors.
-- Top-right, auto-dismiss (success ~4s; errors persist until dismissed).
+- **Error mapping** (one function, `errorMessage` in `apps/web/src/lib/toast.tsx`): API messages are written for users (English, RNF-19), so a 4xx envelope's `message` is shown **verbatim** — 400, 403, 404, 409 (e.g. RN-14's "This size is already out of stock"). Replaced by own copy: **401** → "Your session has expired. Sign in again." (the session is cleared and the guard sends the user to `/login` — layout.md §Session bootstrap); **429** (RNF-07) → "Too many requests. Wait a minute and try again."; **5xx**, a non-envelope answer and any non-API error → "Something went wrong. Try again." (nothing the user can act on, and no internals leak). A network failure (no HTTP answer) keeps the apiClient's "Network error. Check your connection and try again."
+- Top-right stack at `{layers.toast}`, newest last, 16px from the viewport edges (max 360px wide; full width minus the gutters on mobile, over the mobile header). Auto-dismiss: success ~4s; errors persist until dismissed (close `icon-button`, "Dismiss notification"). Mounted once above the router, so a toast raised right before a navigation (create → detail, delete → index) survives it.
+- **Accessibility**: the stack is an always-mounted `aria-live="polite"` region ("Notifications"), so the first toast is announced; each error toast is `role="alert"` (assertive).
+- **API**: `const toast = useToast(); toast.success(message); toast.error(errorOrMessage)` — `error` takes the caught error (mapped as above) or a ready message. Consumers call it from the mutation's own callbacks; there is no global mutation-error toast, because 400s on forms go inline and the autosave exception above stays silent on success. The "Undo" action toast (`../pages/replenishment-detail.md`) extends `success` with an optional action when its consumer ships.
 
 ## Modals & confirms
 
@@ -87,7 +90,9 @@ Visual per DESIGN.md `progress-bar` (8px `{colors.surface-raised}` pill track, `
 Renders a product's sizes as one row of **44px tiles** with `{rounded.sm}` corners (visual per DESIGN.md §Size run — a tile is a button, so it takes the button radius). Behavior:
 
 - Receives the product's sizes in `position` order with each one's `is_available` and latest-event timestamp; derives each elapsed figure and its band per DP-07 at render time (nothing is precomputed server-side). The band affects **only the figure's weight** — every out-of-stock tile renders the same mark.
-- Tiles are buttons where the consumer passes an action, plain spans where it does not — so the same component serves the read-only case without a variant of its own.
+- Tiles are **links** where the consumer passes a destination (`/availability`, Home — navigation is a link, optionally carrying router state such as the list's URL state), **buttons** where it passes an action (the ProductPicker's selection, with `run-tile-selected`/`-disabled` — added with that consumer), plain spans where it passes neither — so the same component serves the read-only case without a variant of its own.
+- Each tile names its state as text for assistive tech ("42, out of stock 5 h", "38, available", plus ", inactive"), and hovering/focusing it shows a tooltip (above the tile) with label · SKU · state and `badge-inactive` when the size is inactive. An inactive size's label is muted (`text-secondary`); its mark, if out of stock, is unchanged.
+- The elapsed figure and band come from one util (`apps/web/src/lib/aging.ts`), also used by the consumers' line figure (earliest outage in the run) and `badge-out-of-stock`.
 - The component owns no navigation or mutation: `/availability` and Home wire the per-size link (`/availability/:id`) into it, the ProductPicker wires selection into it. Flagging is never wired into a run — it lives on the item detail (RF-20).
 - Long runs wrap; the run never scrolls horizontally on its own.
 - Tiles carry the product's **largest touch target: 44×44px visual = hit area** (DESIGN.md §Size run). The component never renders a smaller pointer-device variant — one geometry everywhere — so consuming layouts must budget the extra row height rather than shrinking the run.

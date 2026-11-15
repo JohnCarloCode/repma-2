@@ -22,7 +22,7 @@ export const NAV: readonly NavSection[] = [
     items: [
       { label: 'Home', to: '/home', icon: 'home', permission: 'availability:read', pending: true }, // 5.2
       { label: 'Replenishment', to: '/replenishment', icon: 'list_alt', permission: 'replenishment:read', pending: true }, // 4.5
-      { label: 'Availability', to: '/availability', icon: 'inventory_2', permission: 'availability:read', pending: true }, // 3.6
+      { label: 'Availability', to: '/availability', icon: 'inventory_2', permission: 'availability:read' },
       { label: 'Activity', to: '/activity', icon: 'history', permission: 'activity:read' },
       { label: 'Catalog', to: '/catalog', icon: 'menu_book', permission: 'assortment:manage', pending: true }, // 6.5
     ],

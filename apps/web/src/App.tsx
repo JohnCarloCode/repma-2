@@ -5,7 +5,10 @@ import { RouteGuard } from './auth/guards';
 import { AppShell } from './components/shell/AppShell';
 import { roleHome } from './auth/session';
 import { createQueryClient } from './lib/queryClient';
+import { ToastProvider } from './lib/toast';
 import { ActivityPage } from './pages/ActivityPage';
+import { AvailabilityDetailPage } from './pages/AvailabilityDetailPage';
+import { AvailabilityPage } from './pages/AvailabilityPage';
 import { LoginPage } from './pages/LoginPage';
 import { UnauthorizedPage } from './pages/UnauthorizedPage';
 
@@ -28,6 +31,10 @@ export function AppRoutes() {
         <Route element={<RouteGuard permission="activity:read" store />}>
           <Route path="/activity" element={<ActivityPage />} />
         </Route>
+        <Route element={<RouteGuard permission="availability:read" store />}>
+          <Route path="/availability" element={<AvailabilityPage />} />
+          <Route path="/availability/:id" element={<AvailabilityDetailPage />} />
+        </Route>
       </Route>
 
       <Route path="*" element={<RoleHomeRedirect />} />
@@ -40,11 +47,13 @@ const queryClient = createQueryClient();
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <AppRoutes />
-        </AuthProvider>
-      </BrowserRouter>
+      <ToastProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <AppRoutes />
+          </AuthProvider>
+        </BrowserRouter>
+      </ToastProvider>
     </QueryClientProvider>
   );
 }

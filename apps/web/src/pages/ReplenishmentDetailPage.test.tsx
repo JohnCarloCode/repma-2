@@ -412,9 +412,9 @@ describe("/replenishment/:id — name (click-to-edit, saves on blur)", () => {
 });
 
 describe("/replenishment/:id — status (any transition, RF-30)", () => {
-  it("the select PATCHes the status alone: badge follows, toast", async () => {
+  it("the select PATCHes the status alone: badge follows, toast, index and Home invalidated", async () => {
     const { bodies } = detail();
-    renderPage();
+    const { invalidate } = renderPage();
     await title();
 
     await userEvent.selectOptions(
@@ -429,6 +429,8 @@ describe("/replenishment/:id — status (any transition, RF-30)", () => {
     expect(screen.getByRole("combobox", { name: "Status" })).toHaveValue(
       "draft",
     );
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: listsKey });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: homeKey });
   });
 
   it("an error toasts and falls back to the server status", async () => {
@@ -548,7 +550,7 @@ describe("/replenishment/:id — delete (RF-29)", () => {
         HttpResponse.json({ items: [], page: 1, pageSize: 20, total: 0 }),
       ),
     );
-    renderPage({
+    const { invalidate } = renderPage({
       pathname: "/replenishment/l1",
       state: { listSearch: "?status=draft" },
     });
@@ -566,6 +568,8 @@ describe("/replenishment/:id — delete (RF-29)", () => {
     await waitFor(() => expect(location()).toBe("/replenishment?status=draft"));
     expect(deleted).toBe(1);
     expect(within(toasts()).getByText("List deleted")).toBeInTheDocument();
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: listsKey });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: homeKey });
   });
 });
 
@@ -622,6 +626,7 @@ function held(response: () => Response) {
 
 const detailKey = ["store", expect.any(String), "replenishment", "list", "l1"];
 const listsKey = ["store", expect.any(String), "replenishment", "lists"];
+const homeKey = ["store", expect.any(String), "home"];
 const itemsTable = () =>
   screen.getByRole("table", { name: "Items", hidden: true });
 const check = (size: string) =>
@@ -716,6 +721,7 @@ describe("/replenishment/:id — done check (RF-40, silent autosave)", () => {
       expect(invalidate).toHaveBeenCalledWith({ queryKey: detailKey }),
     );
     expect(invalidate).toHaveBeenCalledWith({ queryKey: listsKey });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: homeKey });
     expect(check("42")).toBeChecked();
     expect(toasts()).toBeEmptyDOMElement();
   });

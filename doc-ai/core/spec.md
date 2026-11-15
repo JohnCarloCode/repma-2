@@ -92,7 +92,7 @@ Manager and employee both hold `catalog:read`, `availability:read`, `availabilit
   - **Recent activity** (`activity:read`): the 4 latest events — author, event, product and size, relative time (RF-23).
   - All three blocks share one bounded-table presentation with a "View all" exit (to RF-26, `/availability`, RF-42). Home never paginates and states the true total when it truncates (except the activity teaser — a feed's total bounds no work). No ornament: no photos, illustrations, gradients or quick-access tiles.
   - Home never derives a replenishment list from out-of-stock items (DP-06).
-- **RF-41** Home summary: `GET /api/v1/home/summary` (tenant-scoped) returns `{ openLists, pendingItems, outOfStock }` — open lists (`draft`/`processing`), unchecked items across **all** open lists, and out-of-stock sizes. Counts only, never quantities (RN-05). One endpoint because `pendingItems` is not derivable from a list endpoint without extra round-trips, and one response gives the strip a single loading state; `openLists` also lets the open-work block state its true total.
+- **RF-41** Home summary: `GET /api/v1/home/summary` (tenant-scoped) returns `{ openLists, pendingItems, outOfStock }` — open lists (`draft`/`processing`), unchecked items across **all** open lists, and out-of-stock sizes (assortment items, not products — inactive ones included, RN-08). Counts only, never quantities (RN-05). One endpoint because `pendingItems` is not derivable from a list endpoint without extra round-trips, and one response gives the strip a single loading state; `openLists` also lets the open-work block state its true total.
 
 ### 3.6 Replenishment lists (per store)
 

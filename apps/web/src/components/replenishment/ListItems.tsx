@@ -117,6 +117,8 @@ function useItemWrites(listId: string, indexPath: string) {
       void queryClient.invalidateQueries({
         queryKey: scope.key("replenishment", "lists"),
       });
+      // Home's pending-items figure counts these rows.
+      void queryClient.invalidateQueries({ queryKey: scope.key("home") });
     });
   };
 

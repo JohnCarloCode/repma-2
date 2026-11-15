@@ -29,7 +29,7 @@ function validate(values: Values) {
  * replenishment.md §Flows · Create manually (RF-27): the "New list" form modal — Name
  * (required) and Notes (optional), nothing else (DP-06: a list is never pre-filled). It owns
  * its mutation: 201 → toast, lists invalidated, navigate to the new list's detail so items can
- * be added right away; 400 → inline field errors, modal stays open; anything else → error toast.
+ * be added right away (the Home summary is invalidated too); 400 → inline field errors, modal stays open; anything else → error toast.
  * Mounted wherever "New list" is offered (the index, Home); render it behind `replenishment:manage`.
  */
 export function NewListModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -55,6 +55,8 @@ export function NewListModal({ open, onClose }: { open: boolean; onClose: () => 
     onSuccess: (list) => {
       toast.success('List created');
       void queryClient.invalidateQueries({ queryKey: scope.key('replenishment') });
+      // Home's KPI strip counts open lists (home.md §Flows · Create a list manually).
+      void queryClient.invalidateQueries({ queryKey: scope.key('home') });
       onClose();
       reset();
       navigate(`/replenishment/${list.id}`);

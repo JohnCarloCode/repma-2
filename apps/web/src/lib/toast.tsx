@@ -4,7 +4,8 @@ import { ApiError, NETWORK_ERROR } from './apiClient';
 
 // components.md §Toasts (RF-36): every mutation reports its outcome — success
 // toasts auto-dismiss after ~4s, error toasts persist until dismissed. One
-// stack, top-right, above everything (`{layers.toast}`) — dialogs included. The stack is
+// stack, top-center (clear of the header actions on the right and the mobile menu button on
+// the left), above everything (`{layers.toast}`) — dialogs included. The stack is
 // portalled to <body>: an open Headless UI Dialog marks the app root (#root) inert and
 // aria-hidden, so inside it a toast raised while a modal is open would be neither announced
 // nor dismissable. Headless UI counts other <body> children as part of the page, not as
@@ -114,7 +115,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         <section
           aria-label="Notifications"
           aria-live="polite"
-          className="pointer-events-none fixed top-base right-base z-toast flex w-[min(360px,calc(100vw-32px))] flex-col gap-sm"
+          className="pointer-events-none fixed top-base left-1/2 z-toast flex w-[min(360px,calc(100vw-128px))] -translate-x-1/2 flex-col gap-sm max-tablet:[&>*:not(:last-child)]:hidden"
         >
           {toasts.map((t) => (
             <div

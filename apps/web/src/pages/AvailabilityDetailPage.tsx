@@ -83,11 +83,12 @@ export function AvailabilityDetailPage() {
       if (context?.previous) queryClient.setQueryData(itemKey, context.previous);
       toast.error(error);
     },
-    // Item, history and list (one prefix), plus the store feed — on error too, so a
-    // 409's loser settles on the state the winner recorded.
+    // Item, history and list (one prefix), the store feed and the Home summary — on error
+    // too, so a 409's loser settles on the state the winner recorded.
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: scope.key('availability') });
       void queryClient.invalidateQueries({ queryKey: scope.key('activity') });
+      void queryClient.invalidateQueries({ queryKey: scope.key('home') });
     },
   });
 

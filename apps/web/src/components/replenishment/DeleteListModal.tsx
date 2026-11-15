@@ -33,12 +33,14 @@ export function DeleteListModal({ list, onClose, onDeleted }: DeleteListModalPro
       onClose();
       toast.success('List deleted');
       void queryClient.invalidateQueries({ queryKey: scope.key('replenishment', 'lists') });
+      void queryClient.invalidateQueries({ queryKey: scope.key('home') });
       onDeleted?.();
     },
     onError: (error) => {
       onClose();
       toast.error(error);
       void queryClient.invalidateQueries({ queryKey: scope.key('replenishment') });
+      void queryClient.invalidateQueries({ queryKey: scope.key('home') });
     },
   });
 

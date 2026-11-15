@@ -61,6 +61,8 @@ function useUpdateList(id: string) {
         current ? { ...current, name, notes, status } : current,
       );
       void queryClient.invalidateQueries({ queryKey: scope.key('replenishment', 'lists') });
+      // A status change moves Home's open-lists / pending-items figures.
+      void queryClient.invalidateQueries({ queryKey: scope.key('home') });
       toast.success('List updated');
     },
   });

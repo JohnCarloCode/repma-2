@@ -423,7 +423,7 @@ Pills with soft background + strong text of the same tone. List status: draft = 
 
 ### Alerts & feedback
 - **Alert box**: `alert-soft` background, `alert` text, 4px left border in `alert`.
-- **Toasts**: `surface` card with a 4px left border in the semantic tone; top-right stack (behavior: `shared/components.md` §Toasts).
+- **Toasts**: `surface` card with a 4px left border in the semantic tone; top-center stack (behavior: `shared/components.md` §Toasts).
 - **Empty / loading / error states**: centered in the card, gray text, one action. Loading uses `surface-raised` skeleton blocks, no spinners over data.
 
 ### Forms & modals

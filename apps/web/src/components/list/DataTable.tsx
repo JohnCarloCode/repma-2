@@ -1,5 +1,6 @@
 import { Fragment, type KeyboardEvent, type ReactNode } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
+import { textButtonClass } from '../buttons';
 
 export interface Column<T> {
   /** Header text; also labels the cell when rows stack as cards below 744px. */
@@ -15,7 +16,10 @@ interface DataTableProps<T> {
   columns: Column<T>[];
   rows: T[];
   rowKey: (row: T) => string;
-  /** Where a row leads (detail route); rows without it are not interactive. */
+  /**
+   * Where a row leads (detail route); rows without it are not interactive. An interactive row is
+   * the `group/row` hover group, so a destination chevron inside it can light up on row hover.
+   */
   rowHref?: (row: T) => string;
   /**
    * Group header rows (optional): the group a row belongs to. A full-width header row naming
@@ -24,6 +28,18 @@ interface DataTableProps<T> {
    * group whose rows were all filtered out renders no header.
    */
   group?: (row: T) => { key: string; label: ReactNode };
+  /**
+   * Bounded (unpaginated) use — a capped set instead of a page (Home's blocks): a tertiary
+   * "View all" link to the full screen, bottom-right under the table, in place of `<Pagination>`.
+   * `total` is the set's true size: when it exceeds the rows shown the link states it
+   * ("View all (9)"); leave it out for a feed teaser, whose total bounds no work.
+   */
+  viewAll?: { to: string; total?: number };
+}
+
+/** The bounded variant's "View all" label: the true total only when rows are actually hidden. */
+export function viewAllLabel(shown: number, total?: number): string {
+  return total !== undefined && total > shown ? `View all (${total})` : 'View all';
 }
 
 /**
@@ -33,10 +49,10 @@ interface DataTableProps<T> {
  * navigate. Below 744px each row stacks into a card list (DESIGN §Responsive
  * Behavior), every cell labelled with its column header.
  */
-export function DataTable<T>({ label, columns, rows, rowKey, rowHref, group }: DataTableProps<T>) {
+export function DataTable<T>({ label, columns, rows, rowKey, rowHref, group, viewAll }: DataTableProps<T>) {
   const navigate = useNavigate();
 
-  return (
+  const table = (
     <div className="overflow-hidden rounded-md border border-border bg-surface">
       <table aria-label={label} className="w-full border-collapse max-tablet:block">
         <thead className="max-tablet:hidden">
@@ -76,7 +92,7 @@ export function DataTable<T>({ label, columns, rows, rowKey, rowHref, group }: D
                   onKeyDown={open && ((e: KeyboardEvent) => e.key === 'Enter' && open())}
                   tabIndex={open ? 0 : undefined}
                   className={`border-b border-border last:border-b-0 max-tablet:block max-tablet:py-sm ${
-                    open ? 'cursor-pointer transition-colors hover:bg-surface-hover' : ''
+                    open ? 'group/row cursor-pointer transition-colors hover:bg-surface-hover' : ''
                   }`}
                 >
                   {columns.map((column, index) => (
@@ -94,6 +110,18 @@ export function DataTable<T>({ label, columns, rows, rowKey, rowHref, group }: D
           })}
         </tbody>
       </table>
+    </div>
+  );
+
+  if (!viewAll) return table;
+  return (
+    <div className="flex flex-col gap-[12px]">
+      {table}
+      <div className="flex justify-end">
+        <Link to={viewAll.to} className={textButtonClass}>
+          {viewAllLabel(rows.length, viewAll.total)}
+        </Link>
+      </div>
     </div>
   );
 }

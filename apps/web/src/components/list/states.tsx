@@ -9,7 +9,7 @@ const cardClass = 'rounded-md border border-border bg-surface';
 const centeredClass = `${cardClass} flex flex-col items-center gap-[12px] px-lg py-xxl text-center`;
 
 /** Query pending: static `surface-raised` skeleton rows in the table's geometry (no spinner, nothing loops — DESIGN §Motion). */
-export function LoadingState({ columns }: { columns: number }) {
+export function LoadingState({ columns, rows = 6 }: { columns: number; rows?: number }) {
   const cells = Array.from({ length: columns }, (_, i) => i);
   return (
     <div role="status" aria-label="Loading" className={`${cardClass} overflow-hidden`}>
@@ -18,7 +18,7 @@ export function LoadingState({ columns }: { columns: number }) {
           <div key={i} className="h-[10px] flex-1 rounded-sm bg-surface-raised" />
         ))}
       </div>
-      {Array.from({ length: 6 }, (_, row) => (
+      {Array.from({ length: rows }, (_, row) => (
         <div key={row} className="flex h-[44px] items-center gap-lg border-b border-border px-base last:border-b-0">
           {cells.map((i) => (
             <div key={i} className="h-[14px] flex-1 rounded-sm bg-surface-raised" />

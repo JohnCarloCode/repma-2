@@ -17,14 +17,22 @@ const initial = (name: string) => name.trim().charAt(0).toUpperCase();
 /** Every store the selector offers: `GET /tenants` (one 100-row page), active ones only. */
 export const selectorStoresKey = ['tenants', 'selector'] as const;
 
+/**
+ * The raw source behind the selector — every store, inactive included (global route: never sent
+ * with `X-Tenant-Id`). `/platform/users` reuses it for its store filter and create select.
+ */
+export const selectorStoresQuery = {
+  queryKey: selectorStoresKey,
+  queryFn: () => api.get<Page<Tenant>>('/tenants?pageSize=100'),
+};
+
 function StoreOptions({ close }: { close: () => void }) {
   const active = useActiveStore();
   const select = useSelectStore();
   const [search, setSearch] = useState('');
   const stores = useQuery({
-    queryKey: selectorStoresKey,
-    // Global route: never sent with `X-Tenant-Id`. Inactive stores are listed by the API; the selector hides them.
-    queryFn: () => api.get<Page<Tenant>>('/tenants?pageSize=100'),
+    ...selectorStoresQuery,
+    // Inactive stores are listed by the API; the selector hides them.
     select: (page) => page.items.filter((store) => store.isActive),
   });
   const term = search.trim().toLowerCase();

@@ -19,3 +19,27 @@ export interface Tenant {
   isActive: boolean;
   createdAt: string;
 }
+
+// A store name: trimmed, required, at most 120 characters. The slug is derived
+// from it by the API (RN-10) and is never part of a request body.
+const storeName = z.string().trim().min(1, 'Name is required').max(120);
+
+// RF-07 — `POST /tenants` body: the name only. The slug is generated, the
+// store starts active; strict validation makes any other key a 400.
+export const createTenantBody = z.object({
+  name: storeName,
+});
+
+export type CreateTenantBody = z.output<typeof createTenantBody>;
+
+// RF-08 — `PATCH /tenants/:id` body: rename and/or (de)activate. The slug is
+// read-only (a stable identifier — it is not regenerated on rename). An empty
+// body is a 400.
+export const updateTenantBody = z
+  .object({
+    name: storeName.optional(),
+    isActive: z.boolean().optional(),
+  })
+  .refine((body) => Object.keys(body).length > 0, 'At least one field is required');
+
+export type UpdateTenantBody = z.output<typeof updateTenantBody>;

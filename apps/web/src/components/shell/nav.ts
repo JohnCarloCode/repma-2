@@ -30,8 +30,8 @@ export const NAV: readonly NavSection[] = [
   {
     title: 'Platform',
     items: [
-      { label: 'Stores', to: '/platform/tenants', icon: 'storefront', permission: 'tenant:manage', pending: true }, // 7.5
-      { label: 'Users', to: '/platform/users', icon: 'group', permission: 'user:manage', pending: true }, // 7.6
+      { label: 'Stores', to: '/platform/tenants', icon: 'storefront', permission: 'tenant:manage' },
+      { label: 'Users', to: '/platform/users', icon: 'group', permission: 'user:manage' },
       { label: 'Global catalog', to: '/platform/catalog', icon: 'category', permission: 'catalog:manage', pending: true }, // 8.5
     ],
   },

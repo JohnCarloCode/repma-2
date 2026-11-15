@@ -95,8 +95,8 @@ describe('route guards & redirects', () => {
     async (role) => {
       server.use(authMe(sessionFor(role)));
       renderAt('/no/such/page', <AppRoutes />);
-      // Store roles land on /home (5.3); the admin on /availability until 7.5.
-      await waitFor(() => expect(location()).toHaveTextContent(role === 'platform_admin' ? '/availability' : '/home'));
+      // Store roles land on /home; the admin on /platform/tenants (login.md).
+      await waitFor(() => expect(location()).toHaveTextContent(role === 'platform_admin' ? '/platform/tenants' : '/home'));
     },
   );
 

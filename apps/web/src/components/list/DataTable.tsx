@@ -69,7 +69,7 @@ export function DataTable<T>({
   const navigate = useNavigate();
 
   const table = (
-    <div className="overflow-hidden rounded-md border border-border bg-surface">
+    <div className="overflow-x-auto rounded-md border border-border bg-surface">
       <table aria-label={label} className="w-full border-collapse max-tablet:block">
         <thead className="max-tablet:hidden">
           <tr>

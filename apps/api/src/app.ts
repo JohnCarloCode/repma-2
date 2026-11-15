@@ -16,6 +16,7 @@ import { catalogRouter } from './modules/catalog/router.js';
 import { homeRouter } from './modules/home/router.js';
 import { replenishmentRouter } from './modules/replenishment/router.js';
 import { tenantsRouter } from './modules/tenants/router.js';
+import { usersRouter } from './modules/users/router.js';
 
 // architecture.md §3.3 request pipeline:
 //   helmet → cors(allowlist) → json(100kb) → /api/v1 router → web (RNF-11) → … → errorHandler
@@ -56,6 +57,7 @@ const v1 = express.Router();
 v1.get('/health', rateLimit('read', byIp), createHealthHandler(() => pingDatabase()));
 v1.use('/auth', authRouter);
 v1.use('/tenants', tenantsRouter);
+v1.use('/users', usersRouter);
 v1.use('/availability', availabilityRouter);
 v1.use('/replenishment-lists', replenishmentRouter);
 v1.use('/home', homeRouter);

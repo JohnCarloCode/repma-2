@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { MemoryRouter, useLocation, useNavigate } from 'react-router';
 import type { Page } from 'shared';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -101,6 +102,25 @@ describe('filter band — URL-held state (components.md §Filter band)', () => {
     act(() => vi.advanceTimersByTime(100));
     expect(location()).toBe('/items?search=nike');
     expect(search()).toHaveValue('nike ');
+  });
+
+  it('a late echo of its own commit never clobbers keys typed since', () => {
+    vi.useFakeTimers();
+    // The committed value comes back after a render delay, while the user keeps typing.
+    function SlowEcho() {
+      const [value, setValue] = useState('');
+      return <SearchField label="Search" value={value} onChange={(v) => setTimeout(() => setValue(v), 50)} />;
+    }
+    render(<SlowEcho />);
+
+    fireEvent.change(search(), { target: { value: 'sku-i' } });
+    act(() => vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS)); // commits "sku-i"
+    fireEvent.change(search(), { target: { value: 'sku-i3' } });
+    act(() => vi.advanceTimersByTime(50)); // "sku-i" arrives as the committed value
+    expect(search()).toHaveValue('sku-i3');
+
+    act(() => vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS + 50));
+    expect(search()).toHaveValue('sku-i3');
   });
 
   it('a select change resets to page 1 and keeps the other filters', async () => {

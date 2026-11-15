@@ -12,6 +12,8 @@ import { AvailabilityPage } from './pages/AvailabilityPage';
 import { CatalogPage } from './pages/CatalogPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
+import { PlatformTenantsPage } from './pages/PlatformTenantsPage';
+import { PlatformUsersPage } from './pages/PlatformUsersPage';
 import { ReplenishmentDetailPage } from './pages/ReplenishmentDetailPage';
 import { ReplenishmentPage } from './pages/ReplenishmentPage';
 import { UnauthorizedPage } from './pages/UnauthorizedPage';
@@ -46,6 +48,14 @@ export function AppRoutes() {
         </Route>
         <Route element={<RouteGuard permission="assortment:manage" store />}>
           <Route path="/catalog" element={<CatalogPage />} />
+        </Route>
+
+        {/* Platform zone: global routes, no store needed (layout.md §Route guards). */}
+        <Route element={<RouteGuard permission="tenant:manage" />}>
+          <Route path="/platform/tenants" element={<PlatformTenantsPage />} />
+        </Route>
+        <Route element={<RouteGuard permission="user:manage" />}>
+          <Route path="/platform/users" element={<PlatformUsersPage />} />
         </Route>
       </Route>
 

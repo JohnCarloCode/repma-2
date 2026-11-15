@@ -68,6 +68,12 @@ describe('<DataTable> (components.md §DataTable)', () => {
     expect(cells[0]).toHaveClass('text-left');
   });
 
+  it('a table wider than its card scrolls inside the card instead of clipping the last columns', () => {
+    table();
+    // A long email column at tablet width pushed the row actions past the card's edge (Phase 7 review).
+    expect(screen.getByRole('table', { name: 'Items' }).parentElement).toHaveClass('overflow-x-auto');
+  });
+
   it('navigates to the row destination on click', async () => {
     const user = userEvent.setup();
     table(undefined, (row) => `/items/${row.id}`);

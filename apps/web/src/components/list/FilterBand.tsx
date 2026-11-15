@@ -39,13 +39,23 @@ export function SearchField({ value, onChange, label, placeholder }: SearchField
     commit.current = onChange;
   });
 
+  // What this field last committed: its echo coming back as `value` is not an outside change.
+  const committed = useRef(value);
+
   // Follow the committed value when it changes from outside (Back, "Clear filters"),
-  // without clobbering what is being typed (e.g. a trailing space).
-  useEffect(() => setDraft((current) => (current.trim() === value ? current : value)), [value]);
+  // without clobbering what is being typed (e.g. a trailing space, or keys typed after a commit).
+  useEffect(() => {
+    if (value === committed.current) return;
+    committed.current = value;
+    setDraft((current) => (current.trim() === value ? current : value));
+  }, [value]);
 
   useEffect(() => {
     if (draft.trim() === value) return;
-    const timer = setTimeout(() => commit.current(draft.trim()), SEARCH_DEBOUNCE_MS);
+    const timer = setTimeout(() => {
+      committed.current = draft.trim();
+      commit.current(draft.trim());
+    }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [draft, value]);
 

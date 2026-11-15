@@ -38,7 +38,7 @@ Fields: **Name** (editable) + **Slug** (read-only, muted). Separate from the nam
 | View list | `tenant:manage` | Route guard; page is invisible below this permission |
 | New store | `tenant:manage` | Opens create modal → `POST /tenants` |
 | Edit name | `tenant:manage` | Edit modal → `PATCH /tenants/:id` |
-| Deactivate / Reactivate | `tenant:manage` | Confirm modal → `PATCH /tenants/:id` with `is_active` |
+| Deactivate / Reactivate | `tenant:manage` | Confirm modal → `PATCH /tenants/:id` with `isActive` |
 | Delete | — | **Does not exist** (RN-08: stores are never deleted) |
 
 ## States
@@ -58,11 +58,11 @@ Defaults from ../shared/components.md apply. Page-specific:
 
 ### Edit name
 1. Row action → edit modal prefilled.
-2. Submit → `PATCH /tenants/:id { name }`. Success: close + toast "Store updated" + invalidate list. 409 on slug conflict → same inline error as create (if the API regenerates the slug on rename; otherwise N/A).
+2. Submit → `PATCH /tenants/:id { name }`. Success: close + toast "Store updated" + invalidate list. No 409 exists here: the slug is stable and never regenerated on rename (architecture.md §7, Tenants row). 400 → inline on Name.
 
 ### Deactivate / reactivate
 1. Toggle in edit modal (or row action) → **confirm modal** (max-w 480px). Deactivation copy must state the consequence (RF-05): "Deactivate the store “Downtown Store”? Its users will not be able to operate while it is deactivated." Confirm button is `button-danger` for deactivation, `button-primary` for reactivation ("Reactivate the store “…”?").
-2. Confirm → `PATCH /tenants/:id { is_active: false|true }`.
+2. Confirm → `PATCH /tenants/:id { isActive: false|true }`.
 3. Success: toast "Store deactivated" / "Store reactivated", invalidate list. Error: error toast, state unchanged.
 
 ## Edge cases
@@ -70,4 +70,12 @@ Defaults from ../shared/components.md apply. Page-specific:
 - Deactivating a store does not log out its users immediately; they get 401 on their next request (RF-05, profile check per request). No UI handling needed here beyond the confirm copy.
 - The Platform Admin's tenant selector (sidebar) lists **active** stores only; after deactivating the currently selected store, the selector must drop it and clear the selection (invalidate the selector's source query on any `is_active` change).
 - Search matching an inactive store still returns it — deactivated stores must remain findable and reactivable.
-- Concurrent rename causing 409: identical handling to create.
+
+## As built (7.5)
+- `pages/PlatformTenantsPage.tsx`, route `/platform/tenants` behind `RouteGuard permission="tenant:manage"` — **not** store-scoped, so it works with no store selected. The nav's Platform section ships with "Stores" (by permission). The Platform Admin's role home is now `/platform/tenants` (`ROLE_HOME` in `auth/session.ts` — login redirect, `*` and `/unauthorized` "Go to stores" share it).
+- Query keys: list `['tenants', 'list', { page, search }]`; every write invalidates the `['tenants']` prefix, which also covers the sidebar selector's `['tenants', 'selector']` — new and renamed stores reach it, (de)activated ones join or leave it.
+- Users column omitted (`GET /tenants` returns no count). No row click; the only row action is "Edit" (`icon-button`, label "Edit <name>").
+- Create and edit share one form modal (Name only; edit adds the read-only Slug and, below a hairline, the activation control "Deactivate store" / "Reactivate store"). Client validation uses the shared `createTenantBody`. Inline on Name: 400 `name` detail and 409 (create); anything else is an error toast with the modal left open.
+- The activation control closes the edit modal (unsaved name edits are dropped) and opens the confirm: title and confirm label "Deactivate store" (`button-danger`) / "Reactivate store" (`button-primary`); reactivation copy: "Reactivate the store “…”? Its users will be able to operate again." Success and failure both re-read the tenants queries; failure is an error toast with the API message and the confirm closes.
+- Selected store (sidebar selection): deactivating it clears the selection (`useSelectStore(null)` — store-scoped queries dropped); renaming it re-selects it under the new name so the sidebar shows it.
+

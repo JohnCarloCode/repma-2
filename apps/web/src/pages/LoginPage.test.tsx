@@ -169,7 +169,7 @@ describe('/login redirects', () => {
       await openLogin();
       await signIn(`${role}@repma.test`, 'pw');
 
-      await waitFor(() => expect(location()).toHaveTextContent(role === 'platform_admin' ? '/availability' : '/home'));
+      await waitFor(() => expect(location()).toHaveTextContent(role === 'platform_admin' ? '/platform/tenants' : '/home'));
       expect(body).toEqual({ email: `${role}@repma.test`, password: 'pw' });
       expect(meCalls).toBe(1); // the bootstrap only
     },
@@ -204,7 +204,7 @@ describe('/login redirects', () => {
       server.use(authMe(sessionFor(role)));
       renderAt('/login', <AppRoutes />);
 
-      await waitFor(() => expect(location()).toHaveTextContent(role === 'platform_admin' ? '/availability' : '/home'));
+      await waitFor(() => expect(location()).toHaveTextContent(role === 'platform_admin' ? '/platform/tenants' : '/home'));
       expect(screen.queryByRole('heading', { name: 'Sign in' })).not.toBeInTheDocument();
       expect(screen.queryByLabelText('Email')).not.toBeInTheDocument();
     },

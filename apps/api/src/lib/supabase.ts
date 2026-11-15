@@ -10,3 +10,10 @@ export function createAuthClient() {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   });
 }
+
+// RF-10/RF-11/RF-12 — Supabase Auth's admin API (service-role key): creates,
+// updates and deletes identities for the users module, never data. It keeps no
+// session, so one shared instance is safe.
+export const authAdmin = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+}).auth.admin;

@@ -10,8 +10,8 @@ export const DEMO_PASSWORD = 'repma-demo-2026';
 export type StoreKey = 'downtown' | 'north';
 
 export const STORES: Record<StoreKey, { name: string; slug: string }> = {
-  downtown: { name: 'Downtown Store', slug: 'downtown' },
-  north: { name: 'North Store', slug: 'north' },
+  downtown: { name: 'Downtown Store', slug: 'downtown-store' },
+  north: { name: 'North Store', slug: 'north-store' },
 };
 
 export const USERS: { email: string; fullName: string; role: Role; store: StoreKey | null }[] = [

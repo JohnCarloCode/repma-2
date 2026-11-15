@@ -24,10 +24,10 @@ Public pages (landing, `/login`) do NOT use this shell. `/unauthorized` uses it 
 
 A full-height panel glued to the left edge: `{colors.surface}` with a 1px `{colors.border}` right edge, no radius, no shadow (tokens in `../DESIGN.md` §Application Shell / `{components.sidebar}`). One surface step above the canvas plus the border is all the separation it needs (DESIGN.md §Elevation).
 
-Vertical order: product wordmark → **tenant context block** → nav sections → (pinned at the bottom) **user menu** + collapse toggle. There is no top bar at tablet width and above — and the mobile header carries navigation only — so the tenant context and the user menu live here (see No topbar · Mobile header below).
+Vertical order: product wordmark → **tenant context block** → nav sections → (pinned at the bottom) **user menu**. There is no top bar at tablet width and above — and the mobile header carries navigation only — so the tenant context and the user menu live here (see No topbar · Mobile header below).
 
 - Internal padding 16px; the sidebar is `100vh` tall and never scrolls as a whole.
-- If the nav sections exceed the available height, **only the nav list scrolls**: wordmark, tenant context block and the bottom block (user menu + toggle) stay fixed inside the sidebar.
+- If the nav sections exceed the available height, **only the nav list scrolls**: wordmark row, tenant context block and the user menu stay fixed inside the sidebar.
 - The sidebar stays full height in every state (expanded, collapsed, tablet overlay) — only its width changes.
 
 ### Tenant context block (RF-33)
@@ -36,10 +36,11 @@ Sits directly below the wordmark, above the navigation, visible to every role �
 
 - **manager / employee**: their store name as static text (`{colors.text}`). No selector. Their store is implicit in every API call (no `X-Tenant-Id` header sent).
 - **platform_admin**: the tenant selector (a `{rounded.full}` pill on `{colors.surface-raised}` — DESIGN.md §Shape). Dropdown with search + active stores list + a **"Clear selection"** row that returns to the no-store-selected state below, opening as a floated menu (`{colors.surface-raised}`, 1px `{colors.border-strong}` border — DESIGN.md §Elevation). The selection:
-  - persists in `localStorage` across sessions;
-  - is sent as `X-Tenant-Id` on every tenant-scoped call (availability, replenishment, home summary);
-  - on change, invalidates all tenant-scoped queries (React Query) so no data from the previous store lingers.
-- **platform_admin with no store selected**: the block shows a "Select a store" placeholder, and store routes render a full-content picker state ("Select a store to continue" + selector), never a broken page or a silent 400. Platform routes work regardless of selection.
+  - persists in `localStorage` (`selectedStore`, id + name) across sessions — logout keeps it;
+  - is sent as `X-Tenant-Id` on every tenant-scoped call (availability, replenishment, home summary, activity) — never on global calls such as `GET /tenants`;
+  - on change, drops all tenant-scoped queries (React Query — they are keyed by store id, architecture.md §3.4) so no data from the previous store lingers.
+- The list is `GET /tenants?pageSize=100` filtered to active stores client-side; the search filters that list by name (case-insensitive substring).
+- **platform_admin with no store selected**: the block shows a "Select a store" placeholder, and store routes render a full-content picker state ("Select a store to continue" + the same selector), never a broken page or a silent 400. Platform routes work regardless of selection. A stored store the API rejects (`INVALID_TENANT` — deactivated or deleted, architecture.md §5.2) is cleared, which lands on this same state.
 
 ### Navigation
 
@@ -63,13 +64,13 @@ Sits directly below the wordmark, above the navigation, visible to every role �
 
 ### User menu
 
-Pinned at the bottom of the sidebar, alongside the collapse toggle (menu above, toggle below — the toggle keeps its own row). Shows the user's name and role label ("Platform Admin", "Manager", "Employee"); opening it reveals a single action: "Log out" → `POST /auth/logout` → redirect to `/login`. The open menu floats above the sidebar (`{colors.surface-raised}`, 1px `{colors.border-strong}` border — DESIGN.md §Elevation).
+Pinned at the bottom of the sidebar. Shows the user's name and role label ("Platform Admin", "Manager", "Employee"); opening it reveals a single action: "Log out" → `POST /auth/logout` → redirect to `/login`. On success the client drops every cached query and clears the session, and guard rule 1 performs the redirect — the same single path as an expired session, so the current URL travels as the intended URL. If the request fails the user stays signed in (the cookie was not cleared). The open menu floats above the sidebar (`{colors.surface-raised}`, 1px `{colors.border-strong}` border — DESIGN.md §Elevation).
 
 ### Collapse / expand
 
 The sidebar has two widths: **expanded** (248px, icon + label) and **collapsed** (72px, icon-only rail). Visual tokens in `../DESIGN.md` (§Application Shell); width animates per DESIGN.md §Motion.
 
-- **Toggle**: a chevron icon-button pinned at the bottom of the sidebar (below the user menu), with `aria-expanded` and an accessible label ("Collapse menu" / "Expand menu").
+- **Toggle**: a chevron icon-button **straddling the sidebar's right edge** at the logo tile's height (half over the sidebar, half over the content), in both states — it follows the edge as the width animates; the logo tile keeps its position in both states — drawn as a 32px `{colors.surface-raised}` circle with a 1px `{colors.border-strong}` border (hover `{colors.border-strong}` fill) inside a 44px hit area, so it reads against the sidebar; with `aria-expanded` and an accessible label ("Collapse menu" / "Expand menu").
 - **Collapsed state**: wordmark reduces to the logo mark; each nav item shows its icon only, with the label as a tooltip on hover **and keyboard focus**; the "Platform" section header is replaced by a hairline divider. Hover keeps its fill; the active item keeps its `{colors.accent-soft}` pill around the icon, with the icon in `{colors.accent-bright}` (DESIGN.md §Navigation).
   - **Tenant context block, collapsed**: a compact **circular** tile (44px, `{colors.surface-raised}` fill) showing the store's initial (first letter of the store name), with the full store name as a tooltip (hover + focus). Circular because the tenant block keeps the pill dialect even collapsed (DESIGN.md §Shape — it names the store you are in): a pill with nothing but an initial left in it is a circle. For platform_admin the tile is a button: clicking it opens the same tenant-selector dropdown as a flyout next to the rail (search + store list, unchanged behavior). With no store selected it shows a placeholder glyph and the "Select a store" tooltip.
   - **User menu, collapsed**: a 32px initials avatar button with `{rounded.sm}` corners (it is a menu button, DESIGN.md §Shape, unlike the circular tenant tile above) with the user's name + role as a tooltip (hover + focus); clicking opens the same menu ("Log out") as a flyout.
@@ -104,7 +105,7 @@ Guards are UX only; the API is the authority (RF-32). A 403 from the API on an a
 
 ## Session bootstrap
 
-On app load, one `GET /auth/me` populates the auth context (user, role, store, effective permissions). While it resolves, render a full-page neutral loading state (no shell flash). A 401 clears context and lands on `/login`.
+On app load, one `GET /auth/me` populates the auth context (user, role, store, effective permissions). While it resolves, render a full-page neutral loading state (no shell flash). A 401 clears context and lands on `/login`. Any other failure (network, 5xx — after one automatic retry) renders a full-page error ("Could not load your session" + "Try again", which refetches) instead of the shell or a false redirect to `/login`: no session is not known, only unreachable. After bootstrap, a 401 from **any** API call clears the context the same way (`login.md` §Edge cases, session expires mid-use).
 
 ## Responsive
 
@@ -112,9 +113,9 @@ Breakpoints per DESIGN.md §Responsive Behavior; the sidebar behaves differently
 
 | Width | Sidebar behavior |
 |---|---|
-| < 744px (mobile) | Off-canvas drawer behind the hamburger in the **fixed mobile header** (see No topbar · Mobile header above); the content area starts below the header's height. Drawer: full height, no radius — the same sidebar treatment at every width. Always full labels (never icon-only). Its top row carries an explicit **close button** ("Close navigation", X glyph in `{colors.text}`, 44px hit area) — the drawer also closes on navigation and on outside tap, but the button gives the gesture a visible target. No collapse toggle. The drawer mirrors the expanded sidebar's order: wordmark → tenant context block (static name or selector) → nav → user menu at the bottom. Drawer at `{layers.shell-panel}` over its scrim at `{layers.shell-overlay}` — both **below** the dialog band. |
-| 744–1128px (tablet) | Defaults to the **collapsed** 64px rail, flush. The toggle expands it to 256px **in place, overlaying the content** (with scrim) — the panel grows, the content never reflows; it re-collapses on navigation or outside click. Rail at `{layers.shell}`, expanded panel at `{layers.shell-panel}` over its scrim at `{layers.shell-overlay}`: the panel overlays **page content only**. An open dialog outranks all three — the rail is covered by the dialog's scrim like everything else, never left showing down the left edge. |
-| > 1128px (desktop) | Defaults to **expanded** (256px) inline; the toggle collapses it to the 64px rail and the content area reflows to use the freed width. The user's choice persists (`sidebarCollapsed`). |
+| < 744px (mobile) | Off-canvas drawer behind the hamburger in the **fixed mobile header** (see No topbar · Mobile header above); the content area starts below the header's height. Drawer: full height, no radius — the same sidebar treatment at every width. Always full labels (never icon-only). Its top row carries an explicit **close button** ("Close navigation", X glyph in `{colors.text}`, 44px hit area) — the drawer also closes on navigation, on outside tap and on Escape, but the button gives the gesture a visible target. No collapse toggle. The drawer mirrors the expanded sidebar's order: wordmark → tenant context block (static name or selector) → nav → user menu at the bottom. Drawer at `{layers.shell-panel}` over its scrim at `{layers.shell-overlay}` — both **below** the dialog band. |
+| 744–1279px (tablet) | Defaults to the **collapsed** 72px rail, flush. The toggle expands it to 248px **in place, overlaying the content** (with scrim) — the panel grows, the content never reflows; it re-collapses on navigation or outside click. Rail at `{layers.shell}`, expanded panel at `{layers.shell-panel}` over its scrim at `{layers.shell-overlay}`: the panel overlays **page content only**. An open dialog outranks all three — the rail is covered by the dialog's scrim like everything else, never left showing down the left edge. |
+| ≥ 1280px (desktop) | Defaults to **expanded** (248px) inline; the toggle collapses it to the 72px rail and the content area reflows to use the freed width. The user's choice persists (`sidebarCollapsed`). |
 
 The persisted preference applies only at desktop width; tablet always starts collapsed and mobile always uses the drawer.
 
@@ -123,7 +124,7 @@ The persisted preference applies only at desktop width; tablet always starts col
 The shell's z-index band ends where the dialog band begins (`layers` in `../DESIGN.md`, rules in §Elevation · Layering). Concretely, whenever a modal, confirm or the `<ProductPicker>` is open:
 
 - **Mobile (< 744px)**: the sheet and its scrim cover the fixed mobile header. The hamburger is not visible and not tappable while a dialog is open — closing the dialog is the only way back to it.
-- **Tablet (744–1128px)**: the sheet and its scrim cover the collapsed rail and, if it was expanded, the panel and the panel's own scrim. No strip of sidebar is left showing beside the dialog.
-- **Desktop (> 1128px)**: same rule — the dialog covers the expanded sidebar; it is never inset to "make room" for it.
+- **Tablet (744–1279px)**: the sheet and its scrim cover the collapsed rail and, if it was expanded, the panel and the panel's own scrim. No strip of sidebar is left showing beside the dialog.
+- **Desktop (≥ 1280px)**: same rule — the dialog covers the expanded sidebar; it is never inset to "make room" for it.
 
 This is a consequence of portalling dialogs at the document root, not of tuning numbers per breakpoint: a dialog mounted inside the content area is trapped in the shell's stacking context and will slide under the chrome no matter its z-index (`./components.md` §Modals & confirms).

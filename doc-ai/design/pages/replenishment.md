@@ -31,6 +31,8 @@ One card per list, on `{components.card}` (`{colors.surface}` on the canvas, `{r
 
 The card carries no product imagery: a list has none, and the design system has no decorative surface to spend on one (DESIGN.md §Color — color is rationed, the data is the imagery).
 
+**Structure**: the card is a list item holding the link (`aria-label` = the list name; badge, name, size and progress lines, hairline, provenance and arrow inside it) and, laid over its top-right corner as a **sibling** of the link, the delete button (accessible name "Delete list “X”") — a button nested in a link is invalid HTML and would be announced as part of the link. The badge row reserves the button's width so a long badge never runs under it. Provenance reads on one caption line, "Creator · age", the creator truncating first.
+
 The **destination arrow** does not add an action: the whole card already resolves to `/replenishment/:id`, and the arrow is rendered **inside that same card link** rather than as a sibling button — one tab stop, one accessible name (the list name), no destination announced twice. It makes the exit visible instead of merely discoverable, which on a card matters more than on a table row: a card has no row-shaped affordance to suggest it leads anywhere.
 
 Interaction states carry no lift and no shadow — there are none in the product (DESIGN.md §Elevation). Hovering the card turns its border `{colors.border-strong}`, underlines the list name in `{colors.accent-bright}`, shows a pointer cursor, **and turns the arrow's chevron `{colors.accent-bright}`** — the two accent marks appear together because they belong to the same single link. `:focus-visible` draws the standard `{colors.accent-bright}` focus ring on the card itself. The delete button keeps its own hover and focus, independent of the card's, and hovering it does not light the arrow: they are different targets and must never read as one.
@@ -45,7 +47,13 @@ Standard filter band (`../shared/components.md` §Filter band): standard control
 | Status | "All" / "Draft" / "In progress" / "Done", multi-select | `status` (comma-separated — the endpoint accepts several) |
 | Date | "Any time" / "Today" / "Last 7 days" / "Last 30 days" / "Custom…" | `from` / `to` on `created_at` |
 
-The date control is **one select, not two inputs**: the frequent question is "this week", which should cost one click. "Custom…" reveals two date inputs that write the same `from`/`to` pair, so the URL shape is identical whichever path produced it. Presets are resolved in the browser's timezone at query time (a page left open overnight re-resolves "Today" on its next fetch, it does not pin the old day).
+The date control is **one select, not two inputs**: the frequent question is "this week", which should cost one click. "Custom…" reveals two date inputs ("From" / "To"); either path produces the same `from`/`to` pair on the API request. Presets are resolved in the browser's timezone at query time (a page left open overnight re-resolves "Today" on its next fetch, it does not pin the old day).
+
+**URL state** (page URL, distinct from the API request it produces):
+
+- `status`: the selected statuses comma-separated in canonical order (`draft,processing,done`), e.g. `?status=draft,processing`. "All" — and all three selected, the same set — is the absent param. Unknown values are ignored. The control is a multi-select listbox whose first option "All" is selected exactly when no status is; picking it clears the others.
+- `date`: the select's value — `today` / `7d` / `30d` / `custom`; absent = "Any time". A preset is stored by name, never as resolved days, which is what lets it re-resolve. On the request it becomes `from` = local midnight of its first day (today included: "Last 7 days" = today and the 6 days before) and no `to` (nothing is created in the future).
+- `from` / `to`: calendar days (`yyyy-mm-dd`), read only with `date=custom`, sent as local-day bounds exactly like `/activity`'s range (start of "From", end of "To", inclusive). Inverted days are swapped in the URL when edited, and queried in order when a shared URL carries them backwards. Picking a preset or "Any time" drops them.
 
 ## Actions by permission
 
@@ -68,16 +76,20 @@ Defaults from `../shared/components.md` apply, with the card grid as the geometr
 ## Flows
 
 **Create manually (RF-27)**
-1. "New list" → form modal (max-w 640px): "Name" (required text input), "Notes" (optional textarea).
-2. Submit → `POST /replenishment-lists` with `{ name, notes }`.
+1. "New list" → form modal (max-w 640px) titled "New list": "Name" (required text input), "Notes (optional)" (textarea); submit "Create list", pending "Creating…". Validated client-side with the shared `createReplenishmentListBody`; Cancel discards what was typed.
+2. Submit → `POST /replenishment-lists` with `{ name, notes }` (blank notes → `null`).
 3. Success (201): close modal, toast "List created", invalidate the lists query, navigate to `/replenishment/:id` of the new list so items can be added immediately.
-4. 400: inline field errors, modal stays open. Other errors: error toast.
+4. 400: inline field errors, modal stays open. Other errors: error toast, modal stays open with its values.
+
+The modal is one self-contained component owning its mutation (`components/replenishment/NewListModal.tsx`), so Home's "New list" (`home.md`) mounts the same flow.
 
 **Delete (RF-29)**
-1. Card delete → confirm modal naming the list: "Delete the list “X”? Its items will be deleted too." (cascade per RN-09). Confirm is `button-danger`.
+1. Card delete → confirm modal titled "Delete list" naming the list: "Delete the list “X”? Its items will be deleted too." (cascade per RN-09). Confirm is `button-danger` "Delete list", pending "Deleting…".
 2. `DELETE /replenishment-lists/:id` → 204: toast "List deleted", invalidate lists query.
 3. Empty-page recovery per `../shared/components.md`: if the delete empties the current page and `page > 1`, refetch on `page − 1`.
-4. Error (e.g. 404 already deleted): error toast + invalidate.
+4. Error (e.g. 404 already deleted): the confirm closes, error toast, and the store's replenishment queries are invalidated (lists and any open detail settle on the server's truth).
+
+The confirm is one self-contained component owning its mutation (`components/replenishment/DeleteListModal.tsx`, `list` + optional `onDeleted`), reused by the detail's "Delete list" (`replenishment-detail.md`).
 
 ## Edge cases
 

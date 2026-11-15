@@ -13,6 +13,7 @@ import { pingDatabase } from './db/client.js';
 import { authRouter } from './modules/auth/router.js';
 import { availabilityRouter } from './modules/availability/router.js';
 import { catalogRouter } from './modules/catalog/router.js';
+import { replenishmentRouter } from './modules/replenishment/router.js';
 import { tenantsRouter } from './modules/tenants/router.js';
 
 // architecture.md §3.3 request pipeline:
@@ -55,6 +56,7 @@ v1.get('/health', rateLimit('read', byIp), createHealthHandler(() => pingDatabas
 v1.use('/auth', authRouter);
 v1.use('/tenants', tenantsRouter);
 v1.use('/availability', availabilityRouter);
+v1.use('/replenishment-lists', replenishmentRouter);
 v1.use(catalogRouter); // `/categories` (+ `/products`, plan 6.1)
 
 app.use('/api/v1', v1);

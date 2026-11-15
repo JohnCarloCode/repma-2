@@ -102,6 +102,41 @@ describe('<SizeRun>', () => {
   });
 });
 
+describe('<SizeRun> — selection mode (ProductPicker)', () => {
+  it('renders button tiles that select, with selected and disabled states named as text', async () => {
+    const user = userEvent.setup();
+    const onSelect = vi.fn();
+    renderRun({ onSelect, selectedSizeId: 'size-38', disabledSizeIds: new Set(['size-40']), disabledLabel: 'Already on the list' });
+    const buttons = screen.getAllByRole('button');
+    expect(buttons).toHaveLength(4);
+    expect(screen.queryAllByRole('link')).toHaveLength(0);
+
+    const [t38, t39, t40, t41] = buttons as [HTMLElement, HTMLElement, HTMLElement, HTMLElement];
+    expect(t38).toHaveAttribute('aria-pressed', 'true');
+    expect(t38).toHaveClass('border-2', 'border-accent-bright', 'bg-accent-soft', 'h-[44px]', 'min-w-[44px]');
+    expect(t39).toHaveAttribute('aria-pressed', 'false');
+    expect(t40).toBeDisabled();
+    expect(t40).toHaveAccessibleName(/^40 ?, already on the list$/);
+    expect(t40).toHaveClass('text-text-disabled');
+    expect(t41).toHaveAccessibleName(/^41 ?, inactive$/);
+
+    await user.click(t39);
+    expect(onSelect).toHaveBeenCalledWith(run[1]);
+    await user.click(t40);
+    expect(onSelect).toHaveBeenCalledTimes(1);
+  });
+
+  it('never renders availability state or its age on a selection tile (DP-06/DP-07)', async () => {
+    const user = userEvent.setup();
+    const group = renderRun({ onSelect: () => {}, disabledSizeIds: new Set(['size-40']), disabledLabel: 'Already on the list' });
+    expect(group).toHaveTextContent(/^383940, already on the list41, inactive$/);
+    expect(group.querySelector('.bg-alert, .border-dashed')).toBeNull();
+
+    await user.hover(screen.getByRole('button', { name: /^39/ }));
+    expect(screen.getByRole('tooltip')).toHaveTextContent(/^39 · RUN-39$/);
+  });
+});
+
 describe('<AgingFigure>', () => {
   it.each([
     [2 * H, '2 h', 'font-normal'],

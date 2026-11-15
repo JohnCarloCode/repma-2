@@ -106,6 +106,50 @@ describe('<DataTable> (components.md §DataTable)', () => {
   });
 });
 
+describe('<DataTable> group header rows', () => {
+  const rows = [
+    { id: 'a', name: 'Air Max — 41', product: 'Air Max' },
+    { id: 'b', name: 'Air Max — 42', product: 'Air Max' },
+    { id: 'c', name: 'Samba — 40', product: 'Samba' },
+  ];
+  const renderGrouped = (shown: typeof rows) =>
+    renderWithRouter(
+      <DataTable
+        label="Grouped"
+        columns={[
+          { header: 'Size', cell: (row) => row.name },
+          { header: 'Qty', cell: () => 1, align: 'right' },
+        ]}
+        rows={shown}
+        rowKey={(row) => row.id}
+        group={(row) => ({ key: row.product, label: row.product })}
+      />,
+    );
+
+  it('names each run of rows sharing a group with one full-width header row', () => {
+    renderGrouped(rows);
+    const grid = screen.getByRole('table', { name: 'Grouped' });
+    expect(within(grid).getAllByRole('row').map((tr) => tr.textContent)).toEqual([
+      'SizeQty',
+      'Air Max',
+      'Air Max — 411',
+      'Air Max — 421',
+      'Samba',
+      'Samba — 401',
+    ]);
+    const header = within(grid).getByRole('columnheader', { name: 'Air Max' });
+    expect(header).toHaveAttribute('scope', 'colgroup');
+    expect(header).toHaveAttribute('colspan', '2');
+  });
+
+  it('a group with no rows left renders no header', () => {
+    renderGrouped(rows.filter((row) => row.product !== 'Air Max'));
+    const grid = screen.getByRole('table', { name: 'Grouped' });
+    expect(within(grid).queryByRole('columnheader', { name: 'Air Max' })).toBeNull();
+    expect(within(grid).getByRole('columnheader', { name: 'Samba' })).toBeInTheDocument();
+  });
+});
+
 describe('<Pagination> (components.md §Pagination)', () => {
   const envelope = (page: number, total: number): Page<unknown> => ({ items: [], page, pageSize: 20, total });
 

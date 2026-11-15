@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { primaryButtonClass, secondaryButtonClass } from '../buttons';
 
 // components.md §Async states — one component each, used everywhere. Each
 // replaces the table card (DESIGN §Alerts & feedback: centered in the card,
@@ -32,9 +33,6 @@ export interface StateAction {
   label: string;
   onClick: () => void;
 }
-
-const primaryButtonClass =
-  'h-[44px] rounded-sm bg-accent px-base text-body-medium text-on-accent transition-colors hover:bg-accent-hover active:bg-accent-active';
 
 /**
  * Success with 0 items. The page tells "no data yet" (its primary action, if
@@ -98,6 +96,3 @@ export function ErrorState({
   );
 }
 
-/** `button-secondary` geometry, shared by Retry and a page's own error action. */
-export const secondaryButtonClass =
-  'inline-flex h-[44px] items-center gap-sm rounded-sm border border-border-strong px-base text-body-medium text-text transition-colors hover:bg-surface-hover';

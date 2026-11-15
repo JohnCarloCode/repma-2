@@ -1,11 +1,18 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { ApiError, NETWORK_ERROR } from './apiClient';
 
 // components.md §Toasts (RF-36): every mutation reports its outcome — success
 // toasts auto-dismiss after ~4s, error toasts persist until dismissed. One
-// stack, top-right, above everything (`{layers.toast}`).
+// stack, top-right, above everything (`{layers.toast}`) — dialogs included. The stack is
+// portalled to <body>: an open Headless UI Dialog marks the app root (#root) inert and
+// aria-hidden, so inside it a toast raised while a modal is open would be neither announced
+// nor dismissable. Headless UI counts other <body> children as part of the page, not as
+// "outside" the dialog, so dismissing a toast doesn't close the modal.
 
 export const SUCCESS_DISMISS_MS = 4000;
+/** A success toast carrying an action ("Undo") stays longer, so the action can be reached. */
+export const ACTION_DISMISS_MS = 6000;
 
 const GENERIC_ERROR = 'Something went wrong. Try again.';
 
@@ -26,15 +33,22 @@ export function errorMessage(error: unknown): string {
 
 type Tone = 'success' | 'error';
 
+/** One text button inside a success toast; using it runs `onAction` and dismisses the toast. */
+export interface ToastAction {
+  label: string;
+  onAction: () => void;
+}
+
 interface Toast {
   id: number;
   tone: Tone;
   message: string;
+  action?: ToastAction;
 }
 
 export interface Toaster {
-  /** Auto-dismisses after `SUCCESS_DISMISS_MS`. */
-  success: (message: string) => void;
+  /** Auto-dismisses after `SUCCESS_DISMISS_MS` (`ACTION_DISMISS_MS` with an `action`). */
+  success: (message: string, action?: ToastAction) => void;
   /** Persists until dismissed. Takes the caught error (mapped by `errorMessage`) or a ready message. */
   error: (error: unknown) => void;
 }
@@ -68,10 +82,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const push = useCallback(
-    (tone: Tone, message: string) => {
+    (tone: Tone, message: string, action?: ToastAction) => {
       const id = ++nextId.current;
-      setToasts((current) => [...current, { id, tone, message }]);
-      if (tone === 'success') timers.current.set(id, setTimeout(() => dismiss(id), SUCCESS_DISMISS_MS));
+      setToasts((current) => [...current, { id, tone, message, action }]);
+      if (tone === 'success') {
+        timers.current.set(id, setTimeout(() => dismiss(id), action ? ACTION_DISMISS_MS : SUCCESS_DISMISS_MS));
+      }
     },
     [dismiss],
   );
@@ -83,7 +99,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const toaster = useMemo<Toaster>(
     () => ({
-      success: (message) => push('success', message),
+      success: (message, action) => push('success', message, action),
       error: (error) => push('error', typeof error === 'string' ? error : errorMessage(error)),
     }),
     [push],
@@ -94,37 +110,52 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       {/* Always mounted, so screen readers register the live region before the first toast
           arrives. Success is polite; an error item is role="alert" (assertive). */}
-      <section
-        aria-label="Notifications"
-        aria-live="polite"
-        className="pointer-events-none fixed top-base right-base z-toast flex w-[min(360px,calc(100vw-32px))] flex-col gap-sm"
-      >
-        {toasts.map((t) => (
-          <div
-            key={t.id}
-            role={t.tone === 'error' ? 'alert' : undefined}
-            className={`pointer-events-auto flex items-start gap-[12px] rounded-sm border border-l-4 border-border bg-surface py-[12px] pr-sm pl-base text-text motion-safe:animate-[toast-in_var(--transition-duration-base)_var(--ease-standard)] ${TONE[t.tone].border}`}
-          >
-            <span className={`icon mt-[2px] ${TONE[t.tone].iconColor}`} aria-hidden>
-              {TONE[t.tone].icon}
-            </span>
-            <p className="flex-1 pt-[1px] text-body">{t.message}</p>
-            {/* icon-button: 44px hit area around a 32px visual, pulled into the toast's padding. */}
-            <button
-              type="button"
-              aria-label="Dismiss notification"
-              onClick={() => dismiss(t.id)}
-              className="group -my-[10px] inline-flex size-[44px] shrink-0 items-center justify-center rounded-sm"
+      {createPortal(
+        <section
+          aria-label="Notifications"
+          aria-live="polite"
+          className="pointer-events-none fixed top-base right-base z-toast flex w-[min(360px,calc(100vw-32px))] flex-col gap-sm"
+        >
+          {toasts.map((t) => (
+            <div
+              key={t.id}
+              role={t.tone === 'error' ? 'alert' : undefined}
+              className={`pointer-events-auto flex items-start gap-[12px] rounded-sm border border-l-4 border-border bg-surface py-[12px] pr-sm pl-base text-text motion-safe:animate-[toast-in_var(--transition-duration-base)_var(--ease-standard)] ${TONE[t.tone].border}`}
             >
-              <span className="inline-flex size-[32px] items-center justify-center rounded-sm text-text-secondary transition-colors group-hover:bg-surface-hover group-hover:text-text">
-                <span className="icon" aria-hidden>
-                  close
-                </span>
+              <span className={`icon mt-[2px] ${TONE[t.tone].iconColor}`} aria-hidden>
+                {TONE[t.tone].icon}
               </span>
-            </button>
-          </div>
-        ))}
-      </section>
+              <p className="flex-1 pt-[1px] text-body">{t.message}</p>
+              {t.action && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    dismiss(t.id);
+                    t.action!.onAction();
+                  }}
+                  className="-my-[10px] min-h-[44px] shrink-0 px-xs text-body-medium whitespace-nowrap text-text underline decoration-accent-bright underline-offset-2 transition-colors hover:text-accent-bright"
+                >
+                  {t.action.label}
+                </button>
+              )}
+              {/* icon-button: 44px hit area around a 32px visual, pulled into the toast's padding. */}
+              <button
+                type="button"
+                aria-label="Dismiss notification"
+                onClick={() => dismiss(t.id)}
+                className="group -my-[10px] inline-flex size-[44px] shrink-0 items-center justify-center rounded-sm"
+              >
+                <span className="inline-flex size-[32px] items-center justify-center rounded-sm text-text-secondary transition-colors group-hover:bg-surface-hover group-hover:text-text">
+                  <span className="icon" aria-hidden>
+                    close
+                  </span>
+                </span>
+              </button>
+            </div>
+          ))}
+        </section>,
+        document.body,
+      )}
     </ToastContext.Provider>
   );
 }

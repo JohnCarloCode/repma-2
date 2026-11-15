@@ -20,14 +20,18 @@ interface TooltipProps {
  * name, so the tooltip is not wired as a description (no double announcement).
  */
 export function Tooltip({ content, children, className, placement = 'right' }: TooltipProps) {
-  const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
+  const [position, setPosition] = useState<{ top: number; left: number; inDialog: boolean } | null>(null);
 
   const show = (wrapper: HTMLElement) => {
     const rect = (wrapper.firstElementChild ?? wrapper).getBoundingClientRect();
+    // A trigger inside a dialog (the ProductPicker's size tiles): `{layers.popover}` would sit under
+    // the dialog, so the tooltip takes the dialog's own layer — appended to <body> after the
+    // dialog's portal, it paints above the panel at the same z-index.
+    const inDialog = wrapper.closest('[role="dialog"]') !== null;
     setPosition(
       placement === 'top'
-        ? { top: rect.top - 8, left: rect.left + rect.width / 2 }
-        : { top: rect.top + rect.height / 2, left: rect.right + 8 },
+        ? { top: rect.top - 8, left: rect.left + rect.width / 2, inDialog }
+        : { top: rect.top + rect.height / 2, left: rect.right + 8, inDialog },
     );
   };
   const hide = () => setPosition(null);
@@ -48,7 +52,7 @@ export function Tooltip({ content, children, className, placement = 'right' }: T
           <div
             role="tooltip"
             style={{ top: position.top, left: position.left }}
-            className={`pointer-events-none fixed z-popover ${placement === 'top' ? '-translate-x-1/2 -translate-y-full' : '-translate-y-1/2'} whitespace-nowrap rounded-sm border border-border-strong bg-surface-raised px-sm py-xs text-caption text-text`}
+            className={`pointer-events-none fixed ${position.inDialog ? 'z-dialog' : 'z-popover'} ${placement === 'top' ? '-translate-x-1/2 -translate-y-full' : '-translate-y-1/2'} whitespace-nowrap rounded-sm border border-border-strong bg-surface-raised px-sm py-xs text-caption text-text`}
           >
             {content}
           </div>,

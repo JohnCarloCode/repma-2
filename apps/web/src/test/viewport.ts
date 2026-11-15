@@ -3,17 +3,19 @@ import { act } from '@testing-library/react';
 /**
  * jsdom has no `matchMedia`. This stub answers `(min-width: Npx)` queries
  * against a settable viewport width (default: desktop) and notifies
- * listeners when it changes.
+ * listeners when it changes. Any other query doesn't match — notably
+ * Headless UI's `(pointer: coarse)`: the test "device" is not a touch one,
+ * so dialogs move initial focus as they do on desktop.
  */
 let width = 1440;
 const listeners = new Set<() => void>();
 
 export function installMatchMedia() {
   window.matchMedia = (query: string) => {
-    const min = Number(/min-width:\s*(\d+)px/.exec(query)?.[1] ?? 0);
+    const min = /min-width:\s*(\d+)px/.exec(query)?.[1];
     return {
       get matches() {
-        return width >= min;
+        return min !== undefined && width >= Number(min);
       },
       media: query,
       onchange: null,

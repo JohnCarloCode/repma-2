@@ -17,7 +17,7 @@ Reminder: the app's UI language is English (RNF-19), same as the page docs and t
 
 | Route | Page | Description | Doc |
 |---|---|---|---|
-| `/home` | Home | Store landing: greeting header + figures card, out-of-stock products as size runs with aging, a 7-row table of open replenishment lists (RF-25) | [home.md](home.md) |
+| `/home` | Home | Store landing: greeting header + KPI strip, out-of-stock products as size runs with aging, a 7-row table of open replenishment lists (RF-25) | [home.md](home.md) |
 | `/replenishment` | Replenishment lists | Card grid filtered by name, status and creation date; create manually — never derived from availability (DP-06) — and delete (all store roles) | [replenishment.md](replenishment.md) |
 | `/replenishment/:id` | List detail | Edit name/notes/status, manage items grouped by product (optional category grouping), per-item done checks with progress bar, client-side filters | [replenishment-detail.md](replenishment-detail.md) |
 | `/availability` | Availability | The store's assortment by product, each with its size run and aging (AD-22, DP-07); a tile opens its item detail, where flagging lives (RF-20); add sizes (manager) | [availability.md](availability.md) |
@@ -42,6 +42,6 @@ Reminder: the app's UI language is English (RNF-19), same as the page docs and t
 
 ## Cross-cutting (lives in `../shared/`, not here)
 
-- [layout.md](../shared/layout.md) — shell: flush sidebar spine (no topbar on tablet/desktop; fixed mobile header hosts the drawer trigger), navigation by permission, Platform Admin store selector
+- [layout.md](../shared/layout.md) — shell: full-height sidebar (no topbar on tablet/desktop; fixed mobile header hosts the drawer trigger), navigation by permission, Platform Admin store selector
 - [components.md](../shared/components.md) — shared patterns: paginated table, loading/empty/error states, toasts, badges
 - [product-picker.md](../shared/product-picker.md) — visual product & size selector (images + category navigation), used by every add-product flow

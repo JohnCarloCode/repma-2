@@ -17,6 +17,7 @@ REPMA is a multi-tenant availability & replenishment platform: a Platform Admin 
 | `doc-ai/core/database.md` | You touch the schema, RLS, indexes or the seed |
 | `doc-ai/core/plan/` | You need the phased build plan: `plan.md` is the roadmap/tracker (phases checked off as they close), `journal.md` the session-by-session execution diary, `prompts_plan.md` the prompts that create the plan and execute its phases |
 | `doc-ai/design/DESIGN.md` | You touch UI: design system, tokens, tone |
+| `doc-ai/design/prototype/` | You need to SEE the validated visuals (clickable prototype; reference only — DESIGN.md wins) |
 | `doc-ai/design/shared/` | You touch the app shell (`layout.md`) or shared UI patterns (`components.md`) |
 | `doc-ai/design/pages/README.md` | Page index → open only the `.md` of the page you're touching |
 | `doc-ai/features/README.md` | Feature index → open only the feature you're working on |
@@ -34,9 +35,14 @@ REPMA is a multi-tenant availability & replenishment platform: a Platform Admin 
 
 - Availability only changes via immutable events; no endpoint edits `is_available` directly, and the app never shows a current stock quantity (RN-05).
 - No operation crosses tenants: RLS + isolation tests block the build (RNF-01).
-- Authorization by **permission**, never `role === 'x'` outside the matrix (`packages/shared/permissions.ts`).
+- Authorization by **permission**, never `role === 'x'` outside the matrix (`packages/shared/src/permissions.ts`).
 - The app's UI language is English (product requirement, RNF-19), as are code, docs and comments.
 
 ## Commands
 
-_(pending: will be filled in once the monorepo exists — `dev`, `build`, `test`, `typecheck`, `lint` from the root, RNF-16)_
+From the root (RNF-16):
+
+- `npm run dev` — api + web · `npm run build` · `npm start`
+- `npm run check` — lint + typecheck + test: **the green criterion** (integration tests need `supabase start`)
+- `npm run test` / `typecheck` / `lint` individually
+- DB (local): `supabase start` → `npm run db:migrate -w api` → `npm run db:bootstrap -w api` → `npm run db:seed -w api` (`db:generate -w api` creates a Drizzle migration)

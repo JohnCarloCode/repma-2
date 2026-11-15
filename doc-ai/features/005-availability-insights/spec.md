@@ -15,7 +15,7 @@ The immutable event ledger (AD-04) currently answers only "what is out of stock 
   - `GET /api/v1/insights/time-to-restock`: median and p90 of the `out_of_stock → next restock` interval per period, plus the N currently-open longest gaps. "How fast do we recover."
   - `GET /api/v1/insights/outage-trend`: count of `out_of_stock` events per week over the period. "Are we getting better."
 - All figures are **counts and durations — never stock quantities** (RN-05/RN-06 hold: events carry no quantities at all, so the only things to aggregate are occurrences and intervals).
-- Charts use the palette already reserved in `DESIGN.md`: garnet primary stroke, blue secondary (this feature resolves the "chart palette" Known Gap for exactly these two series; anything needing more hues is out of scope).
+- Charts use the `chart` tokens already defined in `DESIGN.md`: `accent-bright` primary line with `accent-soft` area, `live` secondary series, `border` grid (two series at most; anything needing more hues is out of scope).
 
 ## Out of scope
 

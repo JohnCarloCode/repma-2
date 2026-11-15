@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+  .repma-theme, :root {
+    --color-accent: #8E1B3B;
+    --color-accent-hover: color-mix(in oklab, var(--color-accent) 85%, white);
+    --color-accent-active: color-mix(in oklab, var(--color-accent) 80%, black);
+    --color-accent-bright: color-mix(in oklab, var(--color-accent) 55%, white);
+    --color-accent-soft: color-mix(in oklab, var(--color-accent) 22%, transparent);
+    --on-accent: #FFFFFF;
+    --canvas: #121212; --surface: #1E1E1E; --surface-hover: #252525; --surface-raised: #2C2C2E;
+    --border: #2C2C2E; --border-strong: #3A3A3C;
+    --text: #FFFFFF; --text-secondary: #98989D; --text-disabled: #5A5A5E;
+    --alert: #FF453A; --alert-soft: #3A1C1C; --live: #32D74B; --live-soft: #16301C;
+    --warning: #FFD60A; --warning-soft: #332B0A; --info: #64D2FF; --info-soft: #0E2A36;
+    --mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  }
+</style>
+<style>
+button:disabled { pointer-events: none; }
+.repma-chip > span { transition: background-color 120ms ease-out, color 120ms ease-out; }
+.repma-chip:hover > span { background-color: var(--color-accent-hover) !important; }
+.repma-chip:hover > span > span { color: #FFFFFF !important; }
+@keyframes repmaShimmer { 0% { background-position: 200% 0 } 100% { background-position: -200% 0 } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; } }
+</style>
+</helmet>
+<div style="font-family:'Inter', system-ui, sans-serif; color:var(--text)">
+
+  <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ true }}">
+    <div style="background:var(--surface); border-radius:16px; overflow:hidden">
+      <div style="display:flex; gap:24px; padding:10px 12px; background:var(--surface-raised); border-bottom:1px solid var(--border)">
+        <sc-for list="{{ cols }}" as="col" hint-placeholder-count="5">
+          <div style="height:10px; flex:1; background:var(--surface-raised); border-radius:8px"></div>
+        </sc-for>
+      </div>
+      <sc-for list="{{ skRows }}" as="sk" hint-placeholder-count="6">
+        <div style="display:flex; gap:24px; padding:12px; border-bottom:1px solid var(--border); align-items:center; min-height:40px; box-sizing:border-box">
+          <sc-for list="{{ cols }}" as="col" hint-placeholder-count="5">
+            <div style="height:14px; flex:1; background:linear-gradient(90deg, #2C2C2E 25%, #3A3A3C 37%, #2C2C2E 63%); background-size:200% 100%; border-radius:8px; animation:repmaShimmer 1.5s linear infinite"></div>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isError }}">
+    <div style="background:var(--alert-soft); border-radius:16px; padding:24px; display:flex; gap:16px; align-items:flex-start">
+      <span style="font-family:'Material Symbols Rounded'; font-size:24px; line-height:1; color:var(--alert)">error</span>
+      <div style="flex:1; min-width:0">
+        <div style="font-size:14px; font-weight:500; color:var(--alert)">{{ errTitle }}</div>
+        <div style="font-size:14px; color:var(--text-secondary); margin-top:4px; text-wrap:pretty">{{ errMsg }}</div>
+        <button type="button" onClick="{{ onRetry }}" style="margin-top:16px; height:44px; padding:11px 19px; border-radius:8px; background:var(--surface); color:var(--text); border:1px solid var(--border-strong); font:500 14px 'Inter', system-ui, sans-serif; cursor:pointer; transition:background-color 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out, opacity 120ms ease-out" style-hover="border-color:var(--color-accent-bright); color:var(--color-accent-bright)">{{ errAction }}</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isEmpty }}">
+    <div style="background:var(--surface); border-radius:16px; padding:48px 24px; display:flex; flex-direction:column; align-items:center; gap:12px; text-align:center">
+      <span style="font-family:'Material Symbols Rounded'; font-size:32px; line-height:1; color:var(--text-secondary)">{{ emptyIcon }}</span>
+      <div style="font-size:14px; color:var(--text-secondary); max-width:420px; text-wrap:pretty">{{ emptyTitle }}</div>
+      <sc-if value="{{ hasHint }}">
+        <div style="font-size:12px; color:var(--text-secondary); max-width:420px">{{ emptyHint }}</div>
+      </sc-if>
+      <sc-if value="{{ emptyHasAction }}">
+        <button type="button" onClick="{{ onEmptyAction }}" style="margin-top:4px; height:44px; padding:12px 20px; border-radius:8px; background:var(--color-accent); color:#FFFFFF; border:none; font:500 14px 'Inter', system-ui, sans-serif; cursor:pointer; transition:background-color 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out, opacity 120ms ease-out" style-hover="background:var(--color-accent-hover)">{{ emptyAction }}</button>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isData }}">
+    <div style="background:var(--surface); border:{{ border }}; border-radius:{{ radius }}; overflow:hidden">
+      <div style="overflow-x:auto">
+        <table style="width:100%; border-collapse:collapse; font-size:14px; min-width:520px">
+          <thead>
+            <tr style="background:var(--surface-raised)">
+              <sc-for list="{{ cols }}" as="col" hint-placeholder-count="5">
+                <th style="padding:10px 12px; text-align:{{ col.align }}; font:500 12px 'Inter', system-ui, sans-serif; color:var(--text-secondary); letter-spacing:.02em; border-bottom:1px solid var(--border); white-space:nowrap">{{ col.label }}</th>
+              </sc-for>
+            </tr>
+          </thead>
+          <tbody>
+            <sc-for list="{{ rows }}" as="row" hint-placeholder-count="6">
+              <tr onClick="{{ row.onClick }}" style="background:{{ row.bg }}; cursor:{{ row.cursor }}; opacity:{{ row.opacity }}; transition:background-color 120ms ease-out" style-hover="background:var(--surface-raised)">
+                <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="5">
+                  <td colSpan="{{ cell.colSpan }}" style="padding:8px 12px; text-align:{{ cell.align }}; border-bottom:1px solid var(--border); vertical-align:middle; height:{{ rowH }}; box-sizing:border-box">
+
+                    <sc-if value="{{ cell.isGroup }}">
+                      <span style="font:500 14px 'Inter', system-ui, sans-serif; color:var(--text)">{{ cell.text }}</span>
+                    </sc-if>
+
+                    <sc-if value="{{ cell.isCheck }}">
+                      <label style="display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; margin:-8px -12px; cursor:{{ cell.cursor }}">
+                        <input type="checkbox" checked="{{ cell.checked }}" disabled="{{ cell.disabled }}" onChange="{{ cell.onChange }}" aria-label="{{ cell.label }}" title="{{ cell.title }}" style="width:18px; height:18px; accent-color:var(--live); cursor:{{ cell.cursor }}; opacity:{{ cell.checkOpacity }}" />
+                      </label>
+                    </sc-if>
+
+                    <sc-if value="{{ cell.isText }}">
+                      <span style="font-size:{{ cell.size }}; font-weight:{{ cell.weight }}; color:{{ cell.color }}; font-family:{{ cell.ff }}; font-variant-numeric:tabular-nums; font-family:var(--mono)">{{ cell.text }}</span>
+                      <sc-if value="{{ cell.hasSuffix }}">
+                        <span style="margin-left:6px; font:500 14px 'Inter', system-ui, sans-serif; color:var(--live); font-variant-numeric:tabular-nums; font-family:var(--mono)">{{ cell.suffix }}</span>
+                      </sc-if>
+                      <sc-if value="{{ cell.hasSub }}">
+                        <div style="font-size:12px; color:var(--text-secondary); font-family:{{ cell.subFf }}; font-variant-numeric:tabular-nums; font-family:var(--mono)">{{ cell.sub }}</div>
+                      </sc-if>
+                    </sc-if>
+
+                    <sc-if value="{{ cell.isProd }}">
+                      <div style="display:flex; align-items:center; gap:12px; min-width:0">
+                        <div style="width:32px; height:32px; flex:none; border-radius:8px; background:var(--surface-raised); border:1px solid var(--border); display:flex; align-items:center; justify-content:center">
+                          <span style="font-family:'Material Symbols Rounded'; font-size:16px; line-height:1; color:var(--text-secondary)">image</span>
+                        </div>
+                        <div style="min-width:0">
+                          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap">
+                            <span style="font:500 14px 'Inter', system-ui, sans-serif; color:{{ cell.color }}">{{ cell.text }}</span>
+                            <sc-for list="{{ cell.badges }}" as="b" hint-placeholder-count="0">
+                              <span style="border-radius:9999px; padding:2px 10px; font-size:12px; background:{{ b.bg }}; color:{{ b.fg }}; white-space:nowrap">{{ b.label }}</span>
+                            </sc-for>
+                          </div>
+                          <sc-if value="{{ cell.hasSku }}">
+                            <div style="font-size:12px; color:var(--text-secondary); font-variant-numeric:tabular-nums; font-family:var(--mono)">{{ cell.sku }}</div>
+                          </sc-if>
+                        </div>
+                      </div>
+                    </sc-if>
+
+                    <sc-if value="{{ cell.isBadge }}">
+                      <div style="display:flex; gap:8px; justify-content:{{ cell.justify }}; flex-wrap:wrap">
+                        <sc-for list="{{ cell.badges }}" as="b" hint-placeholder-count="1">
+                          <span style="border-radius:9999px; padding:2px 10px; font-size:12px; background:{{ b.bg }}; color:{{ b.fg }}; white-space:nowrap">{{ b.label }}</span>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+
+                    <sc-if value="{{ cell.isLink }}">
+                      <button type="button" onClick="{{ cell.onClick }}" style="background:none; border:none; border-radius:8px; padding:0; font:500 14px 'Inter', system-ui, sans-serif; color:var(--text); cursor:pointer; transition:background-color 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out, opacity 120ms ease-out; text-decoration:underline; text-decoration-color:var(--color-accent-bright); text-underline-offset:2px" style-hover="color:var(--color-accent-bright)">{{ cell.text }}</button>
+                    </sc-if>
+
+                    <sc-if value="{{ cell.isInput }}">
+                      <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px">
+                        <input type="text" value="{{ cell.value }}" onChange="{{ cell.onChange }}" onBlur="{{ cell.onBlur }}" onKeyDown="{{ cell.onKeyDown }}" aria-label="{{ cell.label }}" style="width:88px; height:44px; padding:12px; box-sizing:border-box; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface); color:var(--text); font:400 14px 'Inter', system-ui, sans-serif; text-align:right; font-variant-numeric:tabular-nums; font-family:var(--mono)" style-focus="border:2px solid var(--color-accent-bright); padding:11px" />
+                        <sc-if value="{{ cell.hasError }}">
+                          <span style="font-size:12px; color:var(--alert)">{{ cell.error }}</span>
+                        </sc-if>
+                      </div>
+                    </sc-if>
+
+                    <sc-if value="{{ cell.isAct }}">
+                      <div style="display:flex; gap:0; justify-content:{{ cell.justify }}">
+                        <sc-for list="{{ cell.actions }}" as="a" hint-placeholder-count="1">
+                          <button class="repma-chip" type="button" onClick="{{ a.onClick }}" title="{{ a.label }}" aria-label="{{ a.label }}" style="width:44px; height:44px; flex:none; display:inline-flex; align-items:center; justify-content:center; background:none; border:none; border-radius:8px; padding:0; cursor:pointer; transition:background-color 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out, opacity 120ms ease-out" style-hover="color:var(--color-accent-bright)">
+                            <span style="width:32px; height:32px; border-radius:8px; background:var(--surface-raised); display:inline-flex; align-items:center; justify-content:center; color:{{ a.color }}">
+                              <span style="font-family:'Material Symbols Rounded'; font-size:18px; line-height:1">{{ a.icon }}</span>
+                            </span>
+                          </button>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+
+                  </td>
+                </sc-for>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+
+      <sc-if value="{{ hasPag }}">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:8px 12px; border-top:1px solid var(--border); background:var(--surface); flex-wrap:wrap">
+          <span style="font-size:12px; color:var(--text-secondary); font-variant-numeric:tabular-nums; font-family:var(--mono)">{{ pagInfo }}</span>
+          <div style="display:flex; align-items:center; gap:8px">
+            <button type="button" onClick="{{ onPrev }}" disabled="{{ prevDisabled }}" style="height:36px; padding:0 12px; display:inline-flex; align-items:center; gap:4px; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface); color:var(--text); font:500 12px 'Inter', system-ui, sans-serif; cursor:pointer; transition:background-color 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out, opacity 120ms ease-out; opacity:{{ prevOpacity }}" style-hover="border-color:var(--color-accent-bright); color:var(--color-accent-bright)">
+              <span style="font-family:'Material Symbols Rounded'; font-size:16px; line-height:1">chevron_left</span>Previous</button>
+            <span style="font-size:12px; color:var(--text-secondary); font-variant-numeric:tabular-nums; font-family:var(--mono); min-width:96px; text-align:center">{{ pagLabel }}</span>
+            <button type="button" onClick="{{ onNext }}" disabled="{{ nextDisabled }}" style="height:36px; padding:0 12px; display:inline-flex; align-items:center; gap:4px; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface); color:var(--text); font:500 12px 'Inter', system-ui, sans-serif; cursor:pointer; transition:background-color 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out, opacity 120ms ease-out; opacity:{{ nextOpacity }}" style-hover="border-color:var(--color-accent-bright); color:var(--color-accent-bright)">Next<span style="font-family:'Material Symbols Rounded'; font-size:16px; line-height:1">chevron_right</span></button>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:900,&quot;height&quot;:420},&quot;cols&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;Array&lt;{label:string;align?:'left'|'right'}&gt;&quot;},&quot;rows&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;Array&lt;{id?:string;onClick?:()=&gt;void;dim?:boolean;cells:any[]}&gt;&quot;},&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;data&quot;,&quot;loading&quot;,&quot;empty&quot;,&quot;error&quot;],&quot;default&quot;:&quot;data&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;empty&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{icon?:string;title?:string;hint?:string;actionLabel?:string;onAction?:()=&gt;void}&quot;},&quot;error&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{title?:string;message?:string;actionLabel?:string;onAction?:()=&gt;void}&quot;},&quot;pagination&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{label?:string;info?:string;prevDisabled?:boolean;nextDisabled?:boolean;onPrev?:()=&gt;void;onNext?:()=&gt;void}&quot;},&quot;flat&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const st = p.state || 'data';
+    const colsIn = p.cols || [];
+    const rowsIn = p.rows || [];
+    const empty = p.empty || {};
+    const err = p.error || {};
+    const pag = p.pagination || null;
+    const flat = !!p.flat;
+
+    const rows = rowsIn.map((r, ri) => ({
+      key: r.id != null ? r.id : 'r' + ri,
+      onClick: r.onClick || null,
+      cursor: r.onClick ? 'pointer' : 'default',
+      opacity: r.dim ? '0.6' : '1',
+      bg: r.group ? 'var(--surface-raised)' : 'var(--surface)',
+      cells: (r.cells || []).map((c, i) => {
+        const col = colsIn[i] || {};
+        const align = c.align || col.align || 'left';
+        return {
+          align: align,
+          colSpan: c.colSpan || 1,
+          isGroup: c.k === 'group',
+          isCheck: c.k === 'check',
+          checked: !!c.checked,
+          disabled: !!c.disabled,
+          checkOpacity: c.disabled ? '0.45' : '1',
+          cursor: c.disabled ? 'not-allowed' : 'pointer',
+          title: c.title || '',
+          justify: align === 'right' ? 'flex-end' : 'flex-start',
+          isText: !c.k || c.k === 'text',
+          isProd: c.k === 'prod',
+          isBadge: c.k === 'badge',
+          isAct: c.k === 'act',
+          isInput: c.k === 'input',
+          isLink: c.k === 'link',
+          text: c.text == null ? '' : String(c.text),
+          sku: c.sku == null ? '' : String(c.sku),
+          hasSku: !!c.sku,
+          sub: c.sub == null ? '' : String(c.sub),
+          hasSub: !!c.sub,
+          /* Restock units: "+N" in {colors.success} beside the event label (activity feed) */
+          suffix: c.suffix == null ? '' : String(c.suffix),
+          hasSuffix: !!c.suffix,
+          subFf: c.subMono ? "'Inter', system-ui, sans-serif" : "inherit",
+          size: c.small ? '12px' : '14px',
+          weight: c.strong ? '500' : '400',
+          color: c.color || (c.muted ? 'var(--text-secondary)' : 'var(--text)'),
+          ff: c.mono ? "'Inter', system-ui, sans-serif" : "inherit",
+          badges: c.badges || [],
+          actions: (c.actions || []).map(a => ({
+            icon: a.icon, label: a.label, onClick: a.onClick,
+            color: a.danger ? 'var(--alert)' : 'var(--text)'
+          })),
+          value: c.value == null ? '' : String(c.value),
+          onChange: c.onChange || null,
+          onBlur: c.onBlur || null,
+          onKeyDown: c.onKeyDown || null,
+          label: c.label || '',
+          error: c.error || '',
+          hasError: !!c.error,
+          onClick: c.onClick || null
+        };
+      })
+    }));
+
+    return {
+      cols: colsIn.map(c => ({ label: c.label || '', align: c.align || 'left' })),
+      rows: rows,
+      skRows: [1, 2, 3, 4, 5, 6],
+      rowH: '40px',
+      isLoading: st === 'loading',
+      isError: st === 'error',
+      isEmpty: st === 'data' && rows.length === 0,
+      isData: st === 'data' && rows.length > 0,
+      border: 'none',
+      radius: flat ? '0px' : '10px',
+      emptyIcon: empty.icon || 'inbox',
+      emptyTitle: empty.title || 'No data.',
+      emptyHint: empty.hint || '',
+      hasHint: !!empty.hint,
+      emptyHasAction: !!(empty.actionLabel && empty.onAction),
+      emptyAction: empty.actionLabel || '',
+      onEmptyAction: empty.onAction || null,
+      errTitle: err.title || 'Data could not be loaded',
+      errMsg: err.message || 'An error occurred while querying the server.',
+      errAction: err.actionLabel || 'Retry',
+      onRetry: err.onAction || null,
+      hasPag: !!(pag && st === 'data' && rows.length > 0),
+      pagLabel: pag ? (pag.label || '') : '',
+      pagInfo: pag ? (pag.info || '') : '',
+      prevDisabled: pag ? !!pag.prevDisabled : true,
+      nextDisabled: pag ? !!pag.nextDisabled : true,
+      prevOpacity: pag && !pag.prevDisabled ? '1' : '0.45',
+      nextOpacity: pag && !pag.nextDisabled ? '1' : '0.45',
+      onPrev: pag ? pag.onPrev : null,
+      onNext: pag ? pag.onNext : null
+    };
+  }
+}
+</script>
+</body>
+</html>

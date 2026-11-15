@@ -1,0 +1,44 @@
+# Manual demo seed against production (RNF-13; database.md §9). Runs on the
+# runner because the image carries no seed script. The seed is re-runnable but
+# WIPES AND REBUILDS the two demo stores' assortment, availability events and
+# replenishment lists, and resets the demo users' passwords — hence the typed
+# confirmation.
+name: Seed
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Resets the demo stores'' data in production. Type "seed" to confirm.'
+        required: true
+        type: string
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  seed:
+    if: inputs.confirm == 'seed'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # parseSeedEnv validates exactly these three (Zod) and refuses to run otherwise.
+      - name: Seed production database
+        run: npm run db:seed -w api
+        env:
+          MIGRATIONS_DATABASE_URL: ${{ secrets.MIGRATIONS_DATABASE_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

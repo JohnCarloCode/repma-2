@@ -6,6 +6,6 @@ One bug = one flat file `NNN-name.md` (copied from `_template.md`). Written once
 
 | ID | Bug | Status | Doc |
 |---|---|---|---|
-| — | _(none yet)_ | — | — |
+| 001 | RLS deny-by-default leaked catalog (reused connection, `''` GUC) and admin profiles without context | fixed | [001](001-rls-deny-by-default-leaks.md) |
 
 Statuses: `open` → `fixed` / `not reproducible`.

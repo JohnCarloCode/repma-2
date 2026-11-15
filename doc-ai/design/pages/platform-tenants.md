@@ -20,7 +20,7 @@ Standard list screen skeleton (../shared/layout.md shell + DESIGN.md §Screen Sk
 | Created | `created_at` | date convention from ../shared/components.md |
 | Users | user count | **Nice-to-have**: render only if the API response includes a count (`GET /tenants` may add it cheaply); omit the column otherwise. Never issue N extra requests for it. |
 
-Row actions (icon-button-ivory): "Edit" (opens edit modal). No delete action exists (RN-08).
+Row actions (`icon-button`): "Edit" (opens edit modal). No delete action exists (RN-08).
 
 ### Filter band
 - Search input (placeholder "Search stores…"), debounced, state in URL (per ../shared/components.md).

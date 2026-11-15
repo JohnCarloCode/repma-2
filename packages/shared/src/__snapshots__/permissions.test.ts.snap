@@ -1,0 +1,49 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`permission matrix (architecture.md §6) > matches the reviewed snapshot 1`] = `
+{
+  "activity:read": [
+    "platform_admin",
+    "manager",
+    "employee",
+  ],
+  "assortment:manage": [
+    "platform_admin",
+    "manager",
+  ],
+  "availability:flag": [
+    "platform_admin",
+    "manager",
+    "employee",
+  ],
+  "availability:read": [
+    "platform_admin",
+    "manager",
+    "employee",
+  ],
+  "catalog:manage": [
+    "platform_admin",
+  ],
+  "catalog:read": [
+    "platform_admin",
+    "manager",
+    "employee",
+  ],
+  "replenishment:manage": [
+    "platform_admin",
+    "manager",
+    "employee",
+  ],
+  "replenishment:read": [
+    "platform_admin",
+    "manager",
+    "employee",
+  ],
+  "tenant:manage": [
+    "platform_admin",
+  ],
+  "user:manage": [
+    "platform_admin",
+  ],
+}
+`;

@@ -61,7 +61,7 @@ Every request's tenant and role flow through a single `AsyncLocalStorage` contex
 | **Manager** | Their store | Manage assortment, flag availability, manage replenishment lists, review activity. |
 | **Employee** | Their store | Flag availability, manage replenishment lists, review activity. Reads the catalog only through in-flow pickers. |
 
-All authorization is **permission-based**, resolved from a single matrix (`packages/shared/permissions.ts`) — code never checks `role === 'x'`.
+All authorization is **permission-based**, resolved from a single matrix (`packages/shared/src/permissions.ts`) — code never checks `role === 'x'`.
 
 ## Invariants
 
@@ -100,5 +100,7 @@ npm install
 npm run check   # lint + typecheck + tests across all workspaces
 npm run dev
 ```
+
+The demo seed (`npm run db:seed -w api`) creates `admin@repma.demo` plus a manager and an employee per store (`manager.downtown@repma.demo`, `employee.north@repma.demo`, …), all with the demo-only password `repma-demo-2026`.
 
 Local development requires Docker (for the Supabase stack), the Supabase CLI, and Node ≥ 22 — see Phase 1's manual setup in `doc-ai/core/plan/plan.md`.

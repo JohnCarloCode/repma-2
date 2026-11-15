@@ -1,0 +1,15 @@
+# Build context = only what the image build needs (sources + manifests).
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+**/coverage
+**/.env
+**/.env.*
+.git
+.github
+.claude
+.mcp.json
+doc-ai
+supabase
+**/.DS_Store
+*.md

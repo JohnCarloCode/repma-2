@@ -3,7 +3,7 @@ import { http, HttpResponse } from 'msw';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { server } from '../test/server';
 import { api, ApiError, NETWORK_ERROR } from './apiClient';
-import { errorMessage, SUCCESS_DISMISS_MS, ToastProvider, useToast, type Toaster } from './toast';
+import { ACTION_DISMISS_MS, errorMessage, SUCCESS_DISMISS_MS, ToastProvider, useToast, type Toaster } from './toast';
 
 const GENERIC = 'Something went wrong. Try again.';
 
@@ -133,6 +133,28 @@ describe('<ToastProvider> (RF-36)', () => {
     const failure = await api.post('/availability/abc/events', { type: 'restocked' }).catch((e: unknown) => e);
     act(() => toaster.error(failure));
     expect(screen.getByRole('alert')).toHaveTextContent('This size is already available');
+  });
+
+  it('success with an action: the button runs it once and dismisses; the toast lasts ~6s', () => {
+    vi.useFakeTimers();
+    const region = renderToasts();
+    const onAction = vi.fn();
+    act(() => {
+      toaster.success('Item removed', { label: 'Undo', onAction });
+      toaster.success('Plain');
+    });
+
+    act(() => vi.advanceTimersByTime(SUCCESS_DISMISS_MS));
+    expect(within(region).queryByText('Plain')).not.toBeInTheDocument();
+    expect(within(region).getByText('Item removed')).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(ACTION_DISMISS_MS - SUCCESS_DISMISS_MS));
+    expect(within(region).queryByText('Item removed')).not.toBeInTheDocument();
+    expect(onAction).not.toHaveBeenCalled();
+
+    act(() => toaster.success('Item removed', { label: 'Undo', onAction }));
+    fireEvent.click(within(region).getByRole('button', { name: 'Undo' }));
+    expect(onAction).toHaveBeenCalledTimes(1);
+    expect(within(region).queryByText('Item removed')).not.toBeInTheDocument();
   });
 
   it('useToast outside the provider fails loudly', () => {

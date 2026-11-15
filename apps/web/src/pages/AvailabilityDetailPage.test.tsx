@@ -232,8 +232,11 @@ describe('/availability/:id — flag flows', () => {
     // A cached list page and feed page, to watch the invalidation reach them.
     const listKey = ['store', STORE_A, 'availability', 'list', { page: 1 }];
     const feedKey = ['store', STORE_A, 'activity', { page: 1 }];
+    // …and Home's summary (home.md §Flows · Open a size from the evidence block).
+    const homeKey = ['store', STORE_A, 'home', 'summary'];
     queryClient.setQueryData(listKey, envelope([]));
     queryClient.setQueryData(feedKey, envelope([]));
+    queryClient.setQueryData(homeKey, { openLists: 0, pendingItems: 0, outOfStock: 0 });
 
     await user.click(await screen.findByRole('button', { name: 'Mark out of stock' }));
 
@@ -253,6 +256,7 @@ describe('/availability/:id — flag flows', () => {
     await waitFor(() => expect(eventRequests.length).toBeGreaterThan(eventReads));
     expect(queryClient.getQueryState(listKey)?.isInvalidated).toBe(true);
     expect(queryClient.getQueryState(feedKey)?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(homeKey)?.isInvalidated).toBe(true);
     expect(within(summary()).getByText('Out of stock')).toBeInTheDocument();
   });
 

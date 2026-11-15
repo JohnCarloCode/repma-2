@@ -1,4 +1,4 @@
-import type { AvailabilityEventType } from 'shared';
+import type { AvailabilityEventType, ReplenishmentStatus } from 'shared';
 
 // components.md §Data conventions — one formatter per convention, shared by
 // every page that renders the same kind of value.
@@ -25,4 +25,10 @@ export const sizeName = (productName: string, sizeLabel: string) =>
 export const EVENT_LABEL: Record<AvailabilityEventType, string> = {
   out_of_stock: 'Out of stock',
   restock: 'Restocked',
+};
+
+export const LIST_STATUS_LABEL: Record<ReplenishmentStatus, string> = {
+  draft: 'Draft',
+  processing: 'In progress',
+  done: 'Done',
 };

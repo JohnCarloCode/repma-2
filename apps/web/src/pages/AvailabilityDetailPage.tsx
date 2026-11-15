@@ -7,7 +7,8 @@ import { ProductThumb } from '../components/availability/ProductThumb';
 import { AgingFigure, OUT_OF_STOCK_MARK, OutOfStockDot } from '../components/availability/SizeRun';
 import { DataTable, type Column } from '../components/list/DataTable';
 import { Pagination } from '../components/list/Pagination';
-import { EmptyState, ErrorState, LoadingState, secondaryButtonClass } from '../components/list/states';
+import { primaryButtonClass, secondaryButtonClass } from '../components/buttons';
+import { EmptyState, ErrorState, LoadingState } from '../components/list/states';
 import { useEmptyPageRecovery, useListParams } from '../components/list/useListParams';
 import { ApiError, api } from '../lib/apiClient';
 import { EVENT_LABEL, formatDate, sizeName } from '../lib/format';
@@ -27,9 +28,6 @@ const FLAG = {
 } as const satisfies Record<AvailabilityEventType, { label: string; icon: string; done: string }>;
 
 const cardClass = 'rounded-md border border-border bg-surface';
-const primaryButtonClass =
-  'inline-flex h-[44px] items-center gap-sm rounded-sm bg-accent px-base text-body-medium text-on-accent transition-colors ' +
-  'hover:bg-accent-hover active:bg-accent-active disabled:pointer-events-none disabled:opacity-45';
 
 /**
  * availability-detail.md — one size of the store's assortment: its state
@@ -85,11 +83,12 @@ export function AvailabilityDetailPage() {
       if (context?.previous) queryClient.setQueryData(itemKey, context.previous);
       toast.error(error);
     },
-    // Item, history and list (one prefix), plus the store feed — on error too, so a
-    // 409's loser settles on the state the winner recorded.
+    // Item, history and list (one prefix), the store feed and the Home summary — on error
+    // too, so a 409's loser settles on the state the winner recorded.
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: scope.key('availability') });
       void queryClient.invalidateQueries({ queryKey: scope.key('activity') });
+      void queryClient.invalidateQueries({ queryKey: scope.key('home') });
     },
   });
 

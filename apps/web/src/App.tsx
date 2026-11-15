@@ -9,7 +9,10 @@ import { ToastProvider } from './lib/toast';
 import { ActivityPage } from './pages/ActivityPage';
 import { AvailabilityDetailPage } from './pages/AvailabilityDetailPage';
 import { AvailabilityPage } from './pages/AvailabilityPage';
+import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
+import { ReplenishmentDetailPage } from './pages/ReplenishmentDetailPage';
+import { ReplenishmentPage } from './pages/ReplenishmentPage';
 import { UnauthorizedPage } from './pages/UnauthorizedPage';
 
 /** layout.md §Route guards rule 4: unknown routes land on the role home. */
@@ -31,7 +34,12 @@ export function AppRoutes() {
         <Route element={<RouteGuard permission="activity:read" store />}>
           <Route path="/activity" element={<ActivityPage />} />
         </Route>
+        <Route element={<RouteGuard permission="replenishment:read" store />}>
+          <Route path="/replenishment" element={<ReplenishmentPage />} />
+          <Route path="/replenishment/:id" element={<ReplenishmentDetailPage />} />
+        </Route>
         <Route element={<RouteGuard permission="availability:read" store />}>
+          <Route path="/home" element={<HomePage />} />
           <Route path="/availability" element={<AvailabilityPage />} />
           <Route path="/availability/:id" element={<AvailabilityDetailPage />} />
         </Route>

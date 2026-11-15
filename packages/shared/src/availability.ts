@@ -1,17 +1,14 @@
 import { z } from 'zod';
 import { AVAILABILITY_EVENT_TYPES, type AvailabilityEventType } from './enums.js';
 import { paginationQuery } from './pagination.js';
-
-// An ISO 8601 timestamp with an explicit offset (`Z` or `±hh:mm`), parsed to
-// a Date. The web sends local-midnight bounds as `toISOString()`.
-const timestamp = z.iso.datetime({ offset: true }).transform((value) => new Date(value));
+import { isoTimestamp } from './params.js';
 
 // RF-23 — `GET /availability/events` query: pagination plus optional
 // `from`/`to` bounds on the event's `created_at`, both inclusive. An inverted
 // range is not an error: it simply matches nothing.
 export const availabilityEventFeedQuery = paginationQuery.extend({
-  from: timestamp.optional(),
-  to: timestamp.optional(),
+  from: isoTimestamp.optional(),
+  to: isoTimestamp.optional(),
 });
 
 export type AvailabilityEventFeedQuery = z.output<typeof availabilityEventFeedQuery>;

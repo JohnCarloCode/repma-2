@@ -31,6 +31,18 @@ interface SizeRunProps {
   href?: (size: AvailabilitySize) => string;
   /** Router state carried by every tile link (e.g. the list's URL state for the detail's back action). */
   linkState?: unknown;
+  /**
+   * Selection mode (the ProductPicker): with it every tile is a button that calls it. Button
+   * tiles never render the out-of-stock mark or its age — availability is not a selection
+   * criterion (product-picker.md §Accessibility, DP-06/DP-07).
+   */
+  onSelect?: (size: AvailabilitySize) => void;
+  /** Selection mode: the chosen size (`run-tile-selected`, `aria-pressed`), by `sizeId`. */
+  selectedSizeId?: string | null;
+  /** Selection mode: sizes that can't be chosen (`run-tile-disabled`), by `sizeId` — e.g. already on the list (RN-04). */
+  disabledSizeIds?: ReadonlySet<string>;
+  /** Selection mode: why a disabled tile is disabled, e.g. "Already on the list" (tooltip + accessible name). */
+  disabledLabel?: string;
 }
 
 /**
@@ -38,15 +50,88 @@ interface SizeRunProps {
  * 8px gap), wrapping, never scrolling. Out-of-stock tiles all wear the same
  * mark — age is never in the tile (DP-07); it lives in the tooltip and in the
  * consumer's line figure. Owns no navigation or mutation: the consumer passes
- * the destination.
+ * the destination (link tiles) or the selection callback (button tiles).
  */
-export function SizeRun({ sizes, label, href, linkState }: SizeRunProps) {
+export function SizeRun({
+  sizes,
+  label,
+  href,
+  linkState,
+  onSelect,
+  selectedSizeId,
+  disabledSizeIds,
+  disabledLabel = 'Unavailable',
+}: SizeRunProps) {
   return (
     <div role="group" aria-label={label} className="flex flex-wrap gap-sm">
-      {sizes.map((size) => (
-        <SizeTile key={size.id} size={size} to={href?.(size)} linkState={linkState} />
-      ))}
+      {sizes.map((size) =>
+        onSelect ? (
+          <SelectTile
+            key={size.id}
+            size={size}
+            selected={size.sizeId === selectedSizeId}
+            disabledLabel={disabledSizeIds?.has(size.sizeId) ? disabledLabel : null}
+            onSelect={onSelect}
+          />
+        ) : (
+          <SizeTile key={size.id} size={size} to={href?.(size)} linkState={linkState} />
+        ),
+      )}
     </div>
+  );
+}
+
+const tileBase =
+  'inline-flex h-[44px] min-w-[44px] items-center justify-center gap-[2px] rounded-sm font-mono text-data transition-colors ';
+
+/**
+ * A selection tile: `run-tile-available` / `-selected` (accent-bright 2px outline on accent-soft,
+ * `aria-pressed`) / `-disabled` (`text-disabled`, not clickable). An inactive size stays
+ * selectable with a muted label — whether it may be chosen is the consumer's call (RN-12/RN-08).
+ */
+function SelectTile({
+  size,
+  selected,
+  disabledLabel,
+  onSelect,
+}: {
+  size: AvailabilitySize;
+  selected: boolean;
+  disabledLabel: string | null;
+  onSelect: (size: AvailabilitySize) => void;
+}) {
+  const className =
+    tileBase +
+    (disabledLabel
+      ? 'cursor-not-allowed bg-surface-raised px-[14px] text-text-disabled'
+      : selected
+        ? 'border-2 border-accent-bright bg-accent-soft px-[12px] text-text'
+        : `bg-surface-raised px-[14px] hover:text-accent-bright ${size.isActive ? 'text-text' : 'text-text-secondary'}`);
+  return (
+    <Tooltip
+      placement="top"
+      className="inline-flex"
+      content={
+        <span className="inline-flex items-center gap-sm">
+          {[size.label, size.sku, disabledLabel].filter(Boolean).join(' · ')}
+          {!size.isActive && <InactiveBadge />}
+        </span>
+      }
+    >
+      <button
+        type="button"
+        className={className}
+        aria-pressed={selected}
+        disabled={disabledLabel !== null}
+        onClick={() => onSelect(size)}
+      >
+        {size.label}
+        <span className="sr-only">
+          {!size.isActive && ', inactive'}
+          {disabledLabel && `, ${disabledLabel.toLowerCase()}`}
+        </span>
+      </button>
+    </Tooltip>
   );
 }
 
@@ -56,7 +141,7 @@ function SizeTile({ size, to, linkState }: { size: AvailabilitySize; to?: string
   const state = out ? `Out of stock${age ? ` ${age.figure}` : ''}` : 'Available';
 
   const className =
-    'inline-flex h-[44px] min-w-[44px] items-center justify-center gap-[2px] rounded-sm font-mono text-data transition-colors ' +
+    tileBase +
     (out ? `${OUT_OF_STOCK_MARK} px-[12px] ` : 'bg-surface-raised px-[14px] ') +
     (size.isActive ? 'text-text' : 'text-text-secondary') +
     (to ? ` hover:text-accent-bright ${out ? 'hover:border-accent-bright' : ''}` : '');

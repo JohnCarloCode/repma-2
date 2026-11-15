@@ -98,6 +98,14 @@ Defaults from `../shared/components.md` apply. Page-specific:
 
 **Metadata edits (RF-28, RF-30)** — name blur / notes blur / status select change → `PATCH /replenishment-lists/:id` with only that field. Success: toast "List updated", invalidate the detail query (and the lists index query so badges/names stay fresh). 400: inline error at the field, value kept for correction. Other errors: error toast + revert to server value.
 
+*As built (4.8):*
+- **Name** — the title is a button inside the `h1` (pencil icon after the text); clicking swaps in a 44px input (focused, text selected). Blur saves; Enter blurs; Escape cancels (back to the server name, no request). The value goes through the shared `updateReplenishmentListBody` schema first: blank → inline "Name is required", **no request**, the field stays open; unchanged after trimming → no request, the field closes. While the `PATCH` is in flight the title already shows the new name, dimmed.
+- **Notes** — the textarea saves on blur through the same schema (trimmed; blank → `null`); unchanged → no request. Read-only rendering is the text, or "No notes." muted.
+- **Status** — a native select beside the badge; both show the picked status while the `PATCH` is in flight, and fall back to the server's on error.
+- **Cache** — success writes the answer's `name`/`notes`/`status` into the detail query (`setQueryData`, items left untouched — they belong to the per-item mutations) and invalidates the index lists; the detail itself is not refetched (the answer *is* the fresh state).
+- 400 `details` on `name`/`notes` map inline (the name field reopens with the value kept); any other error → error toast + revert.
+- **Back arrow** — returns to the index URL the list was opened from: the index's card hands its `location.search` as router state (`listSearch`, the same pattern as `/availability` → `/availability/:id`); a direct visit falls back to `/replenishment`. The 404 card's link and the post-delete navigation (`replace`) use the same target.
+
 **Add item (RF-28)**:
 1. "Add product" → picker → pick size + quantity → confirm → `POST /replenishment-lists/:id/items` `{sizeId, quantity}`.
 2. Success (201): the row appears **inside its product's group** (the table is product-grouped by default, RF-26 — never appended at the bottom) and the tile flips to disabled in the still-open picker — that is the feedback; no toast per add (adding several in a row is the common case).
@@ -117,6 +125,24 @@ Defaults from `../shared/components.md` apply. Page-specific:
 2. Success: row leaves the table, the progress card updates; toast "Item removed" with an **"Undo"** action that re-adds the same size and quantity via `POST` (the done check restarts unchecked — acceptable loss for a just-removed line).
 3. Error (e.g. 404 already removed elsewhere): error toast + invalidate.
 
+*As built (4.9) — items & autosave:*
+- **Table** — `components/replenishment/ListItems.tsx`, a `<DataTable>` with group header rows keyed by product id (labelled with the product name) over `items` in the endpoint's order. Columns: Done (native checkbox in a 44px hit area, accessible name "Done: `<product — size>`"), Product, Size (label + SKU caption), Requested quantity (44px input, 88px wide, right-aligned), and for editors a `close` `icon-button` "Remove `<product — size>`". Done rows mute product, size and quantity text.
+- **Optimistic writes** — every item write is applied to the detail cache at once (any in-flight detail refetch is cancelled first), so the row, the check and the progress card react in the same event.
+- **One in-flight request per item (queue, latest wins)** — an edit made while that item's request is pending is queued rather than blocked: queued PATCH changes merge per field (the latest value of each wins) and go out as one request when the pending one settles; controls are never disabled. A removal replaces whatever is queued and also waits for the in-flight PATCH (so a late PATCH never 404s against its own deletion). Different items never wait for each other.
+- **Settling** — a success writes the server's item into the cache when nothing is queued behind it; the detail and the index lists are refetched once **no item write is in flight** (not per request — a refetch landing mid-burst would overwrite another item's optimistic state).
+- **Errors** — always an error toast. 404 ("Item not found") → the queued writes are dropped and the refetch removes the row. Any other PATCH error → the item reverts to the server's last confirmed answer and queued changes are dropped (a queued removal still goes ahead). A failed DELETE puts the row back at its position.
+- **Quantity** — saved on blur (Enter blurs) only when valid by the shared item schema (whole number 1–9999) and changed. Invalid → inline "Enter a whole number from 1 to 9999." under the input, `aria-invalid`, **the typed value kept** for correction, no request (typing clears the error). Dimmed while the item's write is in flight.
+- **Remove + Undo** — toast "Item removed" with an "Undo" action (action toasts last 6 s); Undo re-`POST`s `{ sizeId, quantity }` with the server's last confirmed quantity, and the answer is inserted back at the row's old position (the refetch then settles the order). The done check is not restored (see Flows). Undo → 404 "List not found" → toast + navigate to the index (with its URL state); Undo → 409 (the size was re-added meanwhile) → toast with the API message, the refetch shows the server's line.
+- **Empty** — "This list has no items" `<EmptyState>` in place of the table; editors get its "Add product" action (4.10).
+
+*As built (4.10) — add product & filters:*
+- **"Add product"** — a `button-secondary` (`add` icon) below the table, and the empty state's action; both editors-only. It opens the `<ProductPicker>` ("Add product", CTA "Add to list" / "Adding…", disabled caption "Already on the list", disabled set = the list's `items[].sizeId`). Confirm → `POST …/items { sizeId, quantity }`.
+- **Not optimistic** — the picker's CTA is already pending while the `POST` is in flight, and the picked product carries no `categoryId` for an optimistic row; the server's answer is inserted at once on success: among its product's rows in the size run's order, or — a product new to the list — before the first product whose name sorts after it. The detail and index lists refetch once no item write is in flight (the same settling as 4.9); the availability queries are not touched. No toast on success.
+- **Errors** — toast with the API message and the picker keeps the selection for a retry: 409 → the refetch brings the other session's line and flips the tile; 400 (not in the assortment, RN-12) → nothing added; 404 "List not found" → toast + back to the index (same as Undo).
+- **Filter band** — hidden while the list is empty. Search "Search by product or SKU…" (accessible name "Search items", 300ms) matches product name or size SKU, case-insensitive; the category select lists only the categories present on the list, by name; "Group by category" is a checkbox in a control-styled box (the band's toggle convention, as "Only out of stock" on `/availability`) rather than the prototype's switch. URL params `search`, `categoryId`, `group=category`; "Clear filters" drops search and category and keeps the grouping (a view choice, not a filter). Filter changes keep the page's router state, so the back arrow's target survives them.
+- **Grouping by category** — category header rows by category name; inside each, rows keep the endpoint's product order (a stable sort). The product name stays in its column, so no product sub-headers.
+- **Progress card** — always counts the whole list, never the filtered rows.
+
 **Filter / group items** — client-side only:
 1. Search, the category filter, and the "Group by category" toggle update the URL and re-render the loaded set; nothing refetches.
 2. The table is always grouped: by product (the default — the endpoint's order, RF-26) or by category (toggle on). Rows keep all their controls (check, quantity, remove) inside groups. A group whose items are all filtered out renders no header row.
@@ -128,7 +154,7 @@ Defaults from `../shared/components.md` apply. Page-specific:
 
 ## Edge cases
 
-- Read-only fallback (a session with `replenishment:read` but without `replenishment:manage` — no current store role, kept for permission evolution): no inputs, no picker, no remove/delete buttons, checks rendered read-only — the same layout via `<RequirePermission>`. The API enforces this regardless (RF-32). The progress card still renders (it is information, not an action).
+- Read-only fallback (a session with `replenishment:read` but without `replenishment:manage` — no current store role, kept for permission evolution): no inputs, no picker, no remove/delete buttons, checks rendered read-only — the same layout via `<RequirePermission>`. The API enforces this regardless (RF-32). The progress card still renders (it is information, not an action). At 100% it keeps the "All items done." text without the "Mark list as done" action.
 - Concurrent edits from two sessions: every mutation is per item, so users editing different lines never conflict; on the same line, last write wins and the post-mutation invalidation settles both clients. A mutation against a line removed elsewhere returns 404 → error toast + invalidate.
 - "Undo" after the list was deleted elsewhere: the `POST` returns 404 → error toast "List not found" + navigate to `/replenishment`.
 - Rapid quantity edits: debounce/enqueue per item so requests do not race each other out of order (one in-flight `PATCH` per item; the latest value wins).

@@ -1,6 +1,6 @@
 # product-picker — Visual product & size selector
 
-> Shared component (`apps/web/src/components/ProductPicker`). Replaces every select/combobox-based product selection. Visual tokens per `../DESIGN.md`; behavior conventions per `components.md`. UI copy is English (RNF-19).
+> Shared component (`apps/web/src/components/ProductPicker.tsx`; replenishment flow built in plan 4.7, the assortment flow joins in 6.3). Replaces every select/combobox-based product selection. Visual tokens per `../DESIGN.md`; behavior conventions per `components.md`. UI copy is English (RNF-19).
 
 ## Purpose
 
@@ -62,3 +62,15 @@ The component receives: the disabled-size set (already-present sizeIds), the ext
 ## Accessibility
 
 Focus trap per `components.md` modals; grid cards and tiles are buttons (keyboard navigable); selected state communicated by text (tile `aria-pressed`), not color alone. The picker never renders the out-of-stock mark or the elapsed figure (DP-07): availability duration is not a selection criterion.
+
+## Implementation contract (replenishment flow, plan 4.7)
+
+`<ProductPicker open onClose title confirmLabel pendingLabel disabledSizeIds disabledLabel onConfirm />`
+
+- `disabledSizeIds: ReadonlySet<string>` — keyed on `sizeId` (the list's `items[].sizeId` against `AvailabilitySize.sizeId`); `disabledLabel` is the caption ("Already on the list"), shown in each disabled tile's tooltip and accessible name and as a visible line under the run ("Already on the list: 38, 40") so the state never rests on color alone.
+- `onConfirm(selection) => Promise` with `selection = { sizeId, quantity, product, size }` (`product`/`size` are the picked `AvailabilityProduct`/`AvailabilitySize`, for a consumer that renders the new row optimistically). **Promise contract**: while it is pending the CTA shows `pendingLabel` and is disabled, "Close" is disabled and the dialog can't be dismissed (components.md §Modals behavior). Resolved → the dialog stays open, the product stays selected, the size selection clears and the quantity returns to 1; the consumer's updated `disabledSizeIds` flips the tile. Rejected → the selection and quantity are kept for a retry; the consumer surfaces the error (toast, 409 included) — the picker swallows the rejection and renders no error of its own.
+- Grid source: `GET /availability?page&pageSize=24&search&categoryId` (no `outOfStock` ever — DP-06), query key `scope.key('availability', 'picker', { page, search, categoryId })` (so invalidating `scope.key('availability')` refreshes it); categories `['categories', { pageSize: 100 }]`. Paging is the shared `<Pagination>` (Previous / Next) inside the grid zone, shown only when there is more than one page; a filter change resets to page 1. Search reuses the filter band's `SearchField` (300ms debounce).
+- Every open is a clean session (search, category, page, selection, quantity reset): the dialog unmounts its body on close.
+- Layout: `<Modal sheetOnMobile>` — full-screen sheet below 744px; from tablet up max-w 960px at a fixed `min(800px, 100dvh − 32px)` height. Inside: search → (category chips / rail 180px) + grid zone (`flex-1`, scrolls internally; 2 columns, 4 from desktop) → selection panel (capped at 45% of the body, scrolls internally) → actions ("Close", CTA). Cards: 96px-high image or initials placeholder, name (2 lines), "N sizes" / "One size", `badge-inactive` for an inactive product.
+- Quantity stepper: −/+ 44px `button-secondary` squares around a `text-input` (`inputMode=numeric`, right-aligned); valid = integer 1–9999 (the API's bounds); invalid → `aria-invalid` + caption "Enter a whole number from 1 to 9999." and the CTA disabled — nothing is sent.
+- **For 6.3 (assortment flow)** the component gains a flow switch rather than a rewrite: grid source `GET /products` (mapped onto the card/run shape, inactive excluded), no quantity field, close after a resolved confirm; the disabled-set/`onConfirm` contract is unchanged.

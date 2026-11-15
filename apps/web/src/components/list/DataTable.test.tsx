@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router';
 import type { Page } from 'shared';
 import { describe, expect, it, vi } from 'vitest';
-import { DataTable, RowAction, type Column } from './DataTable';
+import { DataTable, RowAction, viewAllLabel, type Column } from './DataTable';
 import { PageHeader } from './PageHeader';
 import { Pagination } from './Pagination';
 import { EmptyState, ErrorState, LoadingState } from './states';
@@ -103,6 +103,88 @@ describe('<DataTable> (components.md §DataTable)', () => {
     expect(row).not.toHaveAttribute('tabindex');
     await user.click(row);
     expect(location()).toBe('/items');
+  });
+});
+
+describe('<DataTable> group header rows', () => {
+  const rows = [
+    { id: 'a', name: 'Air Max — 41', product: 'Air Max' },
+    { id: 'b', name: 'Air Max — 42', product: 'Air Max' },
+    { id: 'c', name: 'Samba — 40', product: 'Samba' },
+  ];
+  const renderGrouped = (shown: typeof rows) =>
+    renderWithRouter(
+      <DataTable
+        label="Grouped"
+        columns={[
+          { header: 'Size', cell: (row) => row.name },
+          { header: 'Qty', cell: () => 1, align: 'right' },
+        ]}
+        rows={shown}
+        rowKey={(row) => row.id}
+        group={(row) => ({ key: row.product, label: row.product })}
+      />,
+    );
+
+  it('names each run of rows sharing a group with one full-width header row', () => {
+    renderGrouped(rows);
+    const grid = screen.getByRole('table', { name: 'Grouped' });
+    expect(within(grid).getAllByRole('row').map((tr) => tr.textContent)).toEqual([
+      'SizeQty',
+      'Air Max',
+      'Air Max — 411',
+      'Air Max — 421',
+      'Samba',
+      'Samba — 401',
+    ]);
+    const header = within(grid).getByRole('columnheader', { name: 'Air Max' });
+    expect(header).toHaveAttribute('scope', 'colgroup');
+    expect(header).toHaveAttribute('colspan', '2');
+  });
+
+  it('a group with no rows left renders no header', () => {
+    renderGrouped(rows.filter((row) => row.product !== 'Air Max'));
+    const grid = screen.getByRole('table', { name: 'Grouped' });
+    expect(within(grid).queryByRole('columnheader', { name: 'Air Max' })).toBeNull();
+    expect(within(grid).getByRole('columnheader', { name: 'Samba' })).toBeInTheDocument();
+  });
+});
+
+describe('<DataTable> bounded use (components.md §DataTable · Bounded)', () => {
+  const columns: Column<Item>[] = [{ header: 'Product', cell: (row) => row.name }];
+  const bounded = (viewAll?: { to: string; total?: number }) =>
+    renderWithRouter(
+      <DataTable label="Items" columns={columns} rows={items} rowKey={(row) => row.id} viewAll={viewAll} />,
+    );
+
+  it('states the true total only when the set truncates', () => {
+    expect(viewAllLabel(7, 9)).toBe('View all (9)');
+    expect(viewAllLabel(7, 7)).toBe('View all');
+    expect(viewAllLabel(3, 3)).toBe('View all');
+    expect(viewAllLabel(4)).toBe('View all');
+  });
+
+  it('a truncated work set: "View all (N)" under the table, leading to the full screen', async () => {
+    bounded({ to: '/replenishment', total: 9 });
+    const link = screen.getByRole('link', { name: 'View all (9)' });
+    expect(link).toHaveAttribute('href', '/replenishment');
+    // Under the table, never a pagination row.
+    expect(screen.getByRole('table', { name: 'Items' }).compareDocumentPosition(link)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+    await userEvent.click(link);
+    expect(location()).toBe('/replenishment');
+  });
+
+  it('nothing hidden, or a feed teaser without a total: a countless "View all"', () => {
+    bounded({ to: '/activity', total: items.length });
+    expect(screen.getByRole('link', { name: 'View all' })).toHaveAttribute('href', '/activity');
+  });
+
+  it('a paginated table has no "View all"', () => {
+    bounded();
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 });
 

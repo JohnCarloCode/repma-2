@@ -43,7 +43,15 @@ describe('shell', () => {
     renderAt('/activity', <AppRoutes />);
 
     const nav = await mainNav();
-    expect(within(nav).getAllByRole('link')).toHaveLength(2); // shipped routes only (interim registry)
+    // Shipped routes only (interim registry), in layout.md's order.
+    expect(within(nav).getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual([
+      '/home',
+      '/replenishment',
+      '/availability',
+      '/activity',
+    ]);
+    expect(within(nav).getByRole('link', { name: 'Home' })).not.toHaveAttribute('aria-current');
+    expect(within(nav).getByRole('link', { name: 'Replenishment' })).not.toHaveAttribute('aria-current');
     expect(within(nav).getByRole('link', { name: 'Availability' })).not.toHaveAttribute('aria-current');
     expect(within(nav).getByRole('link', { name: 'Activity' })).toHaveAttribute('aria-current', 'page');
     // No platform item has shipped yet, so its header never renders (no empty section).

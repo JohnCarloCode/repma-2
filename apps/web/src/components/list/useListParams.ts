@@ -1,44 +1,55 @@
-import { useEffect } from 'react';
-import { useSearchParams } from 'react-router';
-import type { Page } from 'shared';
+import { useEffect } from "react";
+import { useLocation, useSearchParams } from "react-router";
+import type { Page } from "shared";
 
 /**
  * components.md §Filter band: a list screen's filter and page state lives in
  * the URL query string (shareable, survives refresh and back navigation).
  * `page` is the page param; every other param is one of the page's named
- * filters. An empty filter and page 1 are absent from the URL.
+ * filters. An empty filter and page 1 are absent from the URL. A URL update keeps
+ * the router state the page was opened with (e.g. a detail's `listSearch` back target).
  */
-export function useListParams<const Name extends string>(filterNames: readonly Name[]) {
-  const [params, setParams] = useSearchParams();
+export function useListParams<const Name extends string>(
+  filterNames: readonly Name[],
+) {
+  const [params, setSearchParams] = useSearchParams();
+  const { state } = useLocation();
+  const setParams = (
+    update: (prev: URLSearchParams) => URLSearchParams,
+    options?: { replace?: boolean },
+  ) => setSearchParams(update, { ...options, state });
 
-  const raw = Number(params.get('page'));
+  const raw = Number(params.get("page"));
   const page = Number.isInteger(raw) && raw > 1 ? raw : 1;
-  const filters = Object.fromEntries(filterNames.map((name) => [name, params.get(name) ?? ''])) as Record<Name, string>;
+  const filters = Object.fromEntries(
+    filterNames.map((name) => [name, params.get(name) ?? ""]),
+  ) as Record<Name, string>;
 
   /** Sets several filters in one URL update; any filter change resets to page 1. */
   const setFilters = (values: Partial<Record<Name, string>>) =>
     setParams((prev) => {
       const next = new URLSearchParams(prev);
       for (const [name, value] of Object.entries(values) as [Name, string][]) {
-        if (value === '') next.delete(name);
+        if (value === "") next.delete(name);
         else next.set(name, value);
       }
-      next.delete('page');
+      next.delete("page");
       return next;
     });
 
   return {
     page,
     filters,
-    hasFilters: filterNames.some((name) => filters[name] !== ''),
-    setFilter: (name: Name, value: string) => setFilters({ [name]: value } as Partial<Record<Name, string>>),
+    hasFilters: filterNames.some((name) => filters[name] !== ""),
+    setFilter: (name: Name, value: string) =>
+      setFilters({ [name]: value } as Partial<Record<Name, string>>),
     /** Several filters at once (e.g. a date range swapped as a whole). */
     setFilters,
     setPage(nextPage: number, options?: { replace?: boolean }) {
       setParams((prev) => {
         const next = new URLSearchParams(prev);
-        if (nextPage > 1) next.set('page', String(nextPage));
-        else next.delete('page');
+        if (nextPage > 1) next.set("page", String(nextPage));
+        else next.delete("page");
         return next;
       }, options);
     },
@@ -47,7 +58,7 @@ export function useListParams<const Name extends string>(filterNames: readonly N
       setParams((prev) => {
         const next = new URLSearchParams(prev);
         for (const name of filterNames) next.delete(name);
-        next.delete('page');
+        next.delete("page");
         return next;
       });
     },
@@ -66,7 +77,10 @@ export function useEmptyPageRecovery(
 ) {
   const target =
     data && data.items.length === 0 && data.page > 1
-      ? Math.max(1, Math.min(data.page - 1, Math.ceil(data.total / data.pageSize)))
+      ? Math.max(
+          1,
+          Math.min(data.page - 1, Math.ceil(data.total / data.pageSize)),
+        )
       : null;
   // Keyed on the target alone: `setPage` is a fresh function every render, and
   // re-firing while the recovered page loads would navigate again.

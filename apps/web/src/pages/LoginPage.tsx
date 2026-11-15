@@ -6,6 +6,7 @@ import { useSession } from '../auth/AuthContext';
 import type { LoginRedirectState } from '../auth/guards';
 import { authMeKey, roleHome } from '../auth/session';
 import { Wordmark } from '../components/Wordmark';
+import { textInputClass } from '../components/form';
 import { api, ApiError } from '../lib/apiClient';
 
 type Field = keyof LoginBody;
@@ -35,11 +36,6 @@ function formErrorOf(error: ApiError): string {
   if (error.status === 429) return 'Too many attempts. Wait a minute and try again.';
   return 'Could not sign in. Try again.';
 }
-
-const inputClass =
-  'h-[44px] w-full rounded-sm border border-border-strong bg-canvas px-[12px] text-body text-text placeholder:text-text-secondary ' +
-  'focus:border-accent-bright focus:outline-3 focus:outline-offset-0 focus:outline-accent-soft ' +
-  'aria-invalid:border-alert';
 
 /**
  * design/pages/login.md. A signed-in visitor (or a sign-in that just
@@ -117,7 +113,7 @@ export function LoginPage() {
         onBlur={revalidate(name)}
         aria-invalid={fieldErrors[name] ? true : undefined}
         aria-describedby={fieldErrors[name] ? `login-${name}-error` : undefined}
-        className={inputClass}
+        className={textInputClass}
         {...props}
       />
       {fieldErrors[name] && (

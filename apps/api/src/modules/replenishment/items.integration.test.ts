@@ -143,9 +143,18 @@ const itemShape = (key: keyof typeof sizes, quantity: number, isDone: boolean) =
     sku: size.sku,
     quantity,
     isDone,
-    product: { id: owner.id, name: owner.name, categoryId: category.id, categoryName: category.name },
+    product: {
+      id: owner.id,
+      name: owner.name,
+      imageUrl: owner.id === product.id ? imageUrl : null,
+      categoryId: category.id,
+      categoryName: category.name,
+    },
   };
 };
+
+// The active product carries an image, which every item shape embeds; the retired one has none.
+const imageUrl = 'https://example.test/repl-i.webp';
 
 describe('replenishment list items (RF-28, RF-40)', () => {
   beforeAll(async () => {
@@ -155,7 +164,7 @@ describe('replenishment list items (RF-28, RF-40)', () => {
         (${storeB}, 'Repl-i B', ${`repl-i-b-${storeB}`})
     `;
     await admin`insert into categories (id, name, slug) values (${category.id}, ${category.name}, ${`repli-${category.id}`})`;
-    await admin`insert into products (id, name, category_id) values (${product.id}, ${product.name}, ${category.id})`;
+    await admin`insert into products (id, name, category_id, image_url) values (${product.id}, ${product.name}, ${category.id}, ${imageUrl})`;
     await admin`
       insert into products (id, name, category_id, is_active)
       values (${retired.id}, ${retired.name}, ${category.id}, false)

@@ -29,6 +29,15 @@ catalogRouter.post(
   controller.createCategory,
 );
 
+// RF-45 — the display order of every category, in one request.
+catalogRouter.put(
+  '/categories/order',
+  authenticate,
+  rateLimit('write', byUser),
+  authorize('catalog:manage'),
+  controller.reorderCategories,
+);
+
 catalogRouter.patch(
   '/categories/:id',
   authenticate,

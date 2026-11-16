@@ -149,23 +149,26 @@ interface RowActionProps {
   /** Accessible name (the button shows only its icon). */
   label: string;
   onClick: () => void;
+  /** Dimmed and inert (e.g. "Move up" on the first row). */
+  disabled?: boolean;
 }
 
 /**
  * A row action (`icon-button`: 32px `surface-raised` square, 44px hit area).
  * Clicks and keys stop here, so acting on a row never also opens it.
  */
-export function RowAction({ icon, label, onClick }: RowActionProps) {
+export function RowAction({ icon, label, onClick, disabled = false }: RowActionProps) {
   return (
     <button
       type="button"
       aria-label={label}
+      disabled={disabled}
       onClick={(e) => {
         e.stopPropagation();
         onClick();
       }}
       onKeyDown={(e) => e.stopPropagation()}
-      className="group inline-flex size-[44px] items-center justify-center rounded-sm align-middle"
+      className="group inline-flex size-[44px] items-center justify-center rounded-sm align-middle disabled:opacity-45"
     >
       <span
         className="inline-flex size-[32px] items-center justify-center rounded-sm bg-surface-raised text-text transition-colors group-hover:bg-surface-hover">

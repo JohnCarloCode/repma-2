@@ -32,11 +32,13 @@ interface Fixture {
   id: string;
   token: string;
 }
-const users: Record<'admin' | 'editor' | 'manager' | 'employee', Fixture> = {
+const users: Record<'admin' | 'editor' | 'orderer' | 'manager' | 'employee', Fixture> = {
   admin: { role: 'platform_admin', tenantId: null, id: '', token: '' },
   // The write limiter is real (30/min per user): PATCH calls go out as a
   // second Platform Admin so POST and PATCH suites never share a bucket.
   editor: { role: 'platform_admin', tenantId: null, id: '', token: '' },
+  // PUT /categories/order goes out as a third one, for the same reason.
+  orderer: { role: 'platform_admin', tenantId: null, id: '', token: '' },
   manager: { role: 'manager', tenantId: store.id, id: '', token: '' },
   employee: { role: 'employee', tenantId: store.id, id: '', token: '' },
 };
@@ -56,6 +58,30 @@ async function create(body: object, user: Fixture = users.admin) {
 
 function patch(id: string, body: object, user: Fixture = users.editor) {
   return auth(request(app).patch(`/api/v1/categories/${id}`), user).send(body);
+}
+
+function reorder(body: object, user: Fixture = users.orderer) {
+  return auth(request(app).put('/api/v1/categories/order'), user).send(body);
+}
+
+/** Every stored category id, in display order (RF-45) — the whole set, as the endpoint requires. */
+async function storedOrder(): Promise<string[]> {
+  const rows = await admin<{ id: string }[]>`select id from categories order by position, name, id`;
+  return rows.map((row) => row.id);
+}
+
+/**
+ * Sends the current order with `move` placed right before `before`. Categories are global and other
+ * suites create theirs concurrently, so a 409 for a set that changed meanwhile is retried on a fresh read.
+ * Everything else keeps its relative order, so other suites' assertions are unaffected.
+ */
+async function moveBefore(move: string, before: string) {
+  for (let attempt = 0; ; attempt++) {
+    const ids = (await storedOrder()).filter((id) => id !== move);
+    ids.splice(ids.indexOf(before), 0, move);
+    const res = await reorder({ ids });
+    if (res.status !== 409 || attempt === 4) return { res, ids };
+  }
 }
 
 describe('categories writes (RF-14)', () => {
@@ -245,6 +271,57 @@ describe('categories writes (RF-14)', () => {
         name: `${token} X`,
       });
       expect(res.status).toBe(400);
+    });
+  });
+
+  describe('PUT /categories/order (RF-45)', () => {
+    it('204: the categories come back from GET /categories in the new order', async () => {
+      const first = (await create({ name: `${token} Order A` })).body;
+      const second = (await create({ name: `${token} Order B` })).body;
+      // A new category goes last.
+      const order = await storedOrder();
+      expect(order.indexOf(second.id)).toBeGreaterThan(order.indexOf(first.id));
+
+      const { res, ids } = await moveBefore(second.id, first.id);
+      expect(res.status).toBe(204);
+      expect(res.headers['ratelimit-limit']).toBe('30');
+      const positions = await admin<{ id: string; position: number }[]>`
+        select id, position from categories where id in ${admin([first.id, second.id])}
+      `;
+      const position = (id: string) => positions.find((p) => p.id === id)!.position;
+      expect(position(second.id)).toBe(ids.indexOf(second.id));
+      expect(position(first.id)).toBe(position(second.id) + 1);
+
+      const list = await auth(request(app).get('/api/v1/categories').query({ pageSize: 100 }), users.manager);
+      const listed = list.body.items.map((c: { id: string }) => c.id);
+      expect(listed.indexOf(second.id)).toBeLessThan(listed.indexOf(first.id));
+    });
+
+    it('a set that is not exactly the stored categories → 409, nothing changes', async () => {
+      const before = await storedOrder();
+      for (const ids of [before.slice(1), [...before.slice(1), randomUUID()]]) {
+        const res = await reorder({ ids: [...ids].reverse() });
+        expect(res.status).toBe(409);
+        expect(res.body.error.code).toBe('CONFLICT');
+      }
+      expect(await storedOrder()).toEqual(expect.arrayContaining(before));
+    });
+
+    it.each([
+      ['an empty list', { ids: [] }],
+      ['a repeated id', { ids: [randomUUID(), randomUUID()].flatMap((id) => [id, id]) }],
+      ['a malformed id', { ids: ['nope'] }],
+      ['an unknown key', { ids: [randomUUID()], extra: 1 }],
+    ])('rejects %s → 400 VALIDATION_ERROR', async (_label, body) => {
+      const res = await reorder(body);
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    });
+
+    it.each(['manager', 'employee'] as const)('%s (no catalog:manage) → 403', async (role) => {
+      const res = await reorder({ ids: await storedOrder() }, users[role]);
+      expect(res.status).toBe(403);
+      expect(res.body).toEqual(FORBIDDEN);
     });
   });
 });

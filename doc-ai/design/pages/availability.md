@@ -32,7 +32,7 @@ Each line has three zones, left to right:
 
 | Zone | Content | Notes |
 |---|---|---|
-| Product | Thumb (product image, 32px; without one, a `surface-raised` placeholder with the name's initials, as in the prototype) + product name (`body-medium`) + category (muted caption) | Clicking the product identity does nothing on its own — the tiles are the interactive surface |
+| Product | Thumb (product image, 32px; without one, a `surface-raised` placeholder with the name's initials) + product name (`body-medium`) + category (muted caption) | Clicking the product identity does nothing on its own — the tiles are the interactive surface |
 | Size run | `<SizeRun>` (`../shared/components.md`, DESIGN.md §Size run): one **tile** per size the store carries, in `position` order — `{rounded.sm}` corners, like every button in the product (§Shape). Available tiles plain; every out-of-stock tile carries the same mark — dashed outline + red dot, no fill — whatever its age (DP-07). Tiles are **44×44px, visual size = hit area** — this page is worked on a tablet on the shop floor, so the run is sized for a fingertip and the product line is taller than a table row by design | Size SKU is not shown here (it lives on `/availability/:id` and in search) — a run of SKUs would be unreadable |
 | Aging | The oldest out-of-stock elapsed figure in that run ("6 d"), right-aligned, tabular-nums, weight-graded per DP-07 — the only place age is visible on this line | "—" when nothing in the run is out of stock. The list arrives sorted by this figure descending — the endpoint's default order (RF-18): the most neglected product first, fully available products after, by name |
 

@@ -123,6 +123,7 @@ async function selectItems(tx: Tx, where: SQL): Promise<ReplenishmentListItem[]>
       isDone: replenishmentListItems.isDone,
       productId: products.id,
       productName: products.name,
+      productImageUrl: products.imageUrl,
       categoryId: categories.id,
       categoryName: categories.name,
     })
@@ -132,9 +133,9 @@ async function selectItems(tx: Tx, where: SQL): Promise<ReplenishmentListItem[]>
     .innerJoin(categories, eq(categories.id, products.categoryId))
     .where(where)
     .orderBy(asc(products.name), asc(products.id), asc(productSizes.position), asc(productSizes.label));
-  return rows.map(({ productId, productName, categoryId, categoryName, ...item }) => ({
+  return rows.map(({ productId, productName, productImageUrl, categoryId, categoryName, ...item }) => ({
     ...item,
-    product: { id: productId, name: productName, categoryId, categoryName },
+    product: { id: productId, name: productName, imageUrl: productImageUrl, categoryId, categoryName },
   }));
 }
 

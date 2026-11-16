@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { paginationQuery } from './pagination.js';
 
-// RF-13 — `GET /categories` query: pagination only, ordered by name. Its
+// RF-13 — `GET /categories` query: pagination only, in the admin's order
+// (`position`, RF-45; then name). Its
 // consumers (the `/availability` category filter, the ProductPicker rail)
 // read the whole list in one page (`pageSize=100`).
 export const categoryListQuery = paginationQuery;
@@ -50,6 +51,19 @@ export const updateCategoryBody = z
   .refine((body) => Object.keys(body).length > 0, 'At least one field is required');
 
 export type UpdateCategoryBody = z.output<typeof updateCategoryBody>;
+
+// RF-45 — `PUT /categories/order` body: every category id, once each, in the
+// new display order. The API answers 409 when the set is not exactly the
+// stored categories (one was added meanwhile).
+export const reorderCategoriesBody = z.object({
+  ids: z
+    .array(z.uuid())
+    .min(1)
+    .max(100)
+    .refine((ids) => new Set(ids).size === ids.length, 'Each category must appear once'),
+});
+
+export type ReorderCategoriesBody = z.output<typeof reorderCategoriesBody>;
 
 // RF-38 / AD-21 — size presets for UI prefill (the sizes editor in the
 // platform catalog's product modal); key order is button order

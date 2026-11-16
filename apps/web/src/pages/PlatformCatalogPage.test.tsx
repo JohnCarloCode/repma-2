@@ -142,12 +142,13 @@ describe('/platform/catalog categories table', () => {
     renderCatalog();
     await table();
 
-    expect(within(rowOf('Footwear')).getAllByRole('cell').slice(0, 3).map((c) => c.textContent)).toEqual([
+    // Cell 0 holds the order buttons (RF-45).
+    expect(within(rowOf('Footwear')).getAllByRole('cell').slice(1, 4).map((c) => c.textContent)).toEqual([
       'Footwear',
       'footwear',
       'Shoes and trainers',
     ]);
-    expect(within(rowOf('Outerwear')).getAllByRole('cell')[2]).toHaveTextContent('—');
+    expect(within(rowOf('Outerwear')).getAllByRole('cell')[3]).toHaveTextContent('—');
 
     const request = listRequests[0]!;
     expect(new URL(request.url).searchParams.get('pageSize')).toBe('100');
@@ -170,6 +171,58 @@ describe('/platform/catalog categories table', () => {
     renderCatalog();
     expect(await screen.findByText('Data could not be loaded')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
+  });
+});
+
+describe('/platform/catalog category order (RF-45)', () => {
+  const kits = category('c-kits', 'Kits');
+  const three = [footwear, outerwear, kits];
+  const names = () => within(screen.getByRole('table', { name: 'Categories' })).getAllByRole('row').slice(1).map((r) => (r as HTMLTableRowElement).cells[1]!.textContent);
+
+  /** `PUT /categories/order`, recording each body; the list answers with the last saved order. */
+  function orderApi(respond: () => Response | Promise<Response> = () => new HttpResponse(null, { status: 204 })) {
+    const puts: string[][] = [];
+    let current = three;
+    categoriesApi({ respondList: () => HttpResponse.json(envelope(current)) });
+    server.use(
+      http.put('*/api/v1/categories/order', async ({ request }) => {
+        const { ids } = (await request.json()) as { ids: string[] };
+        puts.push(ids);
+        const res = await respond();
+        if (res.status === 204) current = ids.map((id) => three.find((c) => c.id === id)!);
+        return res;
+      }),
+    );
+    return puts;
+  }
+
+  it('the first row cannot move up, the last cannot move down', async () => {
+    orderApi();
+    renderCatalog();
+    await table();
+    expect(screen.getByRole('button', { name: 'Move Footwear up' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Move Footwear down' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Move Kits down' })).toBeDisabled();
+  });
+
+  it('moving a category sends the whole new order and the table follows', async () => {
+    const puts = orderApi();
+    renderCatalog();
+    await table();
+    await userEvent.click(screen.getByRole('button', { name: 'Move Kits up' }));
+
+    await waitFor(() => expect(puts).toEqual([['c-footwear', 'c-kits', 'c-outerwear']]));
+    await waitFor(() => expect(names()).toEqual(['Footwear', 'Kits', 'Outerwear']));
+  });
+
+  it('a failed save restores the previous order and toasts the API message', async () => {
+    orderApi(() => apiError(409, 'CONFLICT', 'The categories changed since you loaded them; reload and try again'));
+    renderCatalog();
+    await table();
+    await userEvent.click(screen.getByRole('button', { name: 'Move Footwear down' }));
+
+    expect(await screen.findByText('The categories changed since you loaded them; reload and try again')).toBeInTheDocument();
+    await waitFor(() => expect(names()).toEqual(['Footwear', 'Outerwear', 'Kits']));
   });
 });
 

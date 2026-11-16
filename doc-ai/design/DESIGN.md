@@ -324,8 +324,6 @@ REPMA is an internal B2B multi-tenant availability & replenishment tool: stores 
 - **Dense but breathable**: 8px spacing grid, 44px touch targets on the shop-floor components (size run, icon buttons).
 - UI copy ships in English (RNF-19).
 
-**Visual reference**: `prototype/` holds the clickable prototype these rules were validated against (serve the folder, e.g. `python3 -m http.server`, and open `Prototype.dc.html`; it has a panel to switch theme, role, screen and data state). It is a reference, not code to copy. Where it disagrees with this document, **this document wins** — known case: its replenishment cards carry a filled "Open list" button each; the spec keeps one primary per screen and the chevron `icon-button` inside the card link (`pages/replenishment.md`).
-
 ## Colors
 
 ### Brand accent — configurable

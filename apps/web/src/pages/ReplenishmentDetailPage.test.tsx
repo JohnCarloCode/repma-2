@@ -44,6 +44,7 @@ const item = (
   product: {
     id: "p1",
     name: "Air Max",
+    imageUrl: null,
     categoryId: "c1",
     categoryName: "Footwear",
   },
@@ -645,6 +646,7 @@ describe("/replenishment/:id — items table (RF-26/RF-28)", () => {
     const samba = {
       id: "p2",
       name: "Samba",
+      imageUrl: "https://example.test/samba.webp",
       categoryId: "c1",
       categoryName: "Footwear",
     };
@@ -657,6 +659,8 @@ describe("/replenishment/:id — items table (RF-26/RF-28)", () => {
       ],
     });
     renderPage();
+    // Each line shows its product's thumb; one with an image opens the preview.
+    expect(await screen.findByRole("button", { name: "Enlarge image of Samba" })).toBeInTheDocument();
     await title();
 
     expect(
@@ -666,8 +670,8 @@ describe("/replenishment/:id — items table (RF-26/RF-28)", () => {
     ).toEqual([
       "DoneProductSizeRequested quantity",
       "Air Max",
-      "Air Max41SKU-i1close",
-      "Air Max42SKU-i2close",
+      "AMAir Max41SKU-i1close", // AM: the thumb's initials placeholder (no image)
+      "AMAir Max42SKU-i2close",
       "Samba",
       "SambaOne sizeSKU-i5close",
     ]);
@@ -1088,12 +1092,14 @@ describe("/replenishment/:id — remove + Undo", () => {
 const samba = {
   id: "p5",
   name: "Samba",
+  imageUrl: "https://example.test/samba.webp",
   categoryId: "c2",
   categoryName: "Lifestyle",
 };
 const boost = {
   id: "p7",
   name: "Boost",
+  imageUrl: null,
   categoryId: "c3",
   categoryName: "Accessories",
 };

@@ -41,6 +41,18 @@ describe('apiClient', () => {
     });
   });
 
+  it('sends FormData as multipart (fetch sets the boundary; no JSON content type)', async () => {
+    // jsdom's File can't be streamed by Node's fetch, so the body itself is not read back here.
+    server.use(
+      http.post('*/api/v1/things/1/image', ({ request }) => HttpResponse.json({ type: request.headers.get('content-type') })),
+    );
+    const form = new FormData();
+    form.append('image', new File([new Uint8Array([1, 2, 3])], 'photo.png', { type: 'image/png' }));
+
+    const res = await api.post<{ type: string }>('/things/1/image', form);
+    expect(res.type).toMatch(/^multipart\/form-data; boundary=/);
+  });
+
   it('resolves undefined on 204', async () => {
     server.use(http.delete('*/api/v1/things/1', () => new HttpResponse(null, { status: 204 })));
     await expect(api.delete('/things/1')).resolves.toBeUndefined();

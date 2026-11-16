@@ -3,6 +3,8 @@
 # WIPES AND REBUILDS the two demo stores' assortment, availability events and
 # replenishment lists, and resets the demo users' passwords — hence the typed
 # confirmation.
+# It also uploads the seed's product images, so the production
+# `product-images` bucket must exist first (plan Manual 8-A).
 name: Seed
 
 on:

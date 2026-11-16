@@ -1,7 +1,7 @@
-import type { ReplenishmentStatus, Role } from 'shared';
+import { ONE_SIZE_LABEL, SIZE_PRESETS, type ReplenishmentStatus, type Role } from 'shared';
 
 // The demo dataset (database.md §9). Pure data: `seed.ts` writes it.
-// Product images stay NULL until the Storage bucket exists (plan 8.8).
+// Product images: one per category, see images.ts.
 
 // Demo-only credential, public by design: shown on the landing page and in
 // the README (database.md §9). Never reuse it for a real account.
@@ -33,8 +33,9 @@ export const CATEGORIES = [
 
 type CategorySlug = (typeof CATEGORIES)[number]['slug'];
 
-const APPAREL = ['XS', 'S', 'M', 'L', 'XL', '2XL'];
-const ONE_SIZE = ['One size'];
+// Size runs from the shared presets (RF-38); footwear seeds subsets of 36–45.
+const APPAREL = SIZE_PRESETS.clothing.labels;
+const ONE_SIZE = SIZE_PRESETS.oneSize.labels;
 const shoes = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => String(from + i));
 
 // `code` is the stable seed key: it derives the product id and prefixes SKUs.
@@ -44,7 +45,7 @@ export const PRODUCTS: {
   name: string;
   category: CategorySlug;
   description: string;
-  sizes: string[];
+  sizes: readonly string[];
   stores: StoreKey[];
 }[] = [
   { code: 'FW01', name: 'Trail Runner GTX', category: 'footwear', description: 'Waterproof trail shoe with a lugged outsole.', sizes: shoes(39, 45), stores: ['downtown', 'north'] },
@@ -90,7 +91,7 @@ export const PRODUCTS: {
 ];
 
 export function skuOf(code: string, label: string): string {
-  return `${code}-${label === 'One size' ? 'OS' : label}`;
+  return `${code}-${label === ONE_SIZE_LABEL ? 'OS' : label}`;
 }
 
 // Availability histories, oldest first, as hours before the seed runs. Types

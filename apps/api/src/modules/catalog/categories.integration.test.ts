@@ -38,10 +38,10 @@ const token = `cat${randomUUID().slice(0, 8)}`;
 const store = randomUUID();
 // Inserted out of name order.
 const categories = [
-  { id: randomUUID(), name: `${token} Socks` },
-  { id: randomUUID(), name: `${token} Bags` },
-  { id: randomUUID(), name: `${token} Hats` },
-];
+  { id: randomUUID(), name: `${token} Socks`, description: 'Warm feet' },
+  { id: randomUUID(), name: `${token} Bags`, description: null },
+  { id: randomUUID(), name: `${token} Hats`, description: 'Sun and rain' },
+].map((category) => ({ ...category, slug: `categories-test-${category.id}` }));
 const [socks, bags, hats] = categories as [(typeof categories)[0], (typeof categories)[0], (typeof categories)[0]];
 
 interface Fixture {
@@ -69,7 +69,7 @@ describe('GET /categories (RF-13)', () => {
     for (const category of categories) {
       await admin`
         insert into categories (id, name, slug, description)
-        values (${category.id}, ${category.name}, ${`categories-test-${category.id}`}, 'not exposed')
+        values (${category.id}, ${category.name}, ${category.slug}, ${category.description})
       `;
     }
     const signIn = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, { auth: { persistSession: false } });
@@ -121,7 +121,7 @@ describe('GET /categories (RF-13)', () => {
     }
   });
 
-  it('a store user lists the global categories by name, as { id, name }, in the envelope', async () => {
+  it('a store user lists the global categories by name, as { id, name, slug, description }, in the envelope', async () => {
     const res = await list(users.employee, { pageSize: '100' });
     expect(res.status).toBe(200);
     expect(own(res.body)).toEqual([bags, hats, socks]);

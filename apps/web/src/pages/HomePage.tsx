@@ -227,7 +227,7 @@ function OpenWorkBlock({ onNewList }: { onNewList?: () => void }) {
         <BlockError message="Could not load open replenishment work" onRetry={() => void refetch()} retrying={isFetching} />
       ) : data.items.length === 0 ? (
         <EmptyState
-          icon="checklist"
+          icon="list_alt"
           title="No open replenishment work."
           action={onNewList && { label: 'New list', onClick: onNewList }}
         />

@@ -50,7 +50,7 @@ describe('shell', () => {
       '/availability',
       '/activity',
       ...(role === 'employee' ? [] : ['/catalog']),
-      ...(role === 'platform_admin' ? ['/platform/tenants', '/platform/users'] : []),
+      ...(role === 'platform_admin' ? ['/platform/tenants', '/platform/users', '/platform/catalog'] : []),
     ]);
     expect(within(nav).getByRole('link', { name: 'Home' })).not.toHaveAttribute('aria-current');
     expect(within(nav).getByRole('link', { name: 'Replenishment' })).not.toHaveAttribute('aria-current');

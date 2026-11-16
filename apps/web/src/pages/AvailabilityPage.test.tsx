@@ -51,8 +51,8 @@ const tote: AvailabilityProduct = {
 const envelope = <T,>(items: T[], page = 1, total = items.length): Page<T> => ({ items, page, pageSize: 20, total });
 
 const categories: Category[] = [
-  { id: '00000000-0000-4000-8000-0000000000c1', name: 'Bags' },
-  { id: '00000000-0000-4000-8000-0000000000c2', name: 'Footwear' },
+  { id: '00000000-0000-4000-8000-0000000000c1', name: 'Bags', slug: 'bags', description: null },
+  { id: '00000000-0000-4000-8000-0000000000c2', name: 'Footwear', slug: 'footwear', description: null },
 ];
 
 /** `GET /availability` (and `GET /categories`), recording every request. */

@@ -102,5 +102,20 @@ npm run dev
 ```
 
 The demo seed (`npm run db:seed -w api`) creates `admin@repma.demo` plus a manager and an employee per store (`manager.downtown@repma.demo`, `employee.north@repma.demo`, …), all with the demo-only password `repma-demo-2026`.
+It also uploads the seed's product images (one placeholder per category, under `seed/` in the `product-images` bucket) and points the seed products at them; `npm run db:seed-images -w api` runs that step alone.
+
+### Seed images in production (one time)
+
+After creating the production `product-images` bucket (plan Manual 8-A), run the image step once from your machine — it touches only the seed products' `image_url` and the bucket's `seed/` folder, and is safe to repeat. Export the three values for this shell only, straight from your password manager; never write them to a file:
+
+```bash
+read -rs MIGRATIONS_DATABASE_URL      # session-pooler URI, admin password (postgres.<project-ref>)
+read -rs SUPABASE_SERVICE_ROLE_KEY
+export MIGRATIONS_DATABASE_URL SUPABASE_SERVICE_ROLE_KEY SUPABASE_URL=https://<project-ref>.supabase.co
+npm run db:seed-images -w api
+unset MIGRATIONS_DATABASE_URL SUPABASE_SERVICE_ROLE_KEY SUPABASE_URL
+```
+
+Set all three: exported values win over `apps/api/.env`, and a missing one falls back to the local value there — the script refuses to run when the database and the Supabase URL point to different environments, but a wrong service key is only caught when the upload fails. (The manual *Seed* workflow also runs this step, but it resets the demo stores' data too.)
 
 Local development requires Docker (for the Supabase stack), the Supabase CLI, and Node ≥ 22 — see Phase 1's manual setup in `doc-ai/core/plan/plan.md`.

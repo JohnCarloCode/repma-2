@@ -70,8 +70,8 @@ const envelope = <T,>(items: T[], over: Partial<Page<T>> = {}): Page<T> => ({
 });
 
 const categories: Category[] = [
-  { id: 'cat-bags', name: 'Bags' },
-  { id: 'cat-footwear', name: 'Footwear' },
+  { id: 'cat-bags', name: 'Bags', slug: 'bags', description: null },
+  { id: 'cat-footwear', name: 'Footwear', slug: 'footwear', description: null },
 ];
 
 /** `GET /products`, `GET /availability` (cross-reference) and `GET /categories`, recording requests. */

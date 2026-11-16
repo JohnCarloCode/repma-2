@@ -12,6 +12,7 @@ import { AvailabilityPage } from './pages/AvailabilityPage';
 import { CatalogPage } from './pages/CatalogPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
+import { PlatformCatalogPage } from './pages/PlatformCatalogPage';
 import { PlatformTenantsPage } from './pages/PlatformTenantsPage';
 import { PlatformUsersPage } from './pages/PlatformUsersPage';
 import { ReplenishmentDetailPage } from './pages/ReplenishmentDetailPage';
@@ -56,6 +57,9 @@ export function AppRoutes() {
         </Route>
         <Route element={<RouteGuard permission="user:manage" />}>
           <Route path="/platform/users" element={<PlatformUsersPage />} />
+        </Route>
+        <Route element={<RouteGuard permission="catalog:manage" />}>
+          <Route path="/platform/catalog" element={<PlatformCatalogPage />} />
         </Route>
       </Route>
 

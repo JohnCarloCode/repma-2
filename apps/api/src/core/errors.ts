@@ -22,7 +22,16 @@ export function notFoundHandler(req: Request, _res: Response, next: NextFunction
 }
 
 // Express identifies error-handling middleware by arity (4 params) — `_next` must stay, unused.
-export function errorHandler(err: unknown, req: Request, res: Response, _next: NextFunction): void {
+// body-parser (express.json/urlencoded) rejects before any route runs; its errors carry a `type`.
+function fromBodyParser(err: unknown): AppError | undefined {
+  const type = (err as { type?: unknown } | null)?.type;
+  if (type === 'entity.too.large') return new AppError(413, 'PAYLOAD_TOO_LARGE', 'The request body is too large');
+  if (type === 'entity.parse.failed') return new AppError(400, 'VALIDATION_ERROR', 'The request body is not valid JSON');
+  return undefined;
+}
+
+export function errorHandler(caught: unknown, req: Request, res: Response, _next: NextFunction): void {
+  const err = fromBodyParser(caught) ?? caught;
   if (err instanceof AppError) {
     if (err.status >= 500) {
       req.log?.error({ err }, err.message);

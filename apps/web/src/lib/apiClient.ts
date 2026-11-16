@@ -37,7 +37,9 @@ async function request<T>(method: string, path: string, body?: unknown, options:
   // and also valid for Node's fetch under the test environment.
   const url = new URL(API_BASE + path, window.location.origin);
   const headers: Record<string, string> = {};
-  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  // FormData (a file upload) goes as-is: fetch sets the multipart content type with its boundary.
+  const multipart = body instanceof FormData;
+  if (body !== undefined && !multipart) headers['Content-Type'] = 'application/json';
   if (options.tenantId) headers['X-Tenant-Id'] = options.tenantId;
   let res: Response;
   try {
@@ -45,7 +47,7 @@ async function request<T>(method: string, path: string, body?: unknown, options:
       method,
       credentials: 'include',
       headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: multipart ? body : body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {
     throw new ApiError(0, NETWORK_ERROR, 'Network error. Check your connection and try again.');

@@ -16,11 +16,12 @@ colors:
   accent-bright: "color-mix(in oklab, {colors.accent} 55%, white)"  # accent as TEXT/STROKE on dark: links, focus ring, chart line, KPI highlight (#C18293 with the default)
   accent-soft: "color-mix(in oklab, {colors.accent} 22%, transparent)" # tinted backgrounds: selected row, active nav, chart area gradient start
   on-accent: "#FFFFFF"          # text/icons on accent fills
+  on-alert: "#121212"           # text on alert fills (danger button): white on #FF453A is only 3.4:1
 
   # Surfaces — DARK theme (default). The light theme overrides these in `colors-light` below.
   canvas: "#121212"             # page background
   surface: "#1E1E1E"            # cards, tables, modals, sidebar, inputs
-  surface-hover: "#252525"      # row hover, menu item hover
+  surface-hover: "#242424"      # row hover, menu item hover
   surface-raised: "#2C2C2E"     # nested fills: table header, input on card, icon buttons, progress track
   border: "#2C2C2E"             # 1px borders of cards, row dividers, chart grid lines
   border-strong: "#3A3A3C"      # input borders, the dotted out-of-stock outline
@@ -44,6 +45,7 @@ colors:
 # LIGHT theme — same token names, different values (§Themes). Applied by a theme class on the
 # app root; the accent stays the same configurable value, only its derivations change.
 colors-light:
+  on-alert: "#FFFFFF"
   canvas: "#F4F4F6"
   surface: "#FFFFFF"
   surface-hover: "#F2F2F4"
@@ -55,7 +57,7 @@ colors-light:
   text-disabled: "#A1A1A8"
   alert: "#D70015"
   alert-soft: "#FDE9EA"
-  live: "#1A7F37"
+  live: "#197A35"
   live-soft: "#E5F4EA"
   warning: "#8A5A00"
   warning-soft: "#FFF3D1"
@@ -162,7 +164,7 @@ components:
     height: 44px
   button-danger:
     backgroundColor: "{colors.alert}"
-    textColor: "#FFFFFF"
+    textColor: "{colors.on-alert}"
     rounded: "{rounded.sm}"
     height: 44px
   button-text:
@@ -404,7 +406,7 @@ Two durations (`fast` 120ms for hover/focus/press, `base` 200ms for enter/leave)
 ## Components
 
 ### Buttons
-Primary = `accent` fill, white text, 8px radius, 44px high (buttons and inputs share the 44px touch rule). Secondary = transparent with `border-strong`. Danger = `alert` fill. Text buttons = `accent-bright` with underline on hover. One primary per screen. Icon buttons: 32px visual, 44px hit area.
+Primary = `accent` fill, white text, 8px radius, 44px high (buttons and inputs share the 44px touch rule). Secondary = transparent with `border-strong`. Danger = `alert` fill with `on-alert` text (dark ink on the dark theme's bright red, white on the light theme's deep red). Text buttons = `accent-bright` with underline on hover. One primary per screen. Icon buttons: 32px visual, 44px hit area.
 
 ### Navigation
 Pills in the sidebar; active = `accent-soft` background, white label, `accent-bright` icon. Hover = `surface-hover`.
@@ -442,8 +444,8 @@ Tooltip: `surface-raised`, 12px text, 8px radius. Slide-over (`sheet`): right-an
 Size-run tiles never shrink below 44px; they wrap.
 
 ## Accessibility
-- Text ≥ 4.5:1, UI strokes ≥ 3:1 against their background. Defaults pass in both themes; **a new accent must be re-verified in both themes** for `on-accent`/`accent`, `accent-bright`/`surface` and controls on the filter band.
-- Focus is always visible (accent-bright ring). Never rely on color alone: the out-of-stock mark also changes border style and always shows its elapsed figure as text; statuses always carry a label.
+- Text ≥ 4.5:1, UI strokes ≥ 3:1 against their background. Defaults pass in both themes — `apps/web/src/styles/contrast.test.ts` computes the WCAG ratio of every text/background pair the UI uses (accent tones resolved through their `color-mix`) from `theme.css`, in both themes, so a token change that breaks one fails the build; **a new accent must be re-verified in both themes** for `on-accent`/`accent`, `accent-bright`/`surface` and controls on the filter band.
+- Focus is always visible (accent-bright ring; on the filter band — an `accent-hover` fill, where accent-bright would be ~2:1 — the ring is `on-accent`, set through the `--focus-ring` variable). Never rely on color alone: the out-of-stock mark also changes border style and always shows its elapsed figure as text; statuses always carry a label.
 - Touch targets ≥ 44px on shop-floor interactions.
 
 ## Do's and Don'ts

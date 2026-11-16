@@ -10,3 +10,4 @@ export * from './availability.js';
 export * from './catalog.js';
 export * from './replenishment.js';
 export * from './home.js';
+export * from './users.js';

@@ -40,12 +40,13 @@ jobs:
         with:
           version: 2.119.0
 
-      # Only what the tests use: Postgres, Auth (GoTrue) and the Kong gateway
-      # in front of it (+ PostgREST). Uses supabase/config.toml as committed.
+      # Only what the tests use: Postgres, Auth (GoTrue), Storage (the
+      # `product-images` bucket from config.toml, RF-17) and the Kong gateway
+      # in front of them (+ PostgREST). Uses supabase/config.toml as committed.
       - name: Start local Supabase stack
         run: >-
           supabase start
-          -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+          -x realtime,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
 
       # Non-secret local-stack values only; the repma_api password is a
       # throwaway that exists for the lifetime of this job.

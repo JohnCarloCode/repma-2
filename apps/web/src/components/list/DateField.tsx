@@ -37,7 +37,7 @@ export function DateField({ label, value, onChange }: { label: string; value: st
 
   return (
     <label
-      className={`${filterControlClass} flex items-center gap-sm focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent-bright`}
+      className={`${filterControlClass} flex items-center gap-sm focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[color:var(--focus-ring,var(--color-accent-bright))]`}
     >
       <span className="text-label text-text-secondary">{label}</span>
       <input

@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { delay, http, HttpResponse } from 'msw';
+import { http, HttpResponse } from 'msw';
 import type { AvailabilityItem, AvailabilityItemEvent, Page } from 'shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppRoutes } from '../App';
@@ -146,7 +146,7 @@ describe('/availability/:id — summary and history (availability-detail.md)', (
     expect(await screen.findByText('No events yet. The item is available.')).toBeInTheDocument();
     expect(within(summary()).getByText('no events recorded')).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'Mark out of stock' })).toHaveLength(2);
-    // Interim until 6.4: no removal action, even for a manager-level session.
+    // The employee lacks `assortment:manage`: no removal even with an empty history (RF-44).
     expect(screen.queryByRole('button', { name: 'Remove from assortment' })).not.toBeInTheDocument();
   });
 
@@ -281,10 +281,13 @@ describe('/availability/:id — flag flows', () => {
 
   it('an error reverts the optimistic flip and toasts the API message', async () => {
     const user = userEvent.setup();
+    // The POST is held until the optimistic state has been asserted, so the check never races the response.
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
     detail({
       item: () => HttpResponse.json(availableItem),
       post: async () => {
-        await delay(20);
+        await gate;
         return HttpResponse.json({ error: { code: 'FORBIDDEN', message: 'Not allowed here' } }, { status: 403 });
       },
     });
@@ -292,6 +295,7 @@ describe('/availability/:id — flag flows', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Mark out of stock' }));
     expect(await within(summary()).findByText('Out of stock')).toBeInTheDocument(); // optimistic
+    release();
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Not allowed here');
     expect(within(summary()).getByText('Available')).toBeInTheDocument();
@@ -324,5 +328,177 @@ describe('/availability/:id — flag flows', () => {
     expect(within(summary()).getByText('Out of stock')).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: 'Mark restocked' })).toBeEnabled();
     expect(within(toasts()).queryByText('Marked as out of stock')).not.toBeInTheDocument();
+  });
+});
+
+describe('/availability/:id — remove from assortment (RF-44, RN-13)', () => {
+  const freshItem: AvailabilityItem = { ...availableItem, latestEventAt: null };
+  const noHistory = () => HttpResponse.json(envelope<AvailabilityItemEvent>([])) as Response;
+  const removeButton = () => screen.queryByRole('button', { name: 'Remove from assortment' });
+
+  /** `DELETE /availability/item-42` answers `respond()`; each call's X-Tenant-Id is recorded. */
+  function onDelete(respond: () => Response | Promise<Response>) {
+    const deletes: (string | null)[] = [];
+    server.use(
+      http.delete('*/api/v1/availability/item-42', ({ request }) => {
+        deletes.push(request.headers.get('x-tenant-id'));
+        return respond();
+      }),
+    );
+    return deletes;
+  }
+
+  it('a manager sees the ghost action only while the history is empty', async () => {
+    detail({ item: () => HttpResponse.json(freshItem), events: noHistory });
+    renderDetail('/availability/item-42', 'manager');
+    expect(await screen.findByRole('button', { name: 'Remove from assortment' })).toBeEnabled();
+  });
+
+  it('a manager on an item with history: no removal', async () => {
+    detail();
+    renderDetail('/availability/item-42', 'manager');
+    await screen.findByRole('table', { name: 'Event history' });
+    expect(removeButton()).not.toBeInTheDocument();
+  });
+
+  it('confirm → DELETE → toast, back to the list (its URL state kept), availability queries invalidated, Home untouched', async () => {
+    const user = userEvent.setup();
+    detail({ item: () => HttpResponse.json(freshItem), events: noHistory });
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const deletes = onDelete(async () => {
+      await gate;
+      return new HttpResponse(null, { status: 204 });
+    });
+    const { queryClient } = renderDetail(
+      { pathname: '/availability/item-42', state: { listSearch: '?search=run' } },
+      'manager',
+    );
+    const listKey = ['store', STORE_A, 'availability', 'list', { page: 1 }];
+    const homeKey = ['store', STORE_A, 'home', 'summary'];
+    queryClient.setQueryData(listKey, envelope([]));
+    queryClient.setQueryData(homeKey, { openLists: 0, pendingItems: 0, outOfStock: 0 });
+
+    await user.click(await screen.findByRole('button', { name: 'Remove from assortment' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Remove from assortment' });
+    expect(dialog).toHaveTextContent('Remove “Runner Sneaker — 42” from the assortment?');
+    expect(deletes).toHaveLength(0); // nothing happens before the confirm
+    await user.click(within(dialog).getByRole('button', { name: 'Remove' }));
+
+    expect(await within(dialog).findByRole('button', { name: 'Removing…' })).toBeDisabled();
+    release();
+
+    expect(await within(toasts()).findByText('Removed from assortment')).toBeInTheDocument();
+    await waitFor(() => expect(location()).toBe('/availability?search=run'));
+    expect(deletes).toEqual([null]);
+    expect(queryClient.getQueryState(listKey)?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(homeKey)?.isInvalidated).toBe(false);
+  });
+
+  it('cancel closes the modal without a request', async () => {
+    const user = userEvent.setup();
+    detail({ item: () => HttpResponse.json(freshItem), events: noHistory });
+    const deletes = onDelete(() => new HttpResponse(null, { status: 204 }));
+    renderDetail('/availability/item-42', 'manager');
+
+    await user.click(await screen.findByRole('button', { name: 'Remove from assortment' }));
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(deletes).toHaveLength(0);
+    expect(location()).toBe('/availability/item-42');
+  });
+
+  it('409 (an event appeared meanwhile): API message toast, item + history refetched, the action disappears', async () => {
+    const user = userEvent.setup();
+    let serverItem: AvailabilityItem = freshItem;
+    let serverEvents: AvailabilityItemEvent[] = [];
+    const { itemRequests, eventRequests } = detail({
+      item: () => HttpResponse.json(serverItem),
+      events: () => HttpResponse.json(envelope(serverEvents)),
+    });
+    onDelete(() => {
+      serverItem = { ...outItem, latestEventAt: ago(5 * 60_000) };
+      serverEvents = [{ id: 'e9', type: 'out_of_stock', createdAt: ago(5 * 60_000), authorName: 'Ana Ruiz' }];
+      return HttpResponse.json(
+        { error: { code: 'CONFLICT', message: 'This size has availability history and cannot be removed' } },
+        { status: 409 },
+      );
+    });
+    renderDetail('/availability/item-42', 'manager');
+
+    await user.click(await screen.findByRole('button', { name: 'Remove from assortment' }));
+    const itemReads = itemRequests.length;
+    const eventReads = eventRequests.length;
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Remove' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('This size has availability history and cannot be removed');
+    await waitFor(() => expect(itemRequests.length).toBeGreaterThan(itemReads));
+    await waitFor(() => expect(eventRequests.length).toBeGreaterThan(eventReads));
+    expect(await screen.findByRole('table', { name: 'Event history' })).toBeInTheDocument();
+    expect(removeButton()).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(location()).toBe('/availability/item-42');
+  });
+
+  it('409 (size on a replenishment list): toast, the item stays and so does the action', async () => {
+    const user = userEvent.setup();
+    detail({ item: () => HttpResponse.json(freshItem), events: noHistory });
+    onDelete(() =>
+      HttpResponse.json(
+        { error: { code: 'CONFLICT', message: 'This size is on a replenishment list and cannot be removed' } },
+        { status: 409 },
+      ),
+    );
+    renderDetail('/availability/item-42', 'manager');
+
+    await user.click(await screen.findByRole('button', { name: 'Remove from assortment' }));
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Remove' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'This size is on a replenishment list and cannot be removed',
+    );
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(removeButton()).toBeInTheDocument();
+    expect(location()).toBe('/availability/item-42');
+  });
+
+  it('404 (already removed elsewhere): toast, the refetch lands on "Item not found"', async () => {
+    const user = userEvent.setup();
+    let gone = false;
+    const notFound = () =>
+      HttpResponse.json({ error: { code: 'NOT_FOUND', message: 'Item not found' } }, { status: 404 }) as Response;
+    detail({
+      item: () => (gone ? notFound() : HttpResponse.json(freshItem)),
+      events: () => (gone ? notFound() : noHistory()),
+    });
+    onDelete(() => {
+      gone = true;
+      return notFound();
+    });
+    renderDetail('/availability/item-42', 'manager');
+
+    await user.click(await screen.findByRole('button', { name: 'Remove from assortment' }));
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Remove' }));
+
+    expect(await within(toasts()).findByText('Item not found')).toBeInTheDocument();
+    // The page's own 404 state: its "Back to availability" joins the header's back link.
+    await waitFor(() => expect(screen.getAllByRole('link', { name: 'Back to availability' })).toHaveLength(2));
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Event history' })).not.toBeInTheDocument());
+    expect(removeButton()).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Mark/ })).not.toBeInTheDocument();
+  });
+
+  it('the platform admin removes from the selected store (X-Tenant-Id)', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem(SELECTED_STORE_KEY, JSON.stringify({ id: 'store-b', name: 'Store B' }));
+    detail({ item: () => HttpResponse.json(freshItem), events: noHistory });
+    const deletes = onDelete(() => new HttpResponse(null, { status: 204 }));
+    renderDetail('/availability/item-42', 'platform_admin');
+
+    await user.click(await screen.findByRole('button', { name: 'Remove from assortment' }));
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Remove' }));
+
+    await waitFor(() => expect(location()).toBe('/availability'));
+    expect(deletes).toEqual(['store-b']);
   });
 });

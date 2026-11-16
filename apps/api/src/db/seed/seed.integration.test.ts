@@ -1,24 +1,40 @@
 import 'dotenv/config';
+import { randomUUID } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 import postgres from 'postgres';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { DEMO_PASSWORD, PRODUCTS, USERS, skuOf } from './data.js';
-import { parseSeedEnv, seed, storeId } from './seed.js';
+import { CATEGORIES, DEMO_PASSWORD, PRODUCTS, USERS, skuOf } from './data.js';
+import { PRODUCT_IMAGES_BUCKET } from '../../lib/supabase.js';
+import { SEED_IMAGES_BUCKET, seedImageKey, seedImages } from './images.js';
+import { parseSeedEnv, seed, seedId, storeId } from './seed.js';
 
-// The demo seed (database.md §9; plan.md 1.9) against the local stack. Runs
-// the seed twice to prove it is re-runnable, then checks the result. Other
+// The demo seed (database.md §9; plan.md 1.9, 8.8) against the local stack.
+// Runs the seed and its images twice, as `db:seed` does, to prove both are
+// re-runnable, then checks the result. Other
 // suites use their own fixtures, so this one only looks at the seed's rows.
 const env = parseSeedEnv(process.env);
 const admin = postgres(env.MIGRATIONS_DATABASE_URL);
 const tenantIds = [storeId('downtown'), storeId('north')];
 const demoEmails = USERS.map((u) => u.email);
 
+// A product that isn't the seed's, with its own image: the seed must leave it alone.
+const foreign = { categoryId: randomUUID(), productId: randomUUID(), imageUrl: 'https://example.test/foreign.png' };
+
 beforeAll(async () => {
-  await seed(env);
-  await seed(env);
+  await admin`insert into categories (id, name, slug) values (${foreign.categoryId}, ${`Seed foreign ${foreign.categoryId}`}, ${`seed-foreign-${foreign.categoryId}`})`;
+  await admin`
+    insert into products (id, name, category_id, image_url)
+    values (${foreign.productId}, ${`Seed foreign ${foreign.productId}`}, ${foreign.categoryId}, ${foreign.imageUrl})
+  `;
+  for (let run = 0; run < 2; run++) {
+    await seed(env);
+    await seedImages(env);
+  }
 }, 60_000);
 
 afterAll(async () => {
+  await admin`delete from products where id = ${foreign.productId}`;
+  await admin`delete from categories where id = ${foreign.categoryId}`;
   await admin.end();
 });
 
@@ -40,7 +56,7 @@ describe('demo seed', () => {
     expect(error).toBeNull();
   });
 
-  it('loads the catalog: 6 categories, ~40 products, every one with sizes per its category, SKUs on sizes, no images', async () => {
+  it('loads the catalog: 6 categories, ~40 products, every one with sizes per its category, SKUs on sizes', async () => {
     const productIds = await admin<{ id: string; category: string; image_url: string | null }[]>`
       select p.id, c.slug as category, p.image_url
       from products p join categories c on c.id = p.category_id
@@ -50,7 +66,6 @@ describe('demo seed', () => {
     expect(productIds).toHaveLength(PRODUCTS.length);
     expect(PRODUCTS.length).toBeGreaterThanOrEqual(40);
     expect(new Set(productIds.map((p) => p.category)).size).toBe(6);
-    expect(productIds.every((p) => p.image_url === null)).toBe(true);
 
     const sizes = await admin<{ category: string; labels: string[] }[]>`
       select c.slug as category, array_agg(s.label order by s.position) as labels
@@ -80,6 +95,39 @@ describe('demo seed', () => {
     expect(counts!.shared).toBeGreaterThan(0);
     expect(counts!.downtown_only).toBeGreaterThan(0);
     expect(counts!.north_only).toBeGreaterThan(0);
+  });
+
+  it("points every seed product at its category's image under the bucket's public seed/ path", async () => {
+    const products = await admin<{ id: string; image_url: string | null }[]>`
+      select id, image_url from products where id in ${admin(PRODUCTS.map((p) => seedId(`product:${p.code}`)))}
+    `;
+    expect(products).toHaveLength(PRODUCTS.length);
+    const publicSeedPath = `${env.SUPABASE_URL}/storage/v1/object/public/${SEED_IMAGES_BUCKET}/seed/`;
+    for (const product of PRODUCTS) {
+      const row = products.find((p) => p.id === seedId(`product:${product.code}`))!;
+      expect(row.image_url).toBe(`${publicSeedPath}${product.category}.png`);
+    }
+  });
+
+  it('serves every seed image publicly as a PNG, one object per category', async () => {
+    expect(SEED_IMAGES_BUCKET).toBe(PRODUCT_IMAGES_BUCKET); // the API's bucket
+    for (const { slug } of CATEGORIES) {
+      const res = await fetch(`${env.SUPABASE_URL}/storage/v1/object/public/${SEED_IMAGES_BUCKET}/${seedImageKey(slug)}`);
+      expect(res.status).toBe(200);
+      expect(res.headers.get('content-type')).toBe('image/png');
+      const bytes = new Uint8Array(await res.arrayBuffer());
+      expect([...bytes.slice(0, 4)]).toEqual([0x89, 0x50, 0x4e, 0x47]); // PNG signature
+    }
+
+    const service = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+    const { data, error } = await service.storage.from(SEED_IMAGES_BUCKET).list('seed');
+    expect(error).toBeNull();
+    expect(data!.map((o) => o.name).sort()).toEqual(CATEGORIES.map((c) => `${c.slug}.png`).sort()); // re-runs add nothing
+  });
+
+  it("leaves products that aren't the seed's untouched", async () => {
+    const [row] = await admin<{ image_url: string | null }[]>`select image_url from products where id = ${foreign.productId}`;
+    expect(row!.image_url).toBe(foreign.imageUrl);
   });
 
   it('flags several sizes out of stock in each store', async () => {

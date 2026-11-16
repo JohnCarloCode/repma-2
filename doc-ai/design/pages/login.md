@@ -7,7 +7,7 @@
 Single entry point to the application (DP-01: everything is behind login, no signup, no password recovery). Used by every role: platform_admin, manager, employee. Authenticates via email/password and establishes the HttpOnly cookie session (RF-01) — the page never sees or stores a token (AD-12).
 
 ## Layout
-NO app shell (per `../shared/layout.md`: public pages don't use it). A single centered card (`card` from DESIGN.md) on the `canvas` background, max-width ~400px, vertically centered. Inside: product wordmark, heading at `display` size (per DESIGN.md typography table: "login heading"), then the form. Space below the card is reserved for a future demo-credentials hint when the landing page is built — leave the slot, do not design the landing.
+NO app shell (per `../shared/layout.md`: public pages don't use it). A single centered card (`card` from DESIGN.md) on the `canvas` background, max-width ~400px, vertically centered. Inside: product wordmark, heading at `display` size (per DESIGN.md typography table: "login heading"), then the form. Below the card, one caption line: "Trying the demo? See the demo accounts" — the link goes to `/`, where the credentials live (landing.md §Flows); the login form itself is never prefilled.
 
 ## Content
 Form (single column, per DESIGN.md §Forms):

@@ -6,5 +6,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/setupTests.ts'],
+    // jsdom + user-event flows with many steps can pass 5s when every workspace's suite runs at once (`npm run check`).
+    testTimeout: 15_000,
   },
 });

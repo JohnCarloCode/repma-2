@@ -9,8 +9,13 @@ import { ToastProvider } from './lib/toast';
 import { ActivityPage } from './pages/ActivityPage';
 import { AvailabilityDetailPage } from './pages/AvailabilityDetailPage';
 import { AvailabilityPage } from './pages/AvailabilityPage';
+import { CatalogPage } from './pages/CatalogPage';
 import { HomePage } from './pages/HomePage';
+import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
+import { PlatformCatalogPage } from './pages/PlatformCatalogPage';
+import { PlatformTenantsPage } from './pages/PlatformTenantsPage';
+import { PlatformUsersPage } from './pages/PlatformUsersPage';
 import { ReplenishmentDetailPage } from './pages/ReplenishmentDetailPage';
 import { ReplenishmentPage } from './pages/ReplenishmentPage';
 import { UnauthorizedPage } from './pages/UnauthorizedPage';
@@ -23,8 +28,7 @@ function RoleHomeRedirect() {
 export function AppRoutes() {
   return (
     <Routes>
-      {/* DP-01 interim: the landing page ships in the polish phase (9.1). */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
 
       {/* The shell wraps every guarded route, and /unauthorized when there is a session (layout.md). */}
@@ -42,6 +46,20 @@ export function AppRoutes() {
           <Route path="/home" element={<HomePage />} />
           <Route path="/availability" element={<AvailabilityPage />} />
           <Route path="/availability/:id" element={<AvailabilityDetailPage />} />
+        </Route>
+        <Route element={<RouteGuard permission="assortment:manage" store />}>
+          <Route path="/catalog" element={<CatalogPage />} />
+        </Route>
+
+        {/* Platform zone: global routes, no store needed (layout.md §Route guards). */}
+        <Route element={<RouteGuard permission="tenant:manage" />}>
+          <Route path="/platform/tenants" element={<PlatformTenantsPage />} />
+        </Route>
+        <Route element={<RouteGuard permission="user:manage" />}>
+          <Route path="/platform/users" element={<PlatformUsersPage />} />
+        </Route>
+        <Route element={<RouteGuard permission="catalog:manage" />}>
+          <Route path="/platform/catalog" element={<PlatformCatalogPage />} />
         </Route>
       </Route>
 

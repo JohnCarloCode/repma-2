@@ -12,7 +12,7 @@ export const primaryButtonClass = `${base} bg-accent text-on-accent hover:bg-acc
 export const secondaryButtonClass = `${base} border border-border-strong text-text hover:bg-surface-hover`;
 
 /** `button-danger`: alert fill, white text (`on-accent` is white in both themes). */
-export const dangerButtonClass = `${base} bg-alert text-on-accent hover:opacity-90`;
+export const dangerButtonClass = `${base} bg-alert text-on-alert hover:opacity-90`;
 
 /** `button-text` (tertiary): `accent-bright` text, underline on hover — also used for links styled as actions. */
 export const textButtonClass =

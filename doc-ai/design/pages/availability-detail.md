@@ -77,6 +77,13 @@ Defaults per `../shared/components.md`. Page-specific:
 2. `DELETE /availability/:id` → 204: toast "Removed from assortment", navigate to `/availability` (list invalidated; the size becomes addable again in the picker, RN-04). Home needs no invalidation: an item without events is available and none of the summary's figures counts it (RF-41).
 3. 409 (RN-13 — an event was recorded or the size sits on a replenishment list, possibly from another session): error toast with the API message + refetch item and events; if events now exist, the action disappears with them.
 
+**As built (6.4):**
+- "Empty history" = the item has no `latestEventAt` **and** the history page reports `total` 0, and no flag is in flight (the optimistic flip stamps `latestEventAt`, so the action hides the moment a flag starts).
+- Confirm modal: title "Remove from assortment", confirm "Remove" (pending "Removing…"), `ConfirmModal`'s danger tone.
+- 204 → navigates to `/availability` **with the list's URL state** (the same `listSearch` the back button uses). The `scope.key('availability')` prefix (list, picker cross-reference, this item) is marked stale without an immediate refetch, so the removed item is not re-read on the way out; the list refetches as it mounts. Home and the activity feed are not invalidated (no event exists).
+- Any error closes the modal, toasts the API message and refetches the `scope.key('availability')` prefix. **404** (removed in another session) needs no special case: the refetch lands on the page's own "Item not found" state.
+- Header actions (flag and removal) render only from a successfully read item: after a failed refetch the query keeps its stale data, but the page shows the error state, so no action survives on it.
+
 ## Edge cases
 
 - **State is the latest event**: after any mutation the invalidation refetches item + events together, so the badge can never disagree with the top row of the history. Its elapsed figure is derived from that same timestamp at render time (DP-07), never stored.

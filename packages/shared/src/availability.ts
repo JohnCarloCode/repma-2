@@ -33,11 +33,20 @@ export interface AvailabilityFeedEvent extends AvailabilityItemEvent {
 // optional filters, intersected. `search` matches the product name and the
 // SKU of any size in the store's run (blank after trimming = no filter);
 // `outOfStock=true` selects products with at least one size out of stock and
-// still returns their complete run. No sort param: the order is fixed (RF-18).
+// still returns their complete run. `productId` is one or more product ids,
+// comma-separated in a single param (at most 100 — the page-size cap), the
+// `/catalog` cross-reference (RF-18, RF-35); repeats are tolerated, an empty
+// or non-uuid entry is a 400. No sort param: the order is fixed (RF-18).
 export const availabilityListQuery = paginationQuery.extend({
   search: z.string().trim().max(100).optional(),
   categoryId: z.uuid().optional(),
   outOfStock: z.literal('true').transform(() => true).optional(),
+  productId: z
+    .string()
+    .transform((value) => value.split(','))
+    .pipe(z.array(z.uuid()).max(100))
+    .transform((ids) => [...new Set(ids)])
+    .optional(),
 });
 
 export type AvailabilityListQuery = z.output<typeof availabilityListQuery>;
@@ -84,3 +93,11 @@ export interface AvailabilityItem extends AvailabilitySize {
 export const availabilityEventBody = z.object({ type: z.enum(AVAILABILITY_EVENT_TYPES) });
 
 export type AvailabilityEventBody = z.output<typeof availabilityEventBody>;
+
+// RF-19 — `POST /availability` body: the catalog size to add, and nothing
+// else. The store comes from the request context and the item always starts
+// available with no events; `validate()` is strict, so `is_available` or any
+// other key is a 400 (RF-22, RN-05).
+export const addAssortmentItemBody = z.object({ sizeId: z.uuid() });
+
+export type AddAssortmentItemBody = z.output<typeof addAssortmentItemBody>;

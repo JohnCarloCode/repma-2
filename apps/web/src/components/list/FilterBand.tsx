@@ -7,13 +7,15 @@ export const filterControlClass =
 /**
  * components.md §Filter band — the one branded band of a list screen
  * (`accent-hover`, `rounded.sm`, 16px padding, 12px gap). Controls sit inline
- * from tablet up; below 744px they stack full-width, search first.
+ * from tablet up; below 744px they stack full-width, search first. On this
+ * accent fill the focus ring is `on-accent` (`--focus-ring`): `accent-bright`
+ * would be ~2:1 against it (DESIGN.md §Accessibility, styles/contrast.test.ts).
  */
 export function FilterBand({ children }: { children: ReactNode }) {
   return (
     <div
       role="search"
-      className="flex flex-col gap-[12px] rounded-sm bg-accent-hover p-base tablet:flex-row tablet:flex-wrap tablet:items-center"
+      className="flex flex-col gap-[12px] rounded-sm bg-accent-hover p-base [--focus-ring:var(--color-on-accent)] tablet:flex-row tablet:flex-wrap tablet:items-center"
     >
       {children}
     </div>
@@ -39,19 +41,29 @@ export function SearchField({ value, onChange, label, placeholder }: SearchField
     commit.current = onChange;
   });
 
+  // What this field last committed: its echo coming back as `value` is not an outside change.
+  const committed = useRef(value);
+
   // Follow the committed value when it changes from outside (Back, "Clear filters"),
-  // without clobbering what is being typed (e.g. a trailing space).
-  useEffect(() => setDraft((current) => (current.trim() === value ? current : value)), [value]);
+  // without clobbering what is being typed (e.g. a trailing space, or keys typed after a commit).
+  useEffect(() => {
+    if (value === committed.current) return;
+    committed.current = value;
+    setDraft((current) => (current.trim() === value ? current : value));
+  }, [value]);
 
   useEffect(() => {
     if (draft.trim() === value) return;
-    const timer = setTimeout(() => commit.current(draft.trim()), SEARCH_DEBOUNCE_MS);
+    const timer = setTimeout(() => {
+      committed.current = draft.trim();
+      commit.current(draft.trim());
+    }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [draft, value]);
 
   return (
     <div
-      className={`${filterControlClass} flex items-center gap-sm focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent-bright tablet:min-w-[220px] tablet:flex-1`}
+      className={`${filterControlClass} flex items-center gap-sm focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[color:var(--focus-ring,var(--color-accent-bright))] tablet:min-w-[220px] tablet:flex-1`}
     >
       <span className="icon text-text-secondary" aria-hidden>
         search

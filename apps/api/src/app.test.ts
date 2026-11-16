@@ -35,6 +35,12 @@ describe('health handler (RNF-10)', () => {
     expect(res.body).toEqual({ status: 'ok' });
   });
 
+  it('rejects any query param → 400 (RNF-08)', async () => {
+    const res = await request(buildApp(() => Promise.resolve())).get('/health?verbose=1');
+    expect(res.status).toBe(400);
+    expect(res.body.error.details).toEqual([{ path: 'verbose', message: 'Unknown field' }]);
+  });
+
   it('returns 503 when the ping fails (broken DB connection)', async () => {
     const res = await request(buildApp(() => Promise.reject(new Error('connection refused')))).get('/health');
     expect(res.status).toBe(503);
@@ -47,5 +53,22 @@ describe('404 handler', () => {
     const res = await request(app).get('/api/v1/does-not-exist');
     expect(res.status).toBe(404);
     expect(res.body.error.code).toBe('NOT_FOUND');
+  });
+});
+
+describe('body parser errors (RNF-06)', () => {
+  it('a JSON body over 100 kb → 413 in the error envelope, not a 500', async () => {
+    const res = await request(app)
+      .post('/api/v1/auth/login')
+      .set('Content-Type', 'application/json')
+      .send(JSON.stringify({ email: 'x'.repeat(110 * 1024), password: 'x' }));
+    expect(res.status).toBe(413);
+    expect(res.body).toEqual({ error: { code: 'PAYLOAD_TOO_LARGE', message: 'The request body is too large' } });
+  });
+
+  it('malformed JSON → 400 VALIDATION_ERROR, not a 500', async () => {
+    const res = await request(app).post('/api/v1/auth/login').set('Content-Type', 'application/json').send('{"email":');
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ error: { code: 'VALIDATION_ERROR', message: 'The request body is not valid JSON' } });
   });
 });

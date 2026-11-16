@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useId, useState } from 'react';
-import type { AvailabilityProduct, AvailabilitySize, Category, Page } from 'shared';
+import type { AvailabilityProduct, AvailabilitySize, Category, Page, Product } from 'shared';
 import { api } from '../lib/apiClient';
 import { useStoreScope } from '../tenant/activeStore';
 import { InactiveBadge } from './InactiveBadge';
@@ -21,7 +21,10 @@ export interface PickerSelection {
   size: AvailabilitySize;
 }
 
-interface ProductPickerProps {
+/** The assortment flow's selection: no extra fields (availability.md §Add size to assortment). */
+export type AssortmentSelection = Omit<PickerSelection, 'quantity'>;
+
+interface CommonProps {
   open: boolean;
   /** "Close" (or Escape / a scrim click) ends the session. Ignored while a confirm is in flight. */
   onClose: () => void;
@@ -31,6 +34,11 @@ interface ProductPickerProps {
   confirmLabel: string;
   /** The CTA while `onConfirm` is in flight, e.g. "Adding…". */
   pendingLabel: string;
+}
+
+/** Replenishment flow (the default): the store's assortment, a quantity field, stays open after confirm. */
+interface ReplenishmentFlowProps {
+  flow?: 'replenishment';
   /** Sizes that can't be picked again (RN-04), by `sizeId` — e.g. the list's `items[].sizeId`. */
   disabledSizeIds: ReadonlySet<string>;
   /** Why those sizes are disabled, e.g. "Already on the list". */
@@ -45,15 +53,52 @@ interface ProductPickerProps {
   onConfirm: (selection: PickerSelection) => Promise<unknown>;
 }
 
+/**
+ * Assortment flow: the global catalog (`GET /products?isActive=true`, inactive sizes dropped — RN-08),
+ * no extra fields, closes after confirm. The picker builds the disabled set itself (sizes the store
+ * already carries, RN-04) from the `productId` cross-reference of the grid page — the consumer
+ * can't know which products are on screen.
+ */
+interface AssortmentFlowProps {
+  flow: 'assortment';
+  /**
+   * The consumer's mutation. Resolved with nothing: the picker closes. Resolved with a message:
+   * the picker stays open and shows it inline on the size step (the 409/400 mapping —
+   * availability.md §Flows). Rejected: the consumer surfaced the error (toast); the selection stays.
+   */
+  onConfirm: (selection: AssortmentSelection) => Promise<string | void>;
+}
+
+type ProductPickerProps = CommonProps & (ReplenishmentFlowProps | AssortmentFlowProps);
+
+const ASSORTED_LABEL = 'Already in the assortment';
+const NO_SIZES: ReadonlySet<string> = new Set();
+
+/** A catalog product on the card/run shape, active sizes only (the assortment flow never offers inactive ones). */
+function toPickerProduct(product: Product): AvailabilityProduct {
+  return {
+    id: product.id,
+    name: product.name,
+    imageUrl: product.imageUrl,
+    categoryName: product.categoryName,
+    isActive: product.isActive,
+    sizes: product.sizes
+      .filter((s) => s.isActive)
+      .map((s) => ({ id: s.id, sizeId: s.id, label: s.label, sku: s.sku, isAvailable: true, isActive: true, latestEventAt: null })),
+  };
+}
+
 const PAGE_SIZE = 24;
 
 /**
- * product-picker.md — the visual product & size selector, replenishment flow: the store's
+ * product-picker.md — the visual product & size selector. Replenishment flow: the store's
  * assortment (`GET /availability`, AD-22) browsed by category and search, inactive products and
  * sizes included and selectable (RN-12/RN-08), availability state never shown nor filtered on
- * (DP-06). Stays open after confirm (adding several in a row is the common case).
+ * (DP-06); stays open after confirm (adding several in a row is the common case). Assortment
+ * flow: the active catalog, no quantity, closes after confirm.
  */
-export function ProductPicker({ open, onClose, ...props }: ProductPickerProps) {
+export function ProductPicker(props: ProductPickerProps) {
+  const { open, onClose } = props;
   const [pending, setPending] = useState(false);
   return (
     <Modal
@@ -66,21 +111,16 @@ export function ProductPicker({ open, onClose, ...props }: ProductPickerProps) {
       className="flex max-w-[960px] flex-col tablet:h-[min(800px,calc(100dvh-32px))]"
     >
       {/* Mounted only while open (the Dialog unmounts its panel), so every session starts clean. */}
-      <PickerBody {...props} onClose={onClose} pending={pending} setPending={setPending} />
+      <PickerBody {...props} pending={pending} setPending={setPending} />
     </Modal>
   );
 }
 
-function PickerBody({
-  confirmLabel,
-  pendingLabel,
-  disabledSizeIds,
-  disabledLabel,
-  onConfirm,
-  onClose,
-  pending,
-  setPending,
-}: Omit<ProductPickerProps, 'open' | 'title'> & { pending: boolean; setPending: (pending: boolean) => void }) {
+function PickerBody(
+  props: ProductPickerProps & { pending: boolean; setPending: (pending: boolean) => void },
+) {
+  const { confirmLabel, pendingLabel, onClose, pending, setPending } = props;
+  const assortment = props.flow === 'assortment';
   const scope = useStoreScope();
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -88,16 +128,46 @@ function PickerBody({
   const [product, setProduct] = useState<AvailabilityProduct | null>(null);
   const [sizeId, setSizeId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState('1');
+  const [error, setError] = useState<string | null>(null);
 
-  const products = useQuery({
+  const gridQuery = () => {
+    const query = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
+    if (search) query.set('search', search);
+    if (categoryId) query.set('categoryId', categoryId);
+    return query;
+  };
+  const stock = useQuery({
     queryKey: scope.key('availability', 'picker', { page, search, categoryId }),
+    queryFn: () => api.get<Page<AvailabilityProduct>>(`/availability?${gridQuery()}`, scope.request),
+    enabled: !assortment,
+  });
+  // Global catalog route (no `X-Tenant-Id`); the cache keeps the API shape, the card shape is a `select`.
+  const catalog = useQuery({
+    queryKey: ['products', { isActive: true, page, pageSize: PAGE_SIZE, search, categoryId }],
     queryFn: () => {
-      const query = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
-      if (search) query.set('search', search);
-      if (categoryId) query.set('categoryId', categoryId);
+      const query = gridQuery();
+      query.set('isActive', 'true');
+      return api.get<Page<Product>>(`/products?${query}`);
+    },
+    select: (data): Page<AvailabilityProduct> => ({ ...data, items: data.items.map(toPickerProduct) }),
+    enabled: assortment,
+  });
+  const products = assortment ? catalog : stock;
+  // Assortment flow, RN-04: which of the grid page's sizes the store already carries — the
+  // `productId` cross-reference (one request per grid page, `pageSize` = the ids sent). Under the
+  // `availability` family, so the consumer's invalidation after an add refreshes it.
+  const gridIds = assortment ? (catalog.data?.items.map((p) => p.id) ?? []) : [];
+  const assorted = useQuery({
+    queryKey: scope.key('availability', 'picker', 'assorted', gridIds),
+    queryFn: () => {
+      const query = new URLSearchParams({ productId: gridIds.join(','), pageSize: String(gridIds.length) });
       return api.get<Page<AvailabilityProduct>>(`/availability?${query}`, scope.request);
     },
+    select: (data) => new Set(data.items.flatMap((p) => p.sizes.map((s) => s.sizeId))),
+    enabled: gridIds.length > 0,
   });
+  const disabledSizeIds = assortment ? (assorted.data ?? NO_SIZES) : props.disabledSizeIds;
+  const disabledLabel = assortment ? ASSORTED_LABEL : props.disabledLabel;
   // Global catalog route: no `X-Tenant-Id`, and the key `/availability` already shares.
   const categories = useQuery({
     queryKey: ['categories', { pageSize: 100 }],
@@ -114,24 +184,41 @@ function PickerBody({
   const parsedQuantity = /^\d+$/.test(quantity.trim()) ? Number(quantity.trim()) : NaN;
   const quantityValid = Number.isInteger(parsedQuantity) && parsedQuantity >= 1 && parsedQuantity <= 9999;
 
+  const ready = Boolean(product && size) && (assortment || quantityValid);
+
   const selectProduct = (next: AvailabilityProduct) => {
     if (next.id === product?.id) return;
     setProduct(next);
     setSizeId(null);
+    setError(null);
+  };
+
+  const selectSize = (next: AvailabilitySize) => {
+    setSizeId(next.sizeId);
+    setError(null);
   };
 
   const confirm = async () => {
-    if (!product || !size || !quantityValid || pending) return;
+    if (!product || !size || !ready || pending) return;
     setPending(true);
+    setError(null);
+    let close = false;
     try {
-      await onConfirm({ sizeId: size.sizeId, quantity: parsedQuantity, product, size });
-      setSizeId(null);
-      setQuantity('1');
+      if (props.flow === 'assortment') {
+        const message = await props.onConfirm({ sizeId: size.sizeId, product, size });
+        if (message) setError(message);
+        else close = true;
+      } else {
+        await props.onConfirm({ sizeId: size.sizeId, quantity: parsedQuantity, product, size });
+        setSizeId(null);
+        setQuantity('1');
+      }
     } catch {
       // The consumer owns the error (toast); the selection stays for a retry.
     } finally {
       setPending(false);
     }
+    if (close) onClose();
   };
 
   const stepQuantity = (delta: number) =>
@@ -168,7 +255,10 @@ function PickerBody({
                 action={{ label: 'Clear filters', onClick: () => filter({ search: '', categoryId: '' }) }}
               />
             ) : (
-              <EmptyState icon="inventory_2" title="No items in the assortment yet." />
+              <EmptyState
+                icon="inventory_2"
+                title={assortment ? 'No active products in the catalog.' : 'No items in the assortment yet.'}
+              />
             )
           ) : (
             <>
@@ -205,18 +295,24 @@ function PickerBody({
           <SizeRun
             sizes={product.sizes}
             label={`${product.name} sizes`}
-            onSelect={(s) => setSizeId(s.sizeId)}
+            onSelect={selectSize}
             selectedSizeId={size?.sizeId ?? null}
             disabledSizeIds={disabledSizeIds}
             disabledLabel={disabledLabel}
           />
-          <DisabledCaption product={product} disabledSizeIds={disabledSizeIds} disabledLabel={disabledLabel} />
-          <QuantityStepper
-            value={quantity}
-            valid={quantityValid}
-            onChange={setQuantity}
-            onStep={stepQuantity}
-          />
+          {assortment && product.sizes.every((s) => disabledSizeIds.has(s.sizeId)) ? (
+            <p className="text-caption text-text-secondary">No sizes available to add</p>
+          ) : (
+            <DisabledCaption product={product} disabledSizeIds={disabledSizeIds} disabledLabel={disabledLabel} />
+          )}
+          {error && (
+            <p role="alert" className="text-caption text-alert">
+              {error}
+            </p>
+          )}
+          {!assortment && (
+            <QuantityStepper value={quantity} valid={quantityValid} onChange={setQuantity} onStep={stepQuantity} />
+          )}
         </section>
       )}
 
@@ -227,7 +323,7 @@ function PickerBody({
         <button
           type="button"
           className={primaryButtonClass}
-          disabled={pending || !size || !quantityValid}
+          disabled={pending || !ready}
           onClick={() => void confirm()}
         >
           {pending ? pendingLabel : confirmLabel}

@@ -4,7 +4,7 @@ import { NavLink, useLocation } from 'react-router';
 import type { AuthSession } from 'shared';
 import { Tooltip } from '../Tooltip';
 import { Wordmark } from '../Wordmark';
-import { navSections, SHIPPED_NAV, type NavItem } from './nav';
+import { NAV, navSections, type NavItem } from './nav';
 import { TenantBlock } from './TenantBlock';
 import { UserMenu } from './UserMenu';
 import { useSidebarCollapsed } from './useShellLayout';
@@ -59,7 +59,7 @@ function SidebarBody({ session, rail, onClose }: { session: AuthSession; rail: b
       </div>
       <TenantBlock session={session} rail={rail} />
       <nav aria-label="Main" className="-mx-xs flex min-h-0 flex-1 flex-col gap-lg overflow-y-auto px-xs">
-        {navSections(session, SHIPPED_NAV).map((section) =>
+        {navSections(session, NAV).map((section) =>
           section.title ? (
             // Collapsed: the section header gives way to the hairline divider (kept for screen readers).
             <div key={section.title} className="border-t border-border pt-lg">

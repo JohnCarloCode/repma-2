@@ -14,6 +14,9 @@ import { AVAILABILITY, CATEGORIES, DEMO_PASSWORD, LISTS, PRODUCTS, STORES, USERS
 // users are created or have their demo password reset; the two demo stores'
 // tenant-scoped data (assortment, events, lists) is wiped and rebuilt, so
 // event ages are always relative to the latest run.
+//
+// Product images are set afterwards by `seedImages` (images.ts); `db:seed`
+// runs both.
 const seedEnvSchema = z.object({
   MIGRATIONS_DATABASE_URL: z.string().min(1),
   SUPABASE_URL: z.string().url(),
@@ -25,6 +28,12 @@ export function parseSeedEnv(raw: NodeJS.ProcessEnv): SeedEnv {
   const result = seedEnvSchema.safeParse(raw);
   if (!result.success) {
     throw new Error(`Invalid seed environment: ${JSON.stringify(result.error.flatten().fieldErrors)}`);
+  }
+  // dotenv fills only what the shell left unset, so a variable missed on a one-off prod run would
+  // silently pair the prod database with the local Supabase (or the reverse). Both must point the same way.
+  const isLocal = (url: string) => ['127.0.0.1', 'localhost', '[::1]'].includes(new URL(url).hostname);
+  if (isLocal(result.data.MIGRATIONS_DATABASE_URL) !== isLocal(result.data.SUPABASE_URL)) {
+    throw new Error('MIGRATIONS_DATABASE_URL and SUPABASE_URL must target the same environment (both local or both remote)');
   }
   return result.data;
 }
@@ -93,7 +102,7 @@ export async function seed(env: SeedEnv): Promise<void> {
         insert into products ${tx(productRows, 'id', 'name', 'category_id', 'description')}
         on conflict (id) do update set
           name = excluded.name, category_id = excluded.category_id, description = excluded.description,
-          image_url = null, is_active = true
+          is_active = true
       `;
 
       const sizeRows = PRODUCTS.flatMap((p) =>

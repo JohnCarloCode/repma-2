@@ -133,7 +133,7 @@
 
 **Deliverable:** full shop-floor workflow on prod: create a list, add sizes via the picker, check lines off watching the bar, undo a removal, finish and mark done.
 **Tests:** list/items integration suites (RN-12/RN-04), all detail flow tests, picker tests.
-**Closing criterion:** `npm run check` + CI green; prod walkthrough done. — [ ]
+**Closing criterion:** `npm run check` + CI green; prod walkthrough done. — [x]
 
 ---
 
@@ -150,7 +150,7 @@
 
 **Deliverable:** manager/employee land on a live Home whose figures and blocks react to every flow built so far.
 **Tests:** summary integration; Home block/permission/empty-state suites.
-**Closing criterion:** `npm run check` + CI green; prod Home verified. — [ ]
+**Closing criterion:** `npm run check` + CI green; prod Home verified. — [x]
 
 ---
 
@@ -161,12 +161,12 @@
 **Starting state:** Phase 5 closed. Verify: `npm run check`; Home live locally.
 **Manual setup:** none.
 
-- [ ] **6.1 API `GET /products` + `productId` filter** (M) — `GET /products` per RF-15: paginated, filters `categoryId`/`search` (name + size SKU)/`isActive`, **sizes embedded**; `catalog:read`, read limiter. Plus the `productId` (one-or-more) filter on `GET /availability` (RF-18's `/catalog` cross-reference — built with its consumer). Integration tests.
-- [ ] **6.2 API assortment writes** (M) — `POST /availability` `{sizeId}` (starts available, no events; inactive product/size rejected RN-08; duplicate → 409 RN-04; `is_available` in body → validation error RF-22) and `DELETE /availability/:id` (only unreferenced — no events, no list lines; else clean 409, RF-44/RN-13). `assortment:manage`, write limiter. Tests incl. both RESTRICT paths.
-- [ ] **6.3 Picker assortment flow + `/availability` header action** (M) — "Add to assortment" primary on `/availability` (closes 3.6's interim) opening the **shared picker** in its assortment flow: grid source `GET /products`, inactive products/sizes never offered (RN-08), already-added tiles disabled (RN-04), **no extra fields, closes after confirm**; 409 mapped inline on the size step per `availability.md`. Tests.
-- [ ] **6.4 Detail removal** (S) — ghost "Remove from assortment" on `/availability/:id`, rendered only with `assortment:manage` **and** empty history; confirm modal; 409 → toast + refetch (action disappears if events appeared). Closes 3.7's interim. Tests.
-- [ ] **6.5 Sheet + `/catalog` list** (M) — the right-anchored **slide-over component** (`sheet`/`sheet-scrim` layers, ink left rule, Escape/scrim close) born here; `/catalog` per `catalog.md`: guard `assortment:manage`, products table (thumb, name, size count, category, status, "In assortment" via the **`productId` cross-reference** with `pageSize` = ids sent), filter band (search/category/`isActive` default Active), pagination; cross-reference failure degrades to "—" + retry without blocking. Nav gains "Catalog" (manager only by permission). Tests.
-- [ ] **6.6 `/catalog` slide-over & add flow** (M) — product detail slide-over from row data: image, description, **size list (a list, not a `<SizeRun>` — catalog.md)** with per-size status: "In assortment" + `/availability/:id` link, or "Add to assortment" → `POST /availability` direct (no picker on this page — its only add surface); inactive rules; 409/RN-08 handling. Tests.
+- [x] **6.1 API `GET /products` + `productId` filter** (M) — `GET /products` per RF-15: paginated, filters `categoryId`/`search` (name + size SKU)/`isActive`, **sizes embedded**; `catalog:read`, read limiter. Plus the `productId` (one-or-more) filter on `GET /availability` (RF-18's `/catalog` cross-reference — built with its consumer). Integration tests.
+- [x] **6.2 API assortment writes** (M) — `POST /availability` `{sizeId}` (starts available, no events; inactive product/size rejected RN-08; duplicate → 409 RN-04; `is_available` in body → validation error RF-22) and `DELETE /availability/:id` (only unreferenced — no events, no list lines; else clean 409, RF-44/RN-13). `assortment:manage`, write limiter. Tests incl. both RESTRICT paths.
+- [x] **6.3 Picker assortment flow + `/availability` header action** (M) — "Add to assortment" primary on `/availability` (closes 3.6's interim) opening the **shared picker** in its assortment flow: grid source `GET /products`, inactive products/sizes never offered (RN-08), already-added tiles disabled (RN-04), **no extra fields, closes after confirm**; 409 mapped inline on the size step per `availability.md`. Tests.
+- [x] **6.4 Detail removal** (S) — ghost "Remove from assortment" on `/availability/:id`, rendered only with `assortment:manage` **and** empty history; confirm modal; 409 → toast + refetch (action disappears if events appeared). Closes 3.7's interim. Tests.
+- [x] **6.5 Sheet + `/catalog` list** (M) — the right-anchored **slide-over component** (`sheet`/`sheet-scrim` layers, ink left rule, Escape/scrim close) born here; `/catalog` per `catalog.md`: guard `assortment:manage`, products table (thumb, name, size count, category, status, "In assortment" via the **`productId` cross-reference** with `pageSize` = ids sent), filter band (search/category/`isActive` default Active), pagination; cross-reference failure degrades to "—" + retry without blocking. Nav gains "Catalog" (manager only by permission). Tests.
+- [x] **6.6 `/catalog` slide-over & add flow** (M) — product detail slide-over from row data: image, description, **size list (a list, not a `<SizeRun>` — catalog.md)** with per-size status: "In assortment" + `/availability/:id` link, or "Add to assortment" → `POST /availability` direct (no picker on this page — its only add surface); inactive rules; 409/RN-08 handling. Tests.
 
 **Deliverable:** a manager browses the catalog, adds sizes from both surfaces (picker on `/availability`, slide-over on `/catalog`), and can undo a mistaken addition while it has no history.
 **Tests:** products/assortment-write integrations; both add-surface suites; removal suite.
@@ -181,13 +181,13 @@
 **Starting state:** Phase 6 closed. Verify: `npm run check`; store zone complete locally.
 **Manual setup:** none.
 
-- [ ] **7.1 API tenants write** (M) — **slug util** (generated from name, unit-tested, RN-10 — reused by 8.1); `POST /tenants`, `GET /tenants/:id`, `PATCH /tenants/:id` incl. `is_active` (RF-07/RF-08; slug 409). Tests incl. deactivated-store users getting 401 (RF-05 already enforced — asserted end-to-end here).
-- [ ] **7.2 API users read** (S) — `GET /users` (paginated; `search` on full name **and denormalized email**, store filter — RF-09) and **`GET /users/:id`** (explicitly: it exists in architecture §7). `user:manage`, read limiter. Tests.
-- [ ] **7.3 API users create** (M) — `POST /users`: Supabase Auth admin + profile **atomically-or-compensated** (auth user deleted if the profile fails — the failure case is integration-tested, architecture §9); role↔store coherence 400s before the DB CHECK (RN-01). Tests.
-- [ ] **7.4 API users edit & delete** (M) — `PATCH /users/:id`: name, role (**manager ↔ employee only**, store immutable, email immutable — RF-11), `is_active`, optional write-only `password` reset via Auth admin; self-deactivate rejected. `DELETE /users/:id`: self-delete rejected (RF-12); deletion cascades the profile via `auth.users` and **leaves availability events with `created_by = NULL`** (RN-09 — asserted). Tests for every rule.
-- [ ] **7.5 `/platform/tenants`** (M) — per `platform-tenants.md`: table (no delete anywhere), create modal (name only, slug 409 inline), edit modal (slug read-only), deactivate/reactivate **confirm flow with the consequence copy** (PD-03/RF-05); selector-source invalidation on `is_active` change. Platform nav section appears. **Admin role home flips to `/platform/tenants`** (login.md final). Tests.
-- [ ] **7.6 `/platform/users` — list & create** (M) — per `platform-users.md`: table, search + store filter, create modal with **live role↔store coherence** (store required for store roles, hidden+cleared for admin), 409 email inline. Tests.
-- [ ] **7.7 `/platform/users` — edit & delete** (M) — edit modal (role select constrained m↔e, store read-only with inactive badge, status toggle disabled on own account, optional password reset field), delete confirm with the RN-09 copy, "(you)" marker, self-protection double layer (hidden UI **and** graceful API 4xx), empty-page recovery. Tests.
+- [x] **7.1 API tenants write** (M) — **slug util** (generated from name, unit-tested, RN-10 — reused by 8.1); `POST /tenants`, `GET /tenants/:id`, `PATCH /tenants/:id` incl. `is_active` (RF-07/RF-08; slug 409). Tests incl. deactivated-store users getting 401 (RF-05 already enforced — asserted end-to-end here).
+- [x] **7.2 API users read** (S) — `GET /users` (paginated; `search` on full name **and denormalized email**, store filter — RF-09) and **`GET /users/:id`** (explicitly: it exists in architecture §7). `user:manage`, read limiter. Tests.
+- [x] **7.3 API users create** (M) — `POST /users`: Supabase Auth admin + profile **atomically-or-compensated** (auth user deleted if the profile fails — the failure case is integration-tested, architecture §9); role↔store coherence 400s before the DB CHECK (RN-01). Tests.
+- [x] **7.4 API users edit & delete** (M) — `PATCH /users/:id`: name, role (**manager ↔ employee only**, store immutable, email immutable — RF-11), `is_active`, optional write-only `password` reset via Auth admin; self-deactivate rejected. `DELETE /users/:id`: self-delete rejected (RF-12); deletion cascades the profile via `auth.users` and **leaves availability events with `created_by = NULL`** (RN-09 — asserted). Tests for every rule.
+- [x] **7.5 `/platform/tenants`** (M) — per `platform-tenants.md`: table (no delete anywhere), create modal (name only, slug 409 inline), edit modal (slug read-only), deactivate/reactivate **confirm flow with the consequence copy** (PD-03/RF-05); selector-source invalidation on `is_active` change. Platform nav section appears. **Admin role home flips to `/platform/tenants`** (login.md final). Tests.
+- [x] **7.6 `/platform/users` — list & create** (M) — per `platform-users.md`: table, search + store filter, create modal with **live role↔store coherence** (store required for store roles, hidden+cleared for admin), 409 email inline. Tests.
+- [x] **7.7 `/platform/users` — edit & delete** (M) — edit modal (role select constrained m↔e, store read-only with inactive badge, status toggle disabled on own account, optional password reset field), delete confirm with the RN-09 copy, "(you)" marker, self-protection double layer (hidden UI **and** graceful API 4xx), empty-page recovery. Tests.
 
 **Deliverable:** the admin demo: create a store, staff it, suspend it (its users lose access on next request), reset a password, delete a user and show their events surviving as "—".
 **Tests:** tenants/users integrations (compensation, self-rules, RN-09), both page suites.
@@ -201,20 +201,20 @@
 **Scope:** RF-14, RF-16, RF-17, RF-37, RF-38, RF-34(catalog); RN-02(writes), RN-08(retire), RN-11; AD-02(storage), AD-07, AD-21(API); RNF-04(img-src), RNF-06(5MB).
 **Starting state:** Phase 7 closed. Verify: `npm run check`; platform zone works locally.
 
-- [ ] **8.1 Presets + categories write** (S) — size presets as shared constants (Clothing XS–2XL, Footwear 36–45, "One size" — RF-38, AD-21); `POST /categories`, `PATCH /categories/:id` (slug util reuse, 409; **no delete endpoint** — RF-14). `catalog:manage`, write limiter. Tests.
-- [ ] **8.2 API products write** (M) — `POST /products` (**≥1 size required → 400**, sizes array with labels/SKUs/positions — RN-11; no image in this call), `PATCH /products/:id` (fields + `is_active` soft retire, RF-16/RN-08). Tests: sizeless 400, SKU 409, retire keeps assortment/history readable.
-- [ ] **8.3 API sizes** (M) — `POST /products/:id/sizes`, `PATCH /products/:id/sizes/:sizeId` (label, SKU — editable, global 409 —, position, `is_active`; **no delete**, RF-37). Tests.
-- [ ] **8.4 API image upload** (M) — `POST /products/:id/image`: multipart 5 MB limit (RNF-06), type check, upload via `lib/supabase` Storage to the public `product-images` bucket, URL persisted (RF-17); **local bucket** declared in supabase config so dev/CI need no manual step; **CSP `img-src` extended** with the bucket host (RNF-04). Tests: limit, type, URL persistence.
-- [ ] **8.5 `/platform/catalog` — categories tab** (M) — per `platform-catalog.md`: URL-held tabs, categories table (unpaginated), create/edit modal, slug 409 inline, filter-options invalidation. Tests.
-- [ ] **8.6 Products tab — table & create** (M) — products table + filters; create modal with the **sizes editor** (preset prefill buttons with overwrite confirm, add/remove rows pre-creation, ≥1 size in the shared schema), **create-then-upload** flow with the partial-failure toast. Tests.
-- [ ] **8.7 Products tab — edit, sizes section, retire, image** (M) — edit modal with expandable sizes section (edit label/SKU/position, add sizes, activate/deactivate with confirm — no delete), product retire/reactivate confirms with RN-08 copy, image replacement, per-row SKU 409s. Tests.
-- [ ] **8.8 Seed images** (S) — placeholder product images committed to the repo; `db:seed-images` script uploads them and points seed `image_url`s at the bucket (closes 1.9's interim; `database.md` §9 now fully true). Local/CI: runs inside `db:seed`. Prod: run once (documented, idempotent) with the service key exported — see Manual 8-A.
+- [x] **8.1 Presets + categories write** (S) — size presets as shared constants (Clothing XS–2XL, Footwear 36–45, "One size" — RF-38, AD-21); `POST /categories`, `PATCH /categories/:id` (slug util reuse, 409; **no delete endpoint** — RF-14). `catalog:manage`, write limiter. Tests.
+- [x] **8.2 API products write** (M) — `POST /products` (**≥1 size required → 400**, sizes array with labels/SKUs/positions — RN-11; no image in this call), `PATCH /products/:id` (fields + `is_active` soft retire, RF-16/RN-08). Tests: sizeless 400, SKU 409, retire keeps assortment/history readable.
+- [x] **8.3 API sizes** (M) — `POST /products/:id/sizes`, `PATCH /products/:id/sizes/:sizeId` (label, SKU — editable, global 409 —, position, `is_active`; **no delete**, RF-37). Tests.
+- [x] **8.4 API image upload** (M) — `POST /products/:id/image`: multipart 5 MB limit (RNF-06), type check, upload via `lib/supabase` Storage to the public `product-images` bucket, URL persisted (RF-17); **local bucket** declared in supabase config so dev/CI need no manual step; **CSP `img-src` extended** with the bucket host (RNF-04). Tests: limit, type, URL persistence.
+- [x] **8.5 `/platform/catalog` — categories tab** (M) — per `platform-catalog.md`: URL-held tabs, categories table (unpaginated), create/edit modal, slug 409 inline, filter-options invalidation. Tests.
+- [x] **8.6 Products tab — table & create** (M) — products table + filters; create modal with the **sizes editor** (preset prefill buttons with overwrite confirm, add/remove rows pre-creation, ≥1 size in the shared schema), **create-then-upload** flow with the partial-failure toast. Tests.
+- [x] **8.7 Products tab — edit, sizes section, retire, image** (M) — edit modal with expandable sizes section (edit label/SKU/position, add sizes, activate/deactivate with confirm — no delete), product retire/reactivate confirms with RN-08 copy, image replacement, per-row SKU 409s. Tests.
+- [x] **8.8 Seed images** (S) — placeholder product images committed to the repo; `db:seed-images` script uploads them and points seed `image_url`s at the bucket (closes 1.9's interim; `database.md` §9 now fully true). Local/CI: runs inside `db:seed`. Prod: run once (documented, idempotent) with the service key exported — see Manual 8-A.
 
 ### Manual setup 8-A — production Storage bucket (before verifying 8.4 in prod)
 
 1. Supabase dashboard → **Storage** → New bucket → name **`product-images`** (exact — the API config references it), toggle **Public bucket** on → Save.
-2. *Verify:* on the prod app, `/platform/catalog` → edit a product → upload a small image → the thumbnail renders. Failure "Bucket not found" = name mismatch; a broken image with a 4xx in the network tab = the bucket isn't public.
-3. Run the documented one-time `db:seed-images` invocation against prod (script validates its own env: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `MIGRATIONS_DATABASE_URL` — export them for the single run, from your password manager, never into any file). *Verify:* `/availability` on prod shows real thumbs instead of placeholders.
+2. *Verify:* on the prod app, `/platform/catalog` → edit a product → upload a small image → the thumbnail renders. A 500 whose Render log reads "Product image upload failed: Bucket not found" = name mismatch; a broken image with a 4xx in the network tab = the bucket isn't public.
+3. Run the documented one-time `db:seed-images` invocation against prod (README §"Seed images in production"; script validates its own env: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `MIGRATIONS_DATABASE_URL` — export them for the single run, from your password manager, never into any file). *Verify:* `/availability` on prod shows real thumbs instead of placeholders.
 
 **Deliverable:** the full admin catalog demo: create a product with the Footwear preset, upload its photo, retire a size, and watch the store side respect it (no new additions, history intact).
 **Tests:** catalog write integrations (RN-11/409/soft-delete), upload tests, both tab suites.
@@ -229,9 +229,9 @@
 **Starting state:** Phase 8 closed. Verify: `npm run check`; full product live.
 **Manual setup:** none.
 
-- [ ] **9.1 Landing** (M) — **first write `design/pages/landing.md`** and register it in the pages index (its doc is pending — the reading-list rule); then build `/`: public pitch with visible demo credentials and CTA to `/login`, replacing the interim redirect (DP-01 complete; authenticated visitors still route to their role home). Tests.
-- [ ] **9.2 README + docs** (S) — setup from scratch (tools, `supabase start`, migrate/bootstrap/seed, dev), demo credentials (database.md §9), architecture pointers, commands (RNF-16), deploy notes. Bring the Commands block in `CLAUDE.md` up to date (seed, deploy).
-- [ ] **9.3 Final audit** (M) — executable where possible: a test enumerating every router → its limiter family (RNF-07); Zod-schema presence per endpoint (RNF-08); dependency rules of architecture §3.2 checked (lint rule or documented review); endpoint/route surface diffed against architecture §7 and the pages index; accessibility pass per DESIGN §Accessibility (focus, aria, contrast, reduced motion) with fixes; stale interims sweep (none may remain). Fix everything found.
+- [x] **9.1 Landing** (M) — **first write `design/pages/landing.md`** and register it in the pages index (its doc is pending — the reading-list rule); then build `/`: public pitch with visible demo credentials and CTA to `/login`, replacing the interim redirect (DP-01 complete; authenticated visitors still route to their role home). Tests.
+- [x] **9.2 README + docs** (S) — setup from scratch (tools, `supabase start`, migrate/bootstrap/seed, dev), demo credentials (database.md §9), architecture pointers, commands (RNF-16), deploy notes. Bring the Commands block in `CLAUDE.md` up to date (seed, deploy).
+- [x] **9.3 Final audit** (M) — executable where possible: a test enumerating every router → its limiter family (RNF-07); Zod-schema presence per endpoint (RNF-08); dependency rules of architecture §3.2 checked (lint rule or documented review); endpoint/route surface diffed against architecture §7 and the pages index; accessibility pass per DESIGN §Accessibility (focus, aria, contrast, reduced motion) with fixes; stale interims sweep (none may remain). Fix everything found.
 
 **Deliverable:** the finished MVP: a recruiter opens `/`, reads the pitch, logs in with the shown credentials and tours a coherent product.
 **Closing criterion:** `npm run check` + CI green; audit findings fixed; **MVP complete**. — [ ]

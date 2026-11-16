@@ -1,6 +1,6 @@
 /**
- * A product thumb: the image, or a placeholder with the name's initials (seed
- * images are NULL until 8.8). `sizeClass` sets the square (32px on list lines,
+ * A product thumb: the image, or a placeholder with the name's initials when
+ * the product has none. `sizeClass` sets the square (32px on list lines,
  * larger on the detail's summary card).
  */
 export function ProductThumb({

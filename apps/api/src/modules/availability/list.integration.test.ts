@@ -9,8 +9,8 @@ import { env } from '../../config/env.js';
 
 // Sub-task 3.1 — RF-18 / AD-22 `GET /availability`: `availability:read`, read
 // limiter, tenantContext (+ RLS), a page of products each carrying its full
-// size run, filters `search`/`categoryId`/`outOfStock`, the fixed aging-desc
-// order. Requires the local Supabase stack. Both stores are this file's own,
+// size run, filters `search`/`categoryId`/`outOfStock` (+ `productId`, plan
+// 6.1), the fixed aging-desc order. Requires the local Supabase stack. Both stores are this file's own,
 // so every assertion can be exact.
 
 // `availability:read` is held by every role (architecture.md §6): a switch
@@ -344,7 +344,43 @@ describe('GET /availability (RF-18, AD-22)', () => {
       expect(none.body.total).toBe(0);
     });
 
+    it('productId (one or more, comma-separated) selects exactly those products, in the RF-18 order', async () => {
+      const res = await list(users.employee, { productId: `${charlie.id},${zeta.id}` });
+      expect(res.body).toEqual({ items: [expected.zeta, expected.charlie], page: 1, pageSize: 20, total: 2 });
+      const one = await list(users.employee, { productId: alpha.id });
+      expect(one.body.items).toEqual([expected.alpha]);
+    });
+
+    it('productId tolerates repeats; a product the store does not carry is simply absent', async () => {
+      const res = await list(users.employee, { productId: `${alpha.id},${alpha.id},${delta.id}` });
+      expect(res.body).toEqual({ items: [expected.alpha], page: 1, pageSize: 20, total: 1 });
+    });
+
+    it('productId intersects the other filters', async () => {
+      const res = await list(users.employee, { productId: `${zeta.id},${charlie.id}`, outOfStock: 'true' });
+      expect(res.body.items).toEqual([expected.zeta]);
+      expect(res.body.total).toBe(1);
+    });
+
+    it('productId accepts up to 100 ids (the page-size cap)', async () => {
+      const filler = Array.from({ length: 99 }, () => randomUUID());
+      const res = await list(users.employee, { productId: [bravo.id, ...filler].join(','), pageSize: '100' });
+      expect(res.status).toBe(200);
+      expect(ids(res.body)).toEqual([bravo.id]);
+    });
+
+    it('a repeated productId param → 400 VALIDATION_ERROR (one comma-separated param)', async () => {
+      const res = await request(app)
+        .get(`/api/v1/availability?productId=${alpha.id}&productId=${zeta.id}`)
+        .set('Authorization', `Bearer ${users.employee.token}`);
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    });
+
     it.each([
+      ['an empty productId', { productId: '' }],
+      ['a non-uuid productId entry', { productId: `${alpha.id},shoes` }],
+      ['more than 100 productIds', { productId: Array.from({ length: 101 }, () => randomUUID()).join(',') }],
       ['outOfStock other than true', { outOfStock: 'false' }],
       ['a non-uuid categoryId', { categoryId: 'shoes' }],
       ['a sort param (the order is fixed)', { sort: 'name' }],

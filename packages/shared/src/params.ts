@@ -20,3 +20,8 @@ export const emptyQuery = z.object({});
 // (`Z` or `±hh:mm`), parsed to a Date. The web sends local start/end-of-day
 // bounds as `toISOString()`.
 export const isoTimestamp = z.iso.datetime({ offset: true }).transform((value) => new Date(value));
+
+// Path params of a `/products/:id/sizes/:sizeId` route: both ids are UUIDs.
+export const sizeParams = z.object({ id: z.uuid(), sizeId: z.uuid() });
+
+export type SizeParams = z.output<typeof sizeParams>;

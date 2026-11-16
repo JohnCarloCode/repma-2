@@ -2,12 +2,12 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { useState } from 'react';
-import type { AvailabilityProduct, AvailabilitySize, Page } from 'shared';
+import type { AvailabilityProduct, AvailabilitySize, Page, Product, ProductSize } from 'shared';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SELECTED_STORE_KEY } from '../tenant/activeStore';
 import { authMe, renderAt, sessionFor } from '../test/renderApp';
 import { server } from '../test/server';
-import { ProductPicker, type PickerSelection } from './ProductPicker';
+import { ProductPicker, type AssortmentSelection, type PickerSelection } from './ProductPicker';
 
 const size = (product: string, label: string, over: Partial<AvailabilitySize> = {}): AvailabilitySize => ({
   id: `item-${product}-${label}`,
@@ -358,5 +358,229 @@ describe('<ProductPicker> — replenishment flow', () => {
     renderPicker({}, 'platform_admin');
     await products();
     expect(api.requests.at(-1)!.headers.get('X-Tenant-Id')).toBe('store-b');
+  });
+});
+
+// ——— Assortment flow (6.3) ———
+
+const catalogSize = (product: string, label: string, position: number, isActive = true): ProductSize => ({
+  id: `size-${product}-${label}`,
+  label,
+  sku: `${product.toUpperCase()}-${label}`,
+  position,
+  isActive,
+});
+
+const boot: Product = {
+  id: 'p-boot',
+  name: 'Trail Boot',
+  description: null,
+  imageUrl: null,
+  categoryId: 'c-foot',
+  categoryName: 'Footwear',
+  isActive: true,
+  sizes: [
+    catalogSize('boot', '40', 1),
+    catalogSize('boot', '41', 2),
+    catalogSize('boot', '42', 3, false), // inactive: never offered (RN-08)
+    catalogSize('boot', '43', 4),
+  ],
+};
+const scarf: Product = {
+  id: 'p-scarf',
+  name: 'Silk Scarf',
+  description: 'Soft',
+  imageUrl: null,
+  categoryId: 'c-acc',
+  categoryName: 'Accessories',
+  isActive: true,
+  sizes: [catalogSize('scarf', 'One size', 1)],
+};
+
+/** `GET /products` + the `GET /availability?productId=` cross-reference answering `assorted` sizeIds. */
+function catalog(products: Product[] = [boot, scarf], assorted: string[] = []) {
+  const productRequests: Request[] = [];
+  const crossRequests: Request[] = [];
+  let taken = [...assorted];
+  server.use(
+    http.get('*/api/v1/products', ({ request }) => {
+      productRequests.push(request);
+      return HttpResponse.json({ items: products, page: 1, pageSize: 24, total: products.length });
+    }),
+    http.get('*/api/v1/availability', ({ request }) => {
+      crossRequests.push(request);
+      const ids = new URL(request.url).searchParams.get('productId')?.split(',') ?? [];
+      const items = products
+        .filter((p) => ids.includes(p.id))
+        .map((p) => ({
+          ...p,
+          sizes: p.sizes
+            .filter((s) => taken.includes(s.id))
+            .map((s) => ({ ...size(p.id, s.label), id: `item-${s.id}`, sizeId: s.id })),
+        }))
+        .filter((p) => p.sizes.length > 0);
+      return HttpResponse.json({ items, page: 1, pageSize: ids.length, total: items.length });
+    }),
+  );
+  return { productRequests, crossRequests, take: (sizeId: string) => (taken = [...taken, sizeId]) };
+}
+
+/** A consumer like `/availability`'s: owns the open state; `onConfirm` resolves a message or nothing. */
+function AssortmentHarness({ onConfirm }: { onConfirm: (selection: AssortmentSelection) => Promise<string | void> }) {
+  const [open, setOpen] = useState(true);
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)}>
+        Open picker
+      </button>
+      <ProductPicker
+        flow="assortment"
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Add to assortment"
+        confirmLabel="Add to assortment"
+        pendingLabel="Adding…"
+        onConfirm={onConfirm}
+      />
+    </>
+  );
+}
+
+function renderAssortment(
+  onConfirm: (selection: AssortmentSelection) => Promise<string | void> = async () => {},
+  role: 'manager' | 'platform_admin' = 'manager',
+) {
+  server.use(authMe(sessionFor(role)));
+  renderAt('/availability', <AssortmentHarness onConfirm={onConfirm} />);
+}
+
+const assortmentCta = () => screen.getByRole('button', { name: /^(Add to assortment|Adding…)$/ });
+
+describe('<ProductPicker> — assortment flow', () => {
+  it('browses the active catalog (GET /products?isActive=true, global) with active sizes only', async () => {
+    localStorage.setItem(SELECTED_STORE_KEY, JSON.stringify({ id: 'store-b', name: 'Store B' }));
+    const api = catalog();
+    renderAssortment(undefined, 'platform_admin');
+
+    await screen.findByRole('dialog', { name: 'Add to assortment' });
+    const grid = await products();
+    expect(within(grid).getAllByRole('listitem')).toHaveLength(2);
+    const params = new URL(api.productRequests.at(-1)!.url).searchParams;
+    expect(params.toString()).toBe('page=1&pageSize=24&isActive=true');
+    expect(api.productRequests.at(-1)!.headers.get('X-Tenant-Id')).toBeNull(); // global catalog
+    // The inactive size is dropped from the count and the run (RN-08).
+    expect(card(/Trail Boot/)).toHaveTextContent('3 sizes');
+
+    // The cross-reference of the grid page, store-scoped (RN-04's disabled set).
+    await waitFor(() => expect(api.crossRequests).toHaveLength(1));
+    const cross = new URL(api.crossRequests[0]!.url).searchParams;
+    expect(cross.get('productId')).toBe('p-boot,p-scarf');
+    expect(cross.get('pageSize')).toBe('2');
+    expect(api.crossRequests[0]!.headers.get('X-Tenant-Id')).toBe('store-b');
+
+    const user = userEvent.setup();
+    await user.click(card(/Trail Boot/));
+    const run = screen.getByRole('group', { name: 'Trail Boot sizes' });
+    expect(within(run).getAllByRole('button').map((b) => b.textContent)).toEqual(['40', '41', '43']);
+  });
+
+  it('filters by category and search on the catalog, still active only', async () => {
+    const user = userEvent.setup();
+    const api = catalog();
+    server.use(
+      http.get('*/api/v1/categories', () =>
+        HttpResponse.json({ items: [{ id: 'c-foot', name: 'Footwear' }], page: 1, pageSize: 100, total: 1 }),
+      ),
+    );
+    renderAssortment();
+    await products();
+    await user.click(screen.getByRole('button', { name: 'Footwear' }));
+    await user.type(screen.getByRole('searchbox', { name: 'Search products' }), 'boot');
+    await waitFor(() =>
+      expect(new URL(api.productRequests.at(-1)!.url).searchParams.toString()).toBe(
+        'page=1&pageSize=24&search=boot&categoryId=c-foot&isActive=true',
+      ),
+    );
+  });
+
+  it('disables sizes already in the store assortment, and says so when none is left', async () => {
+    const user = userEvent.setup();
+    catalog([boot, scarf], ['size-boot-41', 'size-scarf-One size']);
+    renderAssortment();
+    await products();
+
+    await user.click(card(/Trail Boot/));
+    await waitFor(() => expect(tile('41')).toBeDisabled());
+    expect(tile('41')).toHaveAccessibleName(/^41 ?, already in the assortment$/);
+    expect(screen.getByText('Already in the assortment: 41')).toBeInTheDocument();
+    expect(tile('40')).toBeEnabled();
+
+    await user.click(card(/Silk Scarf/));
+    expect(tile('One size')).toBeDisabled();
+    expect(screen.getByText('No sizes available to add')).toBeInTheDocument();
+    expect(assortmentCta()).toBeDisabled();
+  });
+
+  it('has no extra fields: a size alone enables the CTA, and a resolved confirm closes the picker', async () => {
+    const user = userEvent.setup();
+    catalog();
+    let finish!: () => void;
+    const onConfirm = vi.fn(() => new Promise<void>((resolve) => (finish = resolve)));
+    renderAssortment(onConfirm);
+    await products();
+    await user.click(card(/Trail Boot/));
+    expect(screen.queryByLabelText('Quantity')).not.toBeInTheDocument();
+    expect(assortmentCta()).toBeDisabled();
+    await user.click(tile('43'));
+    await user.click(assortmentCta());
+
+    expect(onConfirm).toHaveBeenCalledWith({
+      sizeId: 'size-boot-43',
+      product: expect.objectContaining({ id: 'p-boot', name: 'Trail Boot' }),
+      size: expect.objectContaining({ sizeId: 'size-boot-43', label: '43' }),
+    });
+    expect(assortmentCta()).toHaveTextContent('Adding…');
+    expect(screen.getByRole('button', { name: 'Close' })).toBeDisabled();
+
+    finish();
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('a resolved message stays open and shows it inline on the size step; a new pick clears it', async () => {
+    const user = userEvent.setup();
+    catalog();
+    const onConfirm = vi.fn(async () => 'This size is already in the assortment');
+    renderAssortment(onConfirm);
+    await products();
+    await user.click(card(/Trail Boot/));
+    await user.click(tile('40'));
+    await user.click(assortmentCta());
+
+    const panel = screen.getByRole('region', { name: 'Selection' });
+    expect(await within(panel).findByRole('alert')).toHaveTextContent('This size is already in the assortment');
+    expect(screen.getByRole('dialog', { name: 'Add to assortment' })).toBeInTheDocument();
+    expect(tile('40')).toHaveAttribute('aria-pressed', 'true');
+
+    await user.click(tile('41'));
+    expect(within(panel).queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('a rejected confirm keeps the picker open with the selection (the consumer toasted)', async () => {
+    const user = userEvent.setup();
+    catalog();
+    renderAssortment(() => Promise.reject(new Error('boom')));
+    await products();
+    await user.click(card(/Trail Boot/));
+    await user.click(tile('40'));
+    await user.click(assortmentCta());
+    await waitFor(() => expect(assortmentCta()).toBeEnabled());
+    expect(tile('40')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('an empty catalog reads as such', async () => {
+    catalog([]);
+    renderAssortment();
+    expect(await screen.findByText('No active products in the catalog.')).toBeInTheDocument();
   });
 });

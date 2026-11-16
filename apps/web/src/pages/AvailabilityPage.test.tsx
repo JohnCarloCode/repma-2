@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Route, Routes, useLocation } from 'react-router';
-import type { AvailabilityProduct, AvailabilitySize, Category, Page } from 'shared';
+import type { AvailabilityProduct, AvailabilitySize, Category, Page, Product } from 'shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppRoutes } from '../App';
 import { RouteGuard } from '../auth/guards';
@@ -51,8 +51,8 @@ const tote: AvailabilityProduct = {
 const envelope = <T,>(items: T[], page = 1, total = items.length): Page<T> => ({ items, page, pageSize: 20, total });
 
 const categories: Category[] = [
-  { id: '00000000-0000-4000-8000-0000000000c1', name: 'Bags' },
-  { id: '00000000-0000-4000-8000-0000000000c2', name: 'Footwear' },
+  { id: '00000000-0000-4000-8000-0000000000c1', name: 'Bags', slug: 'bags', description: null },
+  { id: '00000000-0000-4000-8000-0000000000c2', name: 'Footwear', slug: 'footwear', description: null },
 ];
 
 /** `GET /availability` (and `GET /categories`), recording every request. */
@@ -158,12 +158,6 @@ describe('/availability — product lines (availability.md)', () => {
     expect(within(nav).getByRole('link', { name: 'Availability' })).toHaveAttribute('aria-current', 'page');
   });
 
-  it('has no "Add to assortment" action yet (interim until 6.3), even for a manager', async () => {
-    stock();
-    renderAvailability('/availability', 'manager');
-    await screen.findByRole('list', { name: 'Products' });
-    expect(screen.queryByRole('button', { name: /add to assortment/i })).toBeNull();
-  });
 });
 
 describe('/availability — filters', () => {
@@ -316,5 +310,169 @@ describe('/availability — states and pagination', () => {
     renderAvailability('/availability?page=5');
     await waitFor(() => expect(location()).toBe('/availability'));
     expect(await screen.findByRole('list', { name: 'Products' })).toBeInTheDocument();
+  });
+});
+
+// ——— "Add to assortment" (6.3, availability.md §Flows · Add size to assortment) ———
+
+const boot: Product = {
+  id: 'p-boot',
+  name: 'Trail Boot',
+  description: null,
+  imageUrl: null,
+  categoryId: 'c-foot',
+  categoryName: 'Footwear',
+  isActive: true,
+  sizes: [
+    { id: 'size-b40', label: '40', sku: 'BOOT-40', position: 1, isActive: true },
+    { id: 'size-b41', label: '41', sku: 'BOOT-41', position: 2, isActive: true },
+  ],
+};
+
+/**
+ * The page's list (`GET /availability` without `productId`), the picker's catalog and its
+ * cross-reference (`?productId=`, answering the sizes in `assorted`), and `POST /availability`
+ * answering `post(body)`; every request recorded.
+ */
+function assortmentApi(post: (body: { sizeId: string }) => Response = () => HttpResponse.json({}, { status: 201 })) {
+  const list: Request[] = [];
+  const cross: Request[] = [];
+  const posts: { request: Request; body: { sizeId: string } }[] = [];
+  const assorted: string[] = [];
+  server.use(
+    http.get('*/api/v1/availability', ({ request }) => {
+      const ids = new URL(request.url).searchParams.get('productId');
+      if (!ids) {
+        list.push(request);
+        return HttpResponse.json(envelope([runner]));
+      }
+      cross.push(request);
+      const sizes = boot.sizes
+        .filter((s) => assorted.includes(s.id))
+        .map((s) => size(s.label, { id: `item-${s.id}`, sizeId: s.id }));
+      const items = sizes.length ? [{ ...runner, id: boot.id, name: boot.name, sizes }] : [];
+      return HttpResponse.json({ items, page: 1, pageSize: 1, total: items.length });
+    }),
+    http.get('*/api/v1/products', () => HttpResponse.json({ items: [boot], page: 1, pageSize: 24, total: 1 })),
+    http.post('*/api/v1/availability', async ({ request }) => {
+      const body = (await request.clone().json()) as { sizeId: string };
+      posts.push({ request, body });
+      return post(body);
+    }),
+  );
+  return { list, cross, posts, assorted };
+}
+
+const addButton = () => screen.findByRole('button', { name: 'Add to assortment' });
+const pickerDialog = () => screen.findByRole('dialog', { name: 'Add to assortment' });
+const runTile = (label: string) =>
+  within(screen.getByRole('group', { name: 'Trail Boot sizes' })).getByRole('button', { name: new RegExp(`^${label}\\b`) });
+
+async function pickBoot(user: ReturnType<typeof userEvent.setup>, label: string) {
+  await user.click(await addButton());
+  const dialog = await pickerDialog();
+  await user.click(await within(dialog).findByRole('button', { name: /Trail Boot/ }));
+  await user.click(runTile(label));
+  await user.click(within(dialog).getByRole('button', { name: 'Add to assortment' }));
+  return dialog;
+}
+
+describe('/availability — "Add to assortment"', () => {
+  it('is the header primary for a manager (assortment:manage)', async () => {
+    stock();
+    renderAvailability('/availability', 'manager');
+    await screen.findByRole('list', { name: 'Products' });
+    expect(await addButton()).toHaveClass('bg-accent'); // the primary
+  });
+
+  it('is not offered to an employee', async () => {
+    stock();
+    renderAvailability('/availability', 'employee');
+    await screen.findByRole('list', { name: 'Products' });
+    expect(screen.queryByRole('button', { name: /add to assortment/i })).toBeNull();
+  });
+
+  it('the empty assortment offers it too, for a manager only', async () => {
+    stock(() => HttpResponse.json(envelope([])));
+    renderAvailability('/availability', 'manager');
+    await screen.findByText('No items in the assortment yet.');
+    expect(screen.getAllByRole('button', { name: 'Add to assortment' })).toHaveLength(2);
+  });
+
+  it('opens the picker on the catalog; confirm POSTs { sizeId }, toasts, closes and refreshes the list', async () => {
+    const user = userEvent.setup();
+    const api = assortmentApi();
+    renderAvailability('/availability', 'manager');
+    await screen.findByRole('list', { name: 'Products' });
+    const listReads = api.list.length;
+
+    await pickBoot(user, '41');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(api.posts).toHaveLength(1);
+    expect(api.posts[0]!.body).toEqual({ sizeId: 'size-b41' });
+    expect(api.posts[0]!.request.headers.get('X-Tenant-Id')).toBeNull();
+    expect(await screen.findByText('Added to assortment')).toBeInTheDocument();
+    await waitFor(() => expect(api.list.length).toBeGreaterThan(listReads)); // availability family invalidated
+  });
+
+  it('the platform admin posts to the selected store (X-Tenant-Id)', async () => {
+    localStorage.setItem(SELECTED_STORE_KEY, JSON.stringify({ id: 'store-b', name: 'Store B' }));
+    const user = userEvent.setup();
+    const api = assortmentApi();
+    renderAvailability('/availability', 'platform_admin');
+    await screen.findByRole('list', { name: 'Products' });
+    await pickBoot(user, '40');
+    await waitFor(() => expect(api.posts).toHaveLength(1));
+    expect(api.posts[0]!.request.headers.get('X-Tenant-Id')).toBe('store-b');
+  });
+
+  it('409 (RN-04): inline on the size step, picker open, the tile flips to disabled after the refetch', async () => {
+    const user = userEvent.setup();
+    // Another user added it between the picker's load and the submit.
+    const api = assortmentApi(({ sizeId }) => {
+      api.assorted.push(sizeId);
+      return HttpResponse.json({ error: { code: 'CONFLICT', message: 'raw' } }, { status: 409 });
+    });
+    renderAvailability('/availability', 'manager');
+    await screen.findByRole('list', { name: 'Products' });
+    const dialog = await pickBoot(user, '40');
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('This size is already in the assortment');
+    await waitFor(() => expect(runTile('40')).toBeDisabled());
+    expect(screen.getByRole('dialog', { name: 'Add to assortment' })).toBeInTheDocument();
+    expect(screen.queryByText('Added to assortment')).toBeNull();
+  });
+
+  it('400 on sizeId (RN-08, deactivated meanwhile): the API message inline, picker open', async () => {
+    const user = userEvent.setup();
+    assortmentApi(() =>
+      HttpResponse.json(
+        {
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid request',
+            details: [{ path: 'sizeId', message: 'This size is inactive' }],
+          },
+        },
+        { status: 400 },
+      ),
+    );
+    renderAvailability('/availability', 'manager');
+    await screen.findByRole('list', { name: 'Products' });
+    const dialog = await pickBoot(user, '40');
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('This size is inactive');
+    expect(screen.getByRole('dialog', { name: 'Add to assortment' })).toBeInTheDocument();
+  });
+
+  it('any other error toasts and keeps the selection', async () => {
+    const user = userEvent.setup();
+    assortmentApi(() => HttpResponse.json({ error: { code: 'FORBIDDEN', message: 'Forbidden' } }, { status: 403 }));
+    renderAvailability('/availability', 'manager');
+    await screen.findByRole('list', { name: 'Products' });
+    const dialog = await pickBoot(user, '40');
+    const toast = await screen.findByRole('alert');
+    expect(toast).toHaveTextContent('Forbidden');
+    expect(within(dialog).queryByRole('alert')).toBeNull();
+    expect(runTile('40')).toHaveAttribute('aria-pressed', 'true');
   });
 });

@@ -35,7 +35,7 @@ const defaultStore = new MemoryRateLimitStore();
 export function rateLimit(family: RateLimitFamily, keyOf: RateLimitKey, store: RateLimitStore = defaultStore) {
   const { limit, windowMs } = rateLimitFamilies[family];
 
-  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  const limiter = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const { count, resetInMs } = await store.hit(`${family}:${keyOf(req)}`, windowMs);
     res.setHeader('RateLimit-Limit', limit);
     res.setHeader('RateLimit-Remaining', Math.max(0, limit - count));
@@ -47,4 +47,7 @@ export function rateLimit(family: RateLimitFamily, keyOf: RateLimitKey, store: R
     }
     next();
   };
+  // Tagged so the surface audit (app.surface.test.ts) can read each route's
+  // family and key from the router stack (RNF-07).
+  return Object.assign(limiter, { rateLimitFamily: family, rateLimitKey: keyOf });
 }

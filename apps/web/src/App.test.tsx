@@ -95,8 +95,8 @@ describe('route guards & redirects', () => {
     async (role) => {
       server.use(authMe(sessionFor(role)));
       renderAt('/no/such/page', <AppRoutes />);
-      // Store roles land on /home (5.3); the admin on /availability until 7.5.
-      await waitFor(() => expect(location()).toHaveTextContent(role === 'platform_admin' ? '/availability' : '/home'));
+      // Store roles land on /home; the admin on /platform/tenants (login.md).
+      await waitFor(() => expect(location()).toHaveTextContent(role === 'platform_admin' ? '/platform/tenants' : '/home'));
     },
   );
 
@@ -106,11 +106,11 @@ describe('route guards & redirects', () => {
     await waitFor(() => expect(location()).toHaveTextContent('/login'));
   });
 
-  it('/ redirects to /login (DP-01 interim)', async () => {
+  it('/ is the public landing (DP-01; its own suite: pages/LandingPage.test.tsx)', async () => {
     server.use(authMe(null));
     renderAt('/', <AppRoutes />);
-    expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
-    expect(location()).toHaveTextContent('/login');
+    expect(await screen.findByRole('link', { name: 'Sign in to the demo' })).toBeInTheDocument();
+    expect(location()).toHaveTextContent(/^\/$/);
   });
 });
 

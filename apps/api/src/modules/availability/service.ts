@@ -12,6 +12,8 @@ import type {
 import { AppError } from '../../core/errors.js';
 import { toPage } from '../../core/http/pagination.js';
 import {
+  addItem as addItemRow,
+  deleteItem as deleteItemRow,
   getItem as getItemRow,
   listAssortment as listAssortmentRows,
   listFeedEvents,
@@ -62,4 +64,35 @@ export async function recordEvent(id: string, type: AvailabilityEventType): Prom
     throw new AppError(409, 'CONFLICT', `This size is already ${state}`);
   }
   return result.item;
+}
+
+// A rejected `sizeId` is a 400 on that field, like a list line outside the
+// assortment (RN-12): the reference itself is what is wrong.
+function invalidSize(message: string): AppError {
+  return new AppError(400, 'VALIDATION_ERROR', message, [{ path: 'sizeId', message }]);
+}
+
+// RF-19 — add a catalog size; 201 with the new item. An unknown size or an
+// inactive product/size is a 400 on `sizeId` (RN-08); a size the store already
+// carries is a 409 (RN-04).
+export async function addItem(sizeId: string): Promise<AvailabilityItem> {
+  const result = await addItemRow(sizeId);
+  if (result === 'size_not_found') throw invalidSize('This size is not in the catalog');
+  if (result === 'product_inactive') throw invalidSize('This product is inactive');
+  if (result === 'size_inactive') throw invalidSize('This size is inactive');
+  if (result === 'duplicate') throw new AppError(409, 'CONFLICT', 'This size is already in the assortment');
+  return result.item;
+}
+
+// RF-44 — remove an unreferenced item (RN-13); each reference has its own
+// 409 message, written for the user.
+export async function deleteItem(id: string): Promise<void> {
+  const result = await deleteItemRow(id);
+  if (result === 'not_found') throw itemNotFound();
+  if (result === 'has_events') {
+    throw new AppError(409, 'CONFLICT', 'This size has availability history and cannot be removed');
+  }
+  if (result === 'on_list') {
+    throw new AppError(409, 'CONFLICT', 'This size is on a replenishment list and cannot be removed');
+  }
 }

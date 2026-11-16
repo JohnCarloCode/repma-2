@@ -6,8 +6,6 @@ export interface NavItem {
   /** Material Symbols glyph (DESIGN.md §Iconography · Navigation). */
   icon: string;
   permission: Permission;
-  /** Interim: the route has not shipped yet, so the item is not rendered. Each route's sub-task drops the flag. */
-  pending?: true;
 }
 
 export interface NavSection {
@@ -24,24 +22,18 @@ export const NAV: readonly NavSection[] = [
       { label: 'Replenishment', to: '/replenishment', icon: 'list_alt', permission: 'replenishment:read' },
       { label: 'Availability', to: '/availability', icon: 'inventory_2', permission: 'availability:read' },
       { label: 'Activity', to: '/activity', icon: 'history', permission: 'activity:read' },
-      { label: 'Catalog', to: '/catalog', icon: 'menu_book', permission: 'assortment:manage', pending: true }, // 6.5
+      { label: 'Catalog', to: '/catalog', icon: 'menu_book', permission: 'assortment:manage' },
     ],
   },
   {
     title: 'Platform',
     items: [
-      { label: 'Stores', to: '/platform/tenants', icon: 'storefront', permission: 'tenant:manage', pending: true }, // 7.5
-      { label: 'Users', to: '/platform/users', icon: 'group', permission: 'user:manage', pending: true }, // 7.6
-      { label: 'Global catalog', to: '/platform/catalog', icon: 'category', permission: 'catalog:manage', pending: true }, // 8.5
+      { label: 'Stores', to: '/platform/tenants', icon: 'storefront', permission: 'tenant:manage' },
+      { label: 'Users', to: '/platform/users', icon: 'group', permission: 'user:manage' },
+      { label: 'Global catalog', to: '/platform/catalog', icon: 'category', permission: 'catalog:manage' },
     ],
   },
 ];
-
-/** Shipped items only (drops the interim `pending` ones). */
-export const SHIPPED_NAV: readonly NavSection[] = NAV.map((section) => ({
-  ...section,
-  items: section.items.filter((item) => !item.pending),
-}));
 
 /**
  * The sections `subject` sees: items filtered by permission — never by role —

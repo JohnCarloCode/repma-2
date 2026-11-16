@@ -38,24 +38,27 @@ describe('nav visibility matrix (layout.md §Navigation, full registry)', () => 
 });
 
 describe('shell', () => {
-  it.each(ROLES)('%s: wordmark, the shipped nav item active on its route, name and role label', async (role) => {
+  it.each(ROLES)('%s: wordmark, the nav item active on its route, name and role label', async (role) => {
     server.use(authMe(withName(role, 'Ada Lovelace')));
     renderAt('/activity', <AppRoutes />);
 
     const nav = await mainNav();
-    // Shipped routes only (interim registry), in layout.md's order.
+    // layout.md's order; Catalog and Platform by permission.
     expect(within(nav).getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual([
       '/home',
       '/replenishment',
       '/availability',
       '/activity',
+      ...(role === 'employee' ? [] : ['/catalog']),
+      ...(role === 'platform_admin' ? ['/platform/tenants', '/platform/users', '/platform/catalog'] : []),
     ]);
     expect(within(nav).getByRole('link', { name: 'Home' })).not.toHaveAttribute('aria-current');
     expect(within(nav).getByRole('link', { name: 'Replenishment' })).not.toHaveAttribute('aria-current');
     expect(within(nav).getByRole('link', { name: 'Availability' })).not.toHaveAttribute('aria-current');
     expect(within(nav).getByRole('link', { name: 'Activity' })).toHaveAttribute('aria-current', 'page');
-    // No platform item has shipped yet, so its header never renders (no empty section).
-    expect(within(nav).queryByRole('heading', { name: 'Platform' })).not.toBeInTheDocument();
+    // The Platform header renders only with a visible platform item (no empty section).
+    if (role === 'platform_admin') expect(within(nav).getByRole('heading', { name: 'Platform' })).toBeInTheDocument();
+    else expect(within(nav).queryByRole('heading', { name: 'Platform' })).not.toBeInTheDocument();
     expect(screen.getByText('REPMA')).toBeInTheDocument();
 
     const label = { platform_admin: 'Platform Admin', manager: 'Manager', employee: 'Employee' }[role];

@@ -1,4 +1,4 @@
-import { StoreSelector } from '../components/shell/TenantBlock';
+import { StoreSelector } from './TenantBlock';
 
 /**
  * layout.md §Tenant context block: a store route opened by the platform admin

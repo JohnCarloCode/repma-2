@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router';
 import { hasPermission, type Permission } from 'shared';
 import { useSession } from './AuthContext';
-import { StorePickerState } from '../pages/StorePickerState';
+import { StorePickerState } from '../components/shell/StorePickerState';
 import { useActiveStore } from '../tenant/activeStore';
 
 /**

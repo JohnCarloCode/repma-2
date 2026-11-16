@@ -1,21 +1,19 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 
-/** The filter band's control look: `surface` fill, 1px `border-strong`, 44px high (DESIGN `filter-band.controls`). */
+/** The filter band's control look: `canvas` well, 1px `border-strong`, 44px high (DESIGN `filter-band.controls`). */
 export const filterControlClass =
-  'h-[44px] rounded-sm border border-border-strong bg-surface px-[12px] text-body text-text';
+  'h-[44px] rounded-sm border border-border-strong bg-canvas px-[12px] text-body text-text';
 
 /**
- * components.md §Filter band — the one branded band of a list screen
- * (`accent-hover`, `rounded.sm`, 16px padding, 12px gap). Controls sit inline
- * from tablet up; below 744px they stack full-width, search first. On this
- * accent fill the focus ring is `on-accent` (`--focus-ring`): `accent-bright`
- * would be ~2:1 against it (DESIGN.md §Accessibility, styles/contrast.test.ts).
+ * components.md §Filter band — a neutral card above a list (`surface`, 1px `border`,
+ * `rounded.md`, 16px padding, 12px gap), like the replenishment list cards. Controls sit
+ * inline from tablet up; below 744px they stack full-width, search first.
  */
 export function FilterBand({ children }: { children: ReactNode }) {
   return (
     <div
       role="search"
-      className="flex flex-col gap-[12px] rounded-sm bg-accent-hover p-base [--focus-ring:var(--color-on-accent)] tablet:flex-row tablet:flex-wrap tablet:items-center"
+      className="flex flex-col gap-[12px] rounded-md border border-border bg-surface p-base tablet:flex-row tablet:flex-wrap tablet:items-center"
     >
       {children}
     </div>
@@ -63,7 +61,7 @@ export function SearchField({ value, onChange, label, placeholder }: SearchField
 
   return (
     <div
-      className={`${filterControlClass} flex items-center gap-sm focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[color:var(--focus-ring,var(--color-accent-bright))] tablet:min-w-[220px] tablet:flex-1`}
+      className={`${filterControlClass} flex items-center gap-sm focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent-bright tablet:min-w-[220px] tablet:flex-1`}
     >
       <span className="icon text-text-secondary" aria-hidden>
         search

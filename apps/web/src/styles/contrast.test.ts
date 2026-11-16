@@ -94,7 +94,7 @@ const TEXT_PAIRS: Array<[string, string]> = [
   ['text', 'accent-soft'], // selected nav item, selected size tile
   ['accent-bright', 'accent-soft'], // user menu initial
   ['on-accent', 'accent'], // primary button, wordmark tile
-  ['on-accent', 'accent-hover'], // hovered primary button; filter band "Clear"
+  ['on-accent', 'accent-hover'], // hovered primary button
   ['on-accent', 'accent-active'],
   ['on-alert', 'alert'], // danger button
   // Form errors, alert boxes, the escalated aging figure (table rows hover to surface-hover).
@@ -103,12 +103,8 @@ const TEXT_PAIRS: Array<[string, string]> = [
   ['warning', 'warning-soft'],
   ['info', 'info-soft'],
 ];
-// The focus ring on every background a focusable control sits on: accent-bright, except on
-// the filter band (an accent-hover fill), whose `--focus-ring` is on-accent.
-const STROKE_PAIRS: Array<[string, string]> = [
-  ...SURFACES.map((bg) => ['accent-bright', bg] as [string, string]),
-  ['on-accent', 'accent-hover'],
-];
+// The focus ring (accent-bright) on every background a focusable control sits on.
+const STROKE_PAIRS: Array<[string, string]> = SURFACES.map((bg) => ['accent-bright', bg] as [string, string]);
 
 describe.each([
   ['dark', declarations(darkBlock)],

@@ -8,6 +8,7 @@ import type {
   Pagination,
   Product,
   ProductListQuery,
+  ReorderCategoriesBody,
   UpdateCategoryBody,
   UpdateProductBody,
   UpdateProductSizeBody,
@@ -25,6 +26,7 @@ import {
   listCategories as listCategoryRows,
   listProducts as listProductRows,
   productExists,
+  reorderCategories as reorderCategoryRows,
   setProductImage,
   updateCategory as updateCategoryRow,
   updateProduct as updateProductRow,
@@ -56,6 +58,14 @@ export async function updateCategory(id: string, body: UpdateCategoryBody): Prom
   const category = await updateCategoryRow(id, body);
   if (!category) throw new AppError(404, 'NOT_FOUND', 'Category not found');
   return category;
+}
+
+// RF-45 — a stale list (a category added or missing since the client read it)
+// is a 409: the admin reloads and orders again.
+export async function reorderCategories(body: ReorderCategoriesBody): Promise<void> {
+  if ((await reorderCategoryRows(body.ids)) === 'mismatch') {
+    throw new AppError(409, 'CONFLICT', 'The categories changed since you loaded them; reload and try again');
+  }
 }
 
 // RF-15

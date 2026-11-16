@@ -29,6 +29,13 @@
       "when": 1794674789028,
       "tag": "0003_deny_by_default_empty_guc",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794854016620,
+      "tag": "0004_category_position",
+      "breakpoints": true
     }
   ]
 }

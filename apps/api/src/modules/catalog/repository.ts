@@ -1,4 +1,4 @@
-import { and, asc, count, eq, exists, ilike, inArray, max, or } from 'drizzle-orm';
+import { and, asc, count, eq, exists, ilike, inArray, max, or, sql } from 'drizzle-orm';
 import type {
   Category,
   CreateProductBody,
@@ -46,7 +46,7 @@ export function listCategories(query: Pagination): Promise<{ items: Category[]; 
     const items = await tx
       .select(categoryColumns)
       .from(categories)
-      .orderBy(asc(categories.name), asc(categories.id))
+      .orderBy(asc(categories.position), asc(categories.name), asc(categories.id))
       .limit(limit)
       .offset(offset);
     const [totalRow] = await tx.select({ total: count() }).from(categories);
@@ -57,12 +57,12 @@ export function listCategories(query: Pagination): Promise<{ items: Category[]; 
 // RF-14 — insert a category; RLS lets only the Platform Admin write the
 // catalog (database.md §7.3). A taken slug is detected through the UNIQUE via
 // ON CONFLICT DO NOTHING, so a concurrent create of an equivalent name lands on
-// the same answer.
+// the same answer. A new category goes last in the admin's order (RF-45).
 export function insertCategory(name: string, slug: string, description: string | null): Promise<Category | 'duplicate'> {
   return withTenantContext(async (tx) => {
     const [row] = await tx
       .insert(categories)
-      .values({ name, slug, description })
+      .values({ name, slug, description, position: sql`(select coalesce(max(position) + 1, 0) from categories)` })
       .onConflictDoNothing({ target: categories.slug })
       .returning(categoryColumns);
     return row ?? 'duplicate';
@@ -75,6 +75,26 @@ export function updateCategory(id: string, body: UpdateCategoryBody): Promise<Ca
   return withTenantContext(async (tx) => {
     const [row] = await tx.update(categories).set(body).where(eq(categories.id, id)).returning(categoryColumns);
     return row ?? null;
+  }, 'global');
+}
+
+// RF-45 — the new display order: `ids` must be exactly the stored categories
+// (locked, so a concurrent create waits and can't slip in unordered);
+// otherwise 'mismatch' and nothing changes. Positions become 0..n-1.
+export function reorderCategories(ids: string[]): Promise<'mismatch' | 'ok'> {
+  return withTenantContext(async (tx) => {
+    const stored = new Set((await tx.select({ id: categories.id }).from(categories).for('update')).map((r) => r.id));
+    if (stored.size !== ids.length || ids.some((id) => !stored.has(id))) return 'mismatch';
+    const list = sql.join(
+      ids.map((id) => sql`${id}`),
+      sql`, `,
+    );
+    await tx.execute(sql`
+      update categories c set position = o.ord - 1
+      from unnest(array[${list}]::uuid[]) with ordinality as o(id, ord)
+      where c.id = o.id
+    `);
+    return 'ok';
   }, 'global');
 }
 

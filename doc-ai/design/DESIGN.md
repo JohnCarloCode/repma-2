@@ -203,12 +203,13 @@ components:
     backgroundColor: "{colors.surface}"
     borderBottom: "1px solid {colors.border}"
     height: 56px
-  filter-band:                  # search + selects above a table — the one branded band on each list screen
-    backgroundColor: "{colors.accent-hover}"
-    rounded: "{rounded.sm}"
+  filter-band:                  # search + selects above a table — a neutral card, like the list cards
+    backgroundColor: "{colors.surface}"
+    border: "1px solid {colors.border}"
+    rounded: "{rounded.md}"
     padding: 16px
     gap: 12px
-    controls: "{colors.surface} fill, 1px {colors.border-strong}, 44px high"   # inputs/selects/toggles keep their normal surface on the band
+    controls: "{colors.canvas} well, 1px {colors.border-strong}, 44px high"   # like the form inputs
   table-header:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.text-secondary}"
@@ -323,8 +324,6 @@ REPMA is an internal B2B multi-tenant availability & replenishment tool: stores 
 - **Dense but breathable**: 8px spacing grid, 44px touch targets on the shop-floor components (size run, icon buttons).
 - UI copy ships in English (RNF-19).
 
-**Visual reference**: `prototype/` holds the clickable prototype these rules were validated against (serve the folder, e.g. `python3 -m http.server`, and open `Prototype.dc.html`; it has a panel to switch theme, role, screen and data state). It is a reference, not code to copy. Where it disagrees with this document, **this document wins** — known case: its replenishment cards carry a filled "Open list" button each; the spec keeps one primary per screen and the chevron `icon-button` inside the card link (`pages/replenishment.md`).
-
 ## Colors
 
 ### Brand accent — configurable
@@ -371,7 +370,7 @@ Each semantic tone has a `-soft` pair for backgrounds; text on a soft background
 - Don't use generic decorative icons (lightbulbs, sparkles, rockets).
 
 ## Shape
-- `rounded.sm` 8px — everything you act on: buttons, inputs, icon buttons, size tiles, toasts — plus the filter band.
+- `rounded.sm` 8px — everything you act on: buttons, inputs, icon buttons, size tiles, toasts.
 - `rounded.md` 16px — containers: cards, modals, sheets, alert boxes.
 - `rounded.full` — things that name or navigate: badges, nav items, tenant selector.
 
@@ -444,8 +443,8 @@ Tooltip: `surface-raised`, 12px text, 8px radius. Slide-over (`sheet`): right-an
 Size-run tiles never shrink below 44px; they wrap.
 
 ## Accessibility
-- Text ≥ 4.5:1, UI strokes ≥ 3:1 against their background. Defaults pass in both themes — `apps/web/src/styles/contrast.test.ts` computes the WCAG ratio of every text/background pair the UI uses (accent tones resolved through their `color-mix`) from `theme.css`, in both themes, so a token change that breaks one fails the build; **a new accent must be re-verified in both themes** for `on-accent`/`accent`, `accent-bright`/`surface` and controls on the filter band.
-- Focus is always visible (accent-bright ring; on the filter band — an `accent-hover` fill, where accent-bright would be ~2:1 — the ring is `on-accent`, set through the `--focus-ring` variable). Never rely on color alone: the out-of-stock mark also changes border style and always shows its elapsed figure as text; statuses always carry a label.
+- Text ≥ 4.5:1, UI strokes ≥ 3:1 against their background. Defaults pass in both themes — `apps/web/src/styles/contrast.test.ts` computes the WCAG ratio of every text/background pair the UI uses (accent tones resolved through their `color-mix`) from `theme.css`, in both themes, so a token change that breaks one fails the build; **a new accent must be re-verified in both themes** for `on-accent`/`accent` and `accent-bright`/`surface`.
+- Focus is always visible (accent-bright ring). Never rely on color alone: the out-of-stock mark also changes border style and always shows its elapsed figure as text; statuses always carry a label.
 - Touch targets ≥ 44px on shop-floor interactions.
 
 ## Do's and Don'ts

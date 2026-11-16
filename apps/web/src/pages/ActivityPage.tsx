@@ -56,7 +56,7 @@ export function ActivityPage() {
           <button
             type="button"
             onClick={list.clearFilters}
-            className="h-[44px] px-sm text-body-medium text-on-accent hover:underline"
+            className="h-[44px] px-sm text-body-medium text-accent-bright hover:underline"
           >
             Clear
           </button>

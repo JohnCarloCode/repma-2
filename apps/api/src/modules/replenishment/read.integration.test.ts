@@ -199,6 +199,7 @@ const detailItem = (l: LineFixture) => ({
   product: {
     id: l.size.product.id,
     name: l.size.product.name,
+    imageUrl: null,
     categoryId: l.size.product.category.id,
     categoryName: l.size.product.category.name,
   },

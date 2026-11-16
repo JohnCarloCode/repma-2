@@ -3,7 +3,19 @@ import { createClient } from '@supabase/supabase-js';
 import postgres from 'postgres';
 import type { AvailabilityEventType } from 'shared';
 import { z } from 'zod';
-import { AVAILABILITY, CATEGORIES, DEMO_PASSWORD, LISTS, PRODUCTS, STORES, USERS, skuOf, type StoreKey } from './data.js';
+import {
+  AVAILABILITY,
+  CATEGORIES,
+  DEMO_PASSWORD,
+  LISTS,
+  PRODUCTS,
+  RETIRED_CATEGORY_SLUGS,
+  RETIRED_PRODUCT_CODES,
+  STORES,
+  USERS,
+  skuOf,
+  type StoreKey,
+} from './data.js';
 
 // The demo seed (database.md §9). Runs with its own env, never the API's:
 // data goes over the admin connection (bypasses RLS), users through the
@@ -86,10 +98,20 @@ export async function seed(env: SeedEnv): Promise<void> {
 
     await sql.begin(async (tx) => {
       // Global catalog.
-      const categoryRows = CATEGORIES.map((c) => ({ id: seedId(`category:${c.slug}`), ...c }));
+      // Display order (RF-45): the seed categories first, in data order; any other keeps its place after them.
+      const categoryRows = CATEGORIES.map((c, position) => ({ id: seedId(`category:${c.slug}`), position, ...c }));
       await tx`
-        insert into categories ${tx(categoryRows, 'id', 'name', 'slug', 'description')}
-        on conflict (id) do update set name = excluded.name, slug = excluded.slug, description = excluded.description
+        insert into categories ${tx(categoryRows, 'id', 'name', 'slug', 'description', 'position')}
+        on conflict (id) do update set
+          name = excluded.name, slug = excluded.slug, description = excluded.description, position = excluded.position
+      `;
+      await tx`
+        update categories c set position = ${CATEGORIES.length} + o.rn - 1
+        from (
+          select id, row_number() over (order by position, name, id) as rn from categories
+          where id not in ${tx(categoryRows.map((c) => c.id))}
+        ) o
+        where c.id = o.id
       `;
 
       const productRows = PRODUCTS.map((p) => ({
@@ -187,6 +209,25 @@ export async function seed(env: SeedEnv): Promise<void> {
           `;
         }
       }
+
+      // The retired demo catalog (data.ts): the demo stores no longer carry it, so its rows go
+      // wherever no other store does (FKs are restrict); the rest is soft-deleted like the UI would.
+      const retiredIds = RETIRED_PRODUCT_CODES.map((code) => seedId(`product:${code}`));
+      await tx`
+        delete from product_sizes s where s.product_id in ${tx(retiredIds)}
+          and not exists (select 1 from assortment_items a where a.size_id = s.id)
+      `;
+      await tx`
+        delete from products p where p.id in ${tx(retiredIds)}
+          and not exists (select 1 from product_sizes s where s.product_id = p.id)
+      `;
+      await tx`update product_sizes set is_active = false where product_id in ${tx(retiredIds)}`;
+      await tx`update products set is_active = false, image_url = null where id in ${tx(retiredIds)}`; // its seed image is gone
+      const retiredCategoryIds = RETIRED_CATEGORY_SLUGS.map((slug) => seedId(`category:${slug}`));
+      await tx`
+        delete from categories c where c.id in ${tx(retiredCategoryIds)}
+          and not exists (select 1 from products p where p.category_id = c.id)
+      `;
     });
   } finally {
     await sql.end();

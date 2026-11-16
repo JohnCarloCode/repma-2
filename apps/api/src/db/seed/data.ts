@@ -1,7 +1,7 @@
 import { ONE_SIZE_LABEL, SIZE_PRESETS, type ReplenishmentStatus, type Role } from 'shared';
 
 // The demo dataset (database.md §9). Pure data: `seed.ts` writes it.
-// Product images: one per category, see images.ts.
+// Product images: one per product, see images.ts.
 
 // Demo-only credential, public by design: shown on the landing page and in
 // the README (database.md §9). Never reuse it for a real account.
@@ -16,30 +16,52 @@ export const STORES: Record<StoreKey, { name: string; slug: string }> = {
 
 export const USERS: { email: string; fullName: string; role: Role; store: StoreKey | null }[] = [
   { email: 'admin@repma.demo', fullName: 'Platform Admin', role: 'platform_admin', store: null },
-  { email: 'manager.downtown@repma.demo', fullName: 'Dana Torres', role: 'manager', store: 'downtown' },
-  { email: 'employee.downtown@repma.demo', fullName: 'Eli Brooks', role: 'employee', store: 'downtown' },
-  { email: 'manager.north@repma.demo', fullName: 'Nora Patel', role: 'manager', store: 'north' },
-  { email: 'employee.north@repma.demo', fullName: 'Sam Ortiz', role: 'employee', store: 'north' },
+  { email: 'manager.downtown@repma.demo', fullName: 'John', role: 'manager', store: 'downtown' },
+  { email: 'employee.downtown@repma.demo', fullName: 'Manu', role: 'employee', store: 'downtown' },
+  { email: 'manager.north@repma.demo', fullName: 'Alina', role: 'manager', store: 'north' },
+  { email: 'employee.north@repma.demo', fullName: 'Elena', role: 'employee', store: 'north' },
 ];
 
+// One category per kit's match jerseys and one per streetwear collection
+// (each collection in the colours of a kit).
 export const CATEGORIES = [
-  { slug: 'footwear', name: 'Footwear', description: 'Running, training and outdoor shoes.' },
-  { slug: 'apparel', name: 'Apparel', description: 'Technical clothing for training and competition.' },
-  { slug: 'accessories', name: 'Accessories', description: 'Bags, bottles, caps and small gear.' },
-  { slug: 'sports-electronics', name: 'Sports electronics', description: 'Watches, sensors and audio for training.' },
-  { slug: 'nutrition', name: 'Nutrition', description: 'Supplements, gels and recovery products.' },
-  { slug: 'equipment', name: 'Equipment', description: 'Home and gym training equipment.' },
+  { slug: 'first-competition', name: 'First Competition', description: 'Liga REPMA 2025 first-kit match jerseys.' },
+  { slug: 'second-competition', name: 'Second Competition', description: 'Liga REPMA 2025 second-kit match jerseys.' },
+  { slug: 'third-competition', name: 'Third Competition', description: 'Liga REPMA 2025 third-kit match jerseys.' },
+  { slug: 'origins-collection', name: 'Origins Collection', description: 'Streetwear in the first kit\'s red, blue and gold.' },
+  { slug: 'evergreen-collection', name: 'Evergreen Collection', description: 'Streetwear in the second kit\'s green and black.' },
+  { slug: 'dusk-collection', name: 'Dusk Collection', description: 'Streetwear in the third kit\'s orange and purple.' },
 ] as const;
 
 type CategorySlug = (typeof CATEGORIES)[number]['slug'];
 
-// Size runs from the shared presets (RF-38); footwear seeds subsets of 36–45.
+// Every seed product is clothing (RF-38 preset).
 const APPAREL = SIZE_PRESETS.clothing.labels;
-const ONE_SIZE = SIZE_PRESETS.oneSize.labels;
-const shoes = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => String(from + i));
 
-// `code` is the stable seed key: it derives the product id and prefixes SKUs.
-// `stores` builds overlapping assortments with exclusives on both sides.
+// The three kits: their jersey category, their streetwear collection and the
+// players printed on the jerseys. `stores` carries a kit's player jerseys
+// (except #10) and its collection.
+const KITS: { prefix: string; name: string; competition: CategorySlug; collection: { name: string; category: CategorySlug }; stores: StoreKey[] }[] = [
+  { prefix: 'H', name: 'First', competition: 'first-competition', collection: { name: 'Origins', category: 'origins-collection' }, stores: ['downtown', 'north'] },
+  { prefix: 'A', name: 'Second', competition: 'second-competition', collection: { name: 'Evergreen', category: 'evergreen-collection' }, stores: ['downtown'] },
+  { prefix: 'T', name: 'Third', competition: 'third-competition', collection: { name: 'Dusk', category: 'dusk-collection' }, stores: ['north'] },
+];
+const PLAYERS = [
+  { number: 8, name: 'Cadri' },
+  { number: 9, name: 'Lecarlo Mine' },
+  { number: 10, name: 'Johninho' },
+] as const;
+const STREETWEAR = [
+  { code: 'TEE', name: 'T-Shirt', description: 'Cotton tee' },
+  { code: 'TRK', name: 'Tracksuit', description: 'Zip jacket and trousers set' },
+  { code: 'HOD', name: 'Hoodie', description: 'Brushed fleece hoodie' },
+  { code: 'JKT', name: 'Jacket', description: 'Lightweight jacket' },
+] as const;
+
+// `code` is the stable seed key: it derives the product id, prefixes SKUs and
+// names the product's image (`images/<code>.webp`, see images.ts). `stores`
+// builds overlapping assortments with exclusives on both sides; every kit's
+// plain and #10 jerseys are in both stores.
 export const PRODUCTS: {
   code: string;
   name: string;
@@ -47,48 +69,45 @@ export const PRODUCTS: {
   description: string;
   sizes: readonly string[];
   stores: StoreKey[];
-}[] = [
-  { code: 'FW01', name: 'Trail Runner GTX', category: 'footwear', description: 'Waterproof trail shoe with a lugged outsole.', sizes: shoes(39, 45), stores: ['downtown', 'north'] },
-  { code: 'FW02', name: 'Road Racer Elite', category: 'footwear', description: 'Lightweight racing flat for road events.', sizes: shoes(38, 45), stores: ['downtown', 'north'] },
-  { code: 'FW03', name: 'Court Classic Low', category: 'footwear', description: 'Low-top indoor court shoe.', sizes: shoes(36, 44), stores: ['downtown'] },
-  { code: 'FW04', name: 'Studio Flex Trainer', category: 'footwear', description: 'Flexible trainer for studio and gym sessions.', sizes: shoes(36, 42), stores: ['downtown', 'north'] },
-  { code: 'FW05', name: 'Cloudstep Daily', category: 'footwear', description: 'Cushioned everyday running shoe.', sizes: shoes(37, 45), stores: ['downtown', 'north'] },
-  { code: 'FW06', name: 'Peak Approach Boot', category: 'footwear', description: 'Mid-cut approach boot for rocky trails.', sizes: shoes(40, 45), stores: ['north'] },
-  { code: 'FW07', name: 'Sprint Spike Pro', category: 'footwear', description: 'Track spike for sprint distances.', sizes: shoes(38, 44), stores: ['downtown'] },
-  { code: 'FW08', name: 'Recovery Slide', category: 'footwear', description: 'Soft foam slide for post-workout recovery.', sizes: shoes(36, 45), stores: ['downtown', 'north'] },
-  { code: 'AP01', name: 'Dry-Fit Training Tee', category: 'apparel', description: 'Breathable short-sleeve training tee.', sizes: APPAREL, stores: ['downtown', 'north'] },
-  { code: 'AP02', name: 'Thermal Base Layer Top', category: 'apparel', description: 'Long-sleeve thermal layer for cold days.', sizes: APPAREL, stores: ['north'] },
-  { code: 'AP03', name: 'Windshell Running Jacket', category: 'apparel', description: 'Packable wind-resistant running jacket.', sizes: APPAREL, stores: ['downtown', 'north'] },
-  { code: 'AP04', name: 'Performance Shorts 7"', category: 'apparel', description: 'Running shorts with a built-in liner.', sizes: APPAREL, stores: ['downtown', 'north'] },
-  { code: 'AP05', name: 'Seamless Sports Bra', category: 'apparel', description: 'Medium-support seamless sports bra.', sizes: APPAREL, stores: ['downtown'] },
-  { code: 'AP06', name: 'Fleece Training Hoodie', category: 'apparel', description: 'Brushed fleece hoodie for warm-ups.', sizes: APPAREL, stores: ['downtown', 'north'] },
-  { code: 'AP07', name: 'Compression Tights', category: 'apparel', description: 'Full-length compression running tights.', sizes: APPAREL, stores: ['north'] },
-  { code: 'AP08', name: 'Rain Shell Pants', category: 'apparel', description: 'Waterproof over-trousers.', sizes: APPAREL, stores: ['downtown', 'north'] },
-  { code: 'AP09', name: 'Lightweight Track Pants', category: 'apparel', description: 'Tapered track pants with zip pockets.', sizes: APPAREL, stores: ['downtown'] },
-  { code: 'AC01', name: 'Insulated Water Bottle 750 ml', category: 'accessories', description: 'Double-wall steel bottle.', sizes: ONE_SIZE, stores: ['downtown', 'north'] },
-  { code: 'AC02', name: 'Running Cap', category: 'accessories', description: 'Lightweight cap with a reflective trim.', sizes: ONE_SIZE, stores: ['downtown', 'north'] },
-  { code: 'AC03', name: 'Sports Duffel 40 L', category: 'accessories', description: 'Duffel bag with a shoe compartment.', sizes: ONE_SIZE, stores: ['north'] },
-  { code: 'AC04', name: 'Running Belt', category: 'accessories', description: 'Slim waist belt for phone and keys.', sizes: ONE_SIZE, stores: ['downtown', 'north'] },
-  { code: 'AC05', name: 'Sweatband Set', category: 'accessories', description: 'Head and wrist sweatbands.', sizes: ONE_SIZE, stores: ['downtown'] },
-  { code: 'AC06', name: 'Merino Running Socks', category: 'accessories', description: 'Cushioned merino blend socks.', sizes: ONE_SIZE, stores: ['downtown', 'north'] },
-  { code: 'EL01', name: 'GPS Running Watch', category: 'sports-electronics', description: 'Multisport GPS watch with wrist heart rate.', sizes: ONE_SIZE, stores: ['downtown', 'north'] },
-  { code: 'EL02', name: 'Heart Rate Chest Strap', category: 'sports-electronics', description: 'Bluetooth and ANT+ chest strap.', sizes: ONE_SIZE, stores: ['downtown', 'north'] },
-  { code: 'EL03', name: 'Wireless Sport Earbuds', category: 'sports-electronics', description: 'Sweat-resistant earbuds with ear hooks.', sizes: ONE_SIZE, stores: ['downtown'] },
-  { code: 'EL04', name: 'Bike Computer', category: 'sports-electronics', description: 'Handlebar GPS computer with mapping.', sizes: ONE_SIZE, stores: ['north'] },
-  { code: 'EL05', name: 'Smart Jump Rope', category: 'sports-electronics', description: 'Jump rope with a built-in counter.', sizes: ONE_SIZE, stores: ['downtown', 'north'] },
-  { code: 'NU01', name: 'Whey Protein 1 kg Vanilla', category: 'nutrition', description: 'Whey protein concentrate, vanilla flavour.', sizes: ONE_SIZE, stores: ['downtown', 'north'] },
-  { code: 'NU02', name: 'Energy Gel Pack (6)', category: 'nutrition', description: 'Six carbohydrate gels, mixed flavours.', sizes: ONE_SIZE, stores: ['downtown', 'north'] },
-  { code: 'NU03', name: 'Electrolyte Tablets', category: 'nutrition', description: 'Effervescent electrolyte tablets, 20 count.', sizes: ONE_SIZE, stores: ['downtown', 'north'] },
-  { code: 'NU04', name: 'Oat Protein Bar Box (12)', category: 'nutrition', description: 'Twelve oat and protein bars.', sizes: ONE_SIZE, stores: ['north'] },
-  { code: 'NU05', name: 'Recovery Shake Chocolate', category: 'nutrition', description: 'Carbohydrate and protein recovery mix.', sizes: ONE_SIZE, stores: ['downtown'] },
-  { code: 'NU06', name: 'Isotonic Drink Powder', category: 'nutrition', description: 'Isotonic sports drink powder, lemon.', sizes: ONE_SIZE, stores: ['downtown', 'north'] },
-  { code: 'EQ01', name: 'Yoga Mat 6 mm', category: 'equipment', description: 'Non-slip yoga mat with a carry strap.', sizes: ONE_SIZE, stores: ['downtown', 'north'] },
-  { code: 'EQ02', name: 'Adjustable Dumbbell 20 kg', category: 'equipment', description: 'Quick-change adjustable dumbbell.', sizes: ONE_SIZE, stores: ['north'] },
-  { code: 'EQ03', name: 'Resistance Band Set', category: 'equipment', description: 'Five bands from light to extra heavy.', sizes: ONE_SIZE, stores: ['downtown', 'north'] },
-  { code: 'EQ04', name: 'Foam Roller', category: 'equipment', description: 'High-density foam roller, 45 cm.', sizes: ONE_SIZE, stores: ['downtown', 'north'] },
-  { code: 'EQ05', name: 'Kettlebell 12 kg', category: 'equipment', description: 'Cast-iron kettlebell.', sizes: ONE_SIZE, stores: ['downtown'] },
-  { code: 'EQ06', name: 'Pull-up Bar', category: 'equipment', description: 'Doorway pull-up bar, no screws.', sizes: ONE_SIZE, stores: ['north'] },
+}[] = KITS.flatMap((kit) => [
+  {
+    code: `${kit.prefix}J00`,
+    name: `${kit.name} Jersey 2025`,
+    category: kit.competition,
+    description: `Liga REPMA 2025 ${kit.name.toLowerCase()}-kit jersey, no name or number.`,
+    sizes: APPAREL,
+    stores: ['downtown', 'north'] satisfies StoreKey[],
+  },
+  ...PLAYERS.map((player) => ({
+    code: `${kit.prefix}J${String(player.number).padStart(2, '0')}`,
+    name: `${player.name} #${player.number} ${kit.name} Jersey 2025`,
+    category: kit.competition,
+    description: `Liga REPMA 2025 ${kit.name.toLowerCase()}-kit jersey with ${player.name}'s name and number ${player.number}.`,
+    sizes: APPAREL,
+    stores: player.number === 10 ? (['downtown', 'north'] satisfies StoreKey[]) : kit.stores,
+  })),
+  ...STREETWEAR.map((item) => ({
+    code: `${kit.prefix}${item.code}`,
+    name: `${kit.collection.name} ${item.name}`,
+    category: kit.collection.category,
+    description: `${item.description} from the ${kit.collection.name} collection.`,
+    sizes: APPAREL,
+    stores: kit.stores,
+  })),
+]);
+
+// The previous demo catalog's keys (generic sports products, replaced on
+// 2026-11-16). The seed removes those rows where nothing references them and
+// deactivates the rest, so a re-seeded environment shows only PRODUCTS.
+export const RETIRED_PRODUCT_CODES = [
+  ...['FW01', 'FW02', 'FW03', 'FW04', 'FW05', 'FW06', 'FW07', 'FW08'],
+  ...['AP01', 'AP02', 'AP03', 'AP04', 'AP05', 'AP06', 'AP07', 'AP08', 'AP09'],
+  ...['AC01', 'AC02', 'AC03', 'AC04', 'AC05', 'AC06'],
+  ...['EL01', 'EL02', 'EL03', 'EL04', 'EL05'],
+  ...['NU01', 'NU02', 'NU03', 'NU04', 'NU05', 'NU06'],
+  ...['EQ01', 'EQ02', 'EQ03', 'EQ04', 'EQ05', 'EQ06'],
 ];
+export const RETIRED_CATEGORY_SLUGS = ['footwear', 'apparel', 'accessories', 'sports-electronics', 'nutrition', 'equipment'];
 
 export function skuOf(code: string, label: string): string {
   return `${code}-${label === ONE_SIZE_LABEL ? 'OS' : label}`;
@@ -100,21 +119,21 @@ export function skuOf(code: string, label: string): string {
 // DP-07's three aging bands.
 export const AVAILABILITY: Record<StoreKey, { sku: string; hoursAgo: number[] }[]> = {
   downtown: [
-    { sku: 'FW01-42', hoursAgo: [3] },
-    { sku: 'FW02-44', hoursAgo: [240, 216, 72] },
-    { sku: 'AP01-M', hoursAgo: [300] },
-    { sku: 'AP01-L', hoursAgo: [30] },
-    { sku: 'EL01-OS', hoursAgo: [190, 120, 30] },
-    { sku: 'AC01-OS', hoursAgo: [120, 48] },
-    { sku: 'NU01-OS', hoursAgo: [6] },
+    { sku: 'HJ10-M', hoursAgo: [3] },
+    { sku: 'HJ08-L', hoursAgo: [240, 216, 72] },
+    { sku: 'AJ10-S', hoursAgo: [300] },
+    { sku: 'HJ00-XL', hoursAgo: [30] },
+    { sku: 'AJ00-M', hoursAgo: [190, 120, 30] },
+    { sku: 'HHOD-L', hoursAgo: [120, 48] },
+    { sku: 'ATEE-M', hoursAgo: [6] },
   ],
   north: [
-    { sku: 'FW01-42', hoursAgo: [50] },
-    { sku: 'AP03-L', hoursAgo: [200] },
-    { sku: 'EQ01-OS', hoursAgo: [10, 5, 1] },
-    { sku: 'FW05-40', hoursAgo: [20] },
-    { sku: 'NU02-OS', hoursAgo: [96, 90] },
-    { sku: 'EL04-OS', hoursAgo: [400, 380, 180] },
+    { sku: 'HJ10-M', hoursAgo: [50] },
+    { sku: 'TJ09-L', hoursAgo: [200] },
+    { sku: 'HTEE-S', hoursAgo: [10, 5, 1] },
+    { sku: 'TJ00-XL', hoursAgo: [20] },
+    { sku: 'THOD-M', hoursAgo: [96, 90] },
+    { sku: 'HJ09-2XL', hoursAgo: [400, 380, 180] },
   ],
 };
 
@@ -137,36 +156,36 @@ export const LISTS: Record<
       notes: 'Unloaded and shelved.',
       daysAgo: 6,
       lines: [
-        { sku: 'FW05-41', quantity: 4, done: true },
-        { sku: 'AC02-OS', quantity: 10, done: true },
-        { sku: 'NU03-OS', quantity: 12, done: true },
+        { sku: 'HJ00-M', quantity: 4, done: true },
+        { sku: 'HTEE-L', quantity: 10, done: true },
+        { sku: 'AJ00-S', quantity: 12, done: true },
       ],
     },
     {
-      name: 'Footwear wall restock',
+      name: 'Jersey wall restock',
       status: 'processing',
       notes: 'Bring sizes out from the stockroom before noon.',
       daysAgo: 1,
       lines: [
-        { sku: 'FW01-43', quantity: 3, done: true },
-        { sku: 'FW02-42', quantity: 2, done: true },
-        { sku: 'FW04-38', quantity: 4, done: false },
-        { sku: 'FW08-40', quantity: 6, done: false },
-        { sku: 'FW03-39', quantity: 2, done: false },
+        { sku: 'HJ10-M', quantity: 3, done: true },
+        { sku: 'HJ08-L', quantity: 2, done: true },
+        { sku: 'AJ09-S', quantity: 4, done: false },
+        { sku: 'AJ10-XL', quantity: 6, done: false },
+        { sku: 'HJ09-M', quantity: 2, done: false },
       ],
     },
     {
-      name: 'Apparel front tables',
+      name: 'Streetwear front tables',
       status: 'draft',
       notes: null,
       daysAgo: 0,
       lines: [
-        { sku: 'AP04-M', quantity: 5, done: false },
-        { sku: 'AP06-L', quantity: 3, done: false },
-        { sku: 'AP09-S', quantity: 4, done: false },
+        { sku: 'ATRK-M', quantity: 5, done: false },
+        { sku: 'AHOD-L', quantity: 3, done: false },
+        { sku: 'AJKT-S', quantity: 4, done: false },
       ],
     },
-    { name: 'Accessories reorder', status: 'draft', notes: null, daysAgo: 0, lines: [] },
+    { name: 'Matchday reorder', status: 'draft', notes: null, daysAgo: 0, lines: [] },
   ],
   north: [
     {
@@ -175,30 +194,30 @@ export const LISTS: Record<
       notes: null,
       daysAgo: 8,
       lines: [
-        { sku: 'EQ02-OS', quantity: 2, done: true },
-        { sku: 'NU04-OS', quantity: 6, done: true },
+        { sku: 'TJ08-M', quantity: 2, done: true },
+        { sku: 'THOD-L', quantity: 6, done: true },
       ],
     },
     {
       name: 'Morning restock',
       status: 'processing',
-      notes: 'Start with the running section.',
+      notes: 'Start with the jersey wall.',
       daysAgo: 0,
       lines: [
-        { sku: 'AP07-M', quantity: 4, done: true },
-        { sku: 'AP02-S', quantity: 3, done: false },
-        { sku: 'FW06-43', quantity: 2, done: false },
-        { sku: 'AC03-OS', quantity: 3, done: false },
+        { sku: 'TJ10-M', quantity: 4, done: true },
+        { sku: 'HJ00-S', quantity: 3, done: false },
+        { sku: 'TTRK-L', quantity: 2, done: false },
+        { sku: 'TJKT-XL', quantity: 3, done: false },
       ],
     },
     {
-      name: 'Nutrition shelf',
+      name: 'Streetwear shelf',
       status: 'draft',
       notes: null,
       daysAgo: 2,
       lines: [
-        { sku: 'NU06-OS', quantity: 8, done: false },
-        { sku: 'NU02-OS', quantity: 10, done: false },
+        { sku: 'TTEE-M', quantity: 8, done: false },
+        { sku: 'HHOD-S', quantity: 10, done: false },
       ],
     },
     { name: 'Weekend promo', status: 'draft', notes: 'Waiting for the promo plan.', daysAgo: 0, lines: [] },

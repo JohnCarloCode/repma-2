@@ -12,6 +12,7 @@ import { sizeName } from "../../lib/format";
 import { useToast } from "../../lib/toast";
 import { useStoreScope } from "../../tenant/activeStore";
 import { ProductPicker, type PickerSelection } from "../ProductPicker";
+import { ProductThumb } from "../availability/ProductThumb";
 import { secondaryButtonClass } from "../buttons";
 import { textInputClass } from "../form";
 import { DataTable, RowAction, type Column } from "../list/DataTable";
@@ -346,8 +347,11 @@ export function ListItems({
     {
       header: "Product",
       cell: (item) => (
-        <span className={`text-body-medium ${muted(item)}`}>
-          {item.product.name}
+        <span className="flex items-center gap-[12px]">
+          <ProductThumb name={item.product.name} imageUrl={item.product.imageUrl} />
+          <span className={`text-body-medium ${muted(item)}`}>
+            {item.product.name}
+          </span>
         </span>
       ),
     },

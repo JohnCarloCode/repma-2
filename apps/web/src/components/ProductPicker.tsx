@@ -390,7 +390,7 @@ function ProductCard({
         selected ? 'border-accent-bright bg-accent-soft' : 'border-border bg-surface'
       }`}
     >
-      <ProductThumb name={product.name} imageUrl={product.imageUrl} sizeClass="h-[96px] w-full" />
+      <ProductThumb name={product.name} imageUrl={product.imageUrl} sizeClass="aspect-[4/5] w-full" zoom={false} />
       <span className="line-clamp-2 text-body-medium text-text">{product.name}</span>
       <span className="mt-auto flex flex-wrap items-center gap-sm">
         <span className="text-caption text-text-secondary">{count === 1 ? 'One size' : `${count} sizes`}</span>
@@ -474,7 +474,7 @@ function GridSkeleton() {
     <div role="status" aria-label="Loading" className={gridClass}>
       {Array.from({ length: 8 }, (_, i) => (
         <div key={i} className="flex flex-col gap-sm rounded-md border border-border p-sm">
-          <div className="h-[96px] rounded-sm bg-surface-raised" />
+          <div className="aspect-[4/5] rounded-sm bg-surface-raised" />
           <div className="h-[14px] w-3/4 rounded-sm bg-surface-raised" />
           <div className="h-[10px] w-1/3 rounded-sm bg-surface-raised" />
         </div>

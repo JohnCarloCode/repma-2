@@ -39,7 +39,7 @@ Interaction states carry no lift and no shadow — there are none in the product
 
 ## Filters
 
-Standard filter band (`../shared/components.md` §Filter band): standard controls on the accent filter band, state in the URL, any change resets to page 1, and the band stacks on mobile with the search full-width on top.
+Standard filter band (`../shared/components.md` §Filter band): standard controls on the filter band, state in the URL, any change resets to page 1, and the band stacks on mobile with the search full-width on top.
 
 | Control | Options | Query param |
 |---|---|---|

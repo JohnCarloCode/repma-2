@@ -212,7 +212,7 @@
 
 ### Manual setup 8-A — production Storage bucket (before verifying 8.4 in prod)
 
-1. Supabase dashboard → **Storage** → New bucket → name **`product-images`** (exact — the API config references it), toggle **Public bucket** on → Save.
+1. Supabase dashboard → **Storage** → New bucket → name **`product-images`** (exact — the API config references it), toggle **Public bucket** on; leave *Allowed MIME types* empty or set `image/jpeg, image/png, image/webp` (the seed images are WebP) → Save.
 2. *Verify:* on the prod app, `/platform/catalog` → edit a product → upload a small image → the thumbnail renders. A 500 whose Render log reads "Product image upload failed: Bucket not found" = name mismatch; a broken image with a 4xx in the network tab = the bucket isn't public.
 3. Run the documented one-time `db:seed-images` invocation against prod (README §"Seed images in production"; script validates its own env: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `MIGRATIONS_DATABASE_URL` — export them for the single run, from your password manager, never into any file). *Verify:* `/availability` on prod shows real thumbs instead of placeholders.
 

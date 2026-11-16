@@ -54,7 +54,7 @@ export interface ReplenishmentListItem {
   sku: string;
   quantity: number;
   isDone: boolean;
-  product: { id: string; name: string; categoryId: string; categoryName: string };
+  product: { id: string; name: string; imageUrl: string | null; categoryId: string; categoryName: string };
 }
 
 // `GET /replenishment-lists/:id` — the list with its notes and every item,

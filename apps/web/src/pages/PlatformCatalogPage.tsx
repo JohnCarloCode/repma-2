@@ -92,8 +92,31 @@ function CategoriesTab({ onCreate }: { onCreate: () => void }) {
     queryFn: () => api.get<Page<Category>>('/categories?pageSize=100'),
   });
   const [editing, setEditing] = useState<Opened<Category>>(null);
+  const reorder = useReorderCategories();
 
   const columns: Column<Category>[] = [
+    {
+      header: 'Order',
+      cell: (c) => {
+        const index = data!.items.indexOf(c);
+        return (
+          <span className="inline-flex">
+            <RowAction
+              icon="expand_less"
+              label={`Move ${c.name} up`}
+              disabled={index === 0 || reorder.isPending}
+              onClick={() => reorder.move(data!.items, index, index - 1)}
+            />
+            <RowAction
+              icon="expand_more"
+              label={`Move ${c.name} down`}
+              disabled={index === data!.items.length - 1 || reorder.isPending}
+              onClick={() => reorder.move(data!.items, index, index + 1)}
+            />
+          </span>
+        );
+      },
+    },
     { header: 'Name', cell: (c) => <span className="text-body-medium">{c.name}</span> },
     { header: 'Slug', cell: (c) => <span className="text-caption text-text-secondary">{c.slug}</span> },
     {
@@ -137,6 +160,40 @@ function CategoriesTab({ onCreate }: { onCreate: () => void }) {
       )}
     </>
   );
+}
+
+/**
+ * RF-45 — moves a category one place and saves the whole order (`PUT /categories/order`). The
+ * table reorders at once; a failure restores the read order and toasts. Every categories query
+ * (store-side filters and picker rail included) is re-read once it settles.
+ */
+function useReorderCategories() {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const key = [...CATEGORIES, { pageSize: 100 }];
+  const mutation = useMutation({
+    mutationFn: (ordered: Category[]) => api.put<void>('/categories/order', { ids: ordered.map((c) => c.id) }),
+    onMutate: async (ordered) => {
+      await queryClient.cancelQueries({ queryKey: key });
+      const previous = queryClient.getQueryData<Page<Category>>(key);
+      if (previous) queryClient.setQueryData<Page<Category>>(key, { ...previous, items: ordered });
+      return { previous };
+    },
+    onError: (err, _ordered, context) => {
+      if (context?.previous) queryClient.setQueryData(key, context.previous);
+      toast.error(err);
+    },
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: CATEGORIES }),
+  });
+  return {
+    isPending: mutation.isPending,
+    move: (items: Category[], from: number, to: number) => {
+      const ordered = [...items];
+      const [moved] = ordered.splice(from, 1);
+      ordered.splice(to, 0, moved!);
+      mutation.mutate(ordered);
+    },
+  };
 }
 
 type Field = 'name' | 'description';

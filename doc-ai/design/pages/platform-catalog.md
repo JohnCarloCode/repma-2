@@ -12,13 +12,16 @@ Shell per ../shared/layout.md. Below the `<PageHeader>` ("Global catalog"), **tw
 ## Content
 
 ### Tab "Categories"
-Table (from `GET /categories`; not paginated — small closed set):
+Table (from `GET /categories`, in display order; not paginated — small closed set):
 | Column | Source | Notes |
 |---|---|---|
+| Order | — | two row actions, "Move <name> up" (`expand_less`) / "Move <name> down" (`expand_more`); disabled on the first / last row and while a move is saving |
 | Name | `name` | body-medium |
 | Slug | `slug` | muted |
 | Description | `description` | truncated with ellipsis; "—" when empty |
 | Products | product count | **Nice-to-have**: only if the API includes a count; omit the column otherwise |
+
+**Order (RF-45)**: a move reorders the table at once and saves the whole order (`PUT /categories/order`); on failure the previous order comes back with an error toast (a 409 says the categories changed — reload). Every categories query is then re-read, so the store-side category filters and the ProductPicker rail follow the same order. A new category appears last.
 
 Row action: "Edit". **No delete button** — a category with products cannot be deleted (RF-14, FK RESTRICT) and category deletion is not in the API surface for the MVP.
 
@@ -109,7 +112,7 @@ Defaults from ../shared/components.md apply. Page-specific:
 
 ## As built (8.5)
 - `pages/PlatformCatalogPage.tsx`, route `/platform/catalog` behind `RouteGuard permission="catalog:manage"` — **not** store-scoped. The nav's Platform section ships "Global catalog" (by permission).
-- Tabs: `?tab=categories` opens Categories; an absent or unknown `tab` is Products (the default never appears in the URL, like page 1). The tabs are **links** in `<nav aria-label="Catalog sections">` with `aria-current="page"` on the active one (the URL is the state, so a link — not an ARIA tablist — is the honest element; middle-click/copy work). Each tab link carries only its own `tab` value, so switching drops the other tab's params (the "reset" contract of §Edge cases). Visual per the prototype: 44px text tabs, active = `text` + a 16×2px `accent-bright` rule beneath, hover `surface-raised` + `accent-bright`.
+- Tabs: `?tab=categories` opens Categories; an absent or unknown `tab` is Products (the default never appears in the URL, like page 1). The tabs are **links** in `<nav aria-label="Catalog sections">` with `aria-current="page"` on the active one (the URL is the state, so a link — not an ARIA tablist — is the honest element; middle-click/copy work). Each tab link carries only its own `tab` value, so switching drops the other tab's params (the "reset" contract of §Edge cases). Visual: 44px text tabs, active = `text` + a 16×2px `accent-bright` rule beneath, hover `surface-raised` + `accent-bright`.
 - The header action follows the tab: "New category" on Categories, "New product" on Products (8.6).
 - Categories table: `GET /categories?pageSize=100` under `['categories', { pageSize: 100 }]` — the **same** query the store-side category filter and the ProductPicker rail read (one cache entry). Columns Name / Slug / Description (one line, ellipsis, full text in `title`; "—" when null) / Edit row action ("Edit <name>"). Products column omitted (no count in the API). No pagination; empty state "No categories yet" + "New category".
 - One form modal for create/edit: Name, Slug (edit only, read-only) and "Description (optional)" (textarea, ≤500). Client validation and the request body both come from the shared `createCategoryBody` (trimmed; a blank description is sent as `null`); edit sends `{ name, description }` as `PATCH`. Inline: 409 on Name; 400 details on `name` / `description`. Anything else is an error toast with the modal open.

@@ -29,7 +29,7 @@ Manager and employee both hold `catalog:read`, `availability:read`, `availabilit
 
 ### Product decisions
 
-- **DP-01 — Everything behind login.** There is no public content beyond the login screen and the landing page (`/`): a product pitch with visible demo credentials, **built in the final polish phase** — until then `/` redirects to the login. There is no signup: all users are created by the Platform Admin.
+- **DP-01 — Everything behind login.** There is no public content beyond the login screen and the landing page (`/`): a product pitch with visible demo credentials (the seed users and their demo-only password, database.md §9), built in the final polish phase — content in `design/pages/landing.md`; a signed-in visitor to `/` goes to their role home. There is no signup: all users are created by the Platform Admin.
 - **DP-02 — Global catalog, per-store availability.** Categories, products, and their sizes are unique and global, editable only by the Platform Admin. What is tenant-scoped is the assortment, its availability state, the availability events, and the replenishment lists.
 - **DP-03 — One user, one store.** Manager and employee belong to exactly one store. The Platform Admin belongs to none and can operate on all of them (store selector).
 - **DP-04 — Centralized user management.** Only the Platform Admin creates, edits, and deactivates users; managers do not manage users.

@@ -45,4 +45,6 @@ From the root (RNF-16):
 - `npm run dev` — api + web · `npm run build` · `npm start`
 - `npm run check` — lint + typecheck + test: **the green criterion** (integration tests need `supabase start`)
 - `npm run test` / `typecheck` / `lint` individually
-- DB (local): `supabase start` → `npm run db:migrate -w api` → `npm run db:bootstrap -w api` → `npm run db:seed -w api` (`db:generate -w api` creates a Drizzle migration)
+- DB (local): `supabase start` → `npm run db:migrate -w api` → `npm run db:bootstrap -w api` → `npm run db:seed -w api` (data + seed images; `db:seed-images -w api` = images only; `db:generate -w api` creates a Drizzle migration)
+- `npm run icons -w web` — regenerate the icon font subset after editing `apps/web/src/styles/icons.json`
+- Deploy: merge to `main` → Deploy workflow (CI → prod migrations → Render hook); prod seed = manual *Seed* workflow (wipes demo data). Setup details: README

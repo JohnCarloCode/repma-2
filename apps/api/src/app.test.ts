@@ -35,6 +35,12 @@ describe('health handler (RNF-10)', () => {
     expect(res.body).toEqual({ status: 'ok' });
   });
 
+  it('rejects any query param → 400 (RNF-08)', async () => {
+    const res = await request(buildApp(() => Promise.resolve())).get('/health?verbose=1');
+    expect(res.status).toBe(400);
+    expect(res.body.error.details).toEqual([{ path: 'verbose', message: 'Unknown field' }]);
+  });
+
   it('returns 503 when the ping fails (broken DB connection)', async () => {
     const res = await request(buildApp(() => Promise.reject(new Error('connection refused')))).get('/health');
     expect(res.status).toBe(503);

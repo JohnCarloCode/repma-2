@@ -106,11 +106,11 @@ describe('route guards & redirects', () => {
     await waitFor(() => expect(location()).toHaveTextContent('/login'));
   });
 
-  it('/ redirects to /login (DP-01 interim)', async () => {
+  it('/ is the public landing (DP-01; its own suite: pages/LandingPage.test.tsx)', async () => {
     server.use(authMe(null));
     renderAt('/', <AppRoutes />);
-    expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
-    expect(location()).toHaveTextContent('/login');
+    expect(await screen.findByRole('link', { name: 'Sign in to the demo' })).toBeInTheDocument();
+    expect(location()).toHaveTextContent(/^\/$/);
   });
 });
 

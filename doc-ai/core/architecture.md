@@ -113,31 +113,31 @@ repma-2/
 │   │           └── home/             #   Home summary (RF-41): read-only — three COUNTs in one transaction
 │   ├── web/
 │   │   └── src/
-│   │       ├── app/                  # router, providers (QueryClient, AuthContext), guards
-│   │       ├── components/           # design system: Button, Table, EmptyState/ErrorState/LoadingState…
-│   │       ├── lib/                  # apiClient (credentials include), queryClient, toasts
-│   │       └── features/             # mirror of the backend: auth/, catalog/, availability/,
-│   │           └── <feature>/        #   replenishment/, platform-admin/
-│   │               ├── api.ts        #   typed fetch with schemas from shared
-│   │               ├── hooks.ts      #   React Query (queries + mutations + invalidation)
-│   │               └── components/   #   presentation
+│   │       ├── App.tsx               # router (AppRoutes), providers
+│   │       ├── auth/                 # AuthContext (GET /auth/me), RouteGuard/RequirePermission, role homes
+│   │       ├── tenant/               # active store: useStoreScope() (§3.4)
+│   │       ├── components/           # design system + shared UI: shell/, list/, availability/, replenishment/,
+│   │       │                         #   Modal, Sheet, ProductPicker, FormField…
+│   │       ├── lib/                  # apiClient (credentials include), queryClient, toasts, formatting
+│   │       ├── pages/                # one component per route (+ its tests), queries/mutations inline
+│   │       ├── styles/ · assets/     # theme tokens, font faces, icon subset list (icons.json) · self-hosted fonts
+│   │       └── test/                 # MSW server + render helpers
 │   └── …
 ├── packages/
 │   └── shared/                       # Zod request/response schemas + types + constants
 │                                     # (permissions, roles, states, size presets) used by api and web
-├── supabase/                         # local CLI config + seed.sql
-├── docs/                             # ADRs and additional documentation
-├── .github/workflows/ci.yml
-├── Dockerfile                        # single production image (api serves web/dist)
-└── docker-compose.yml                # optional: documented alternative to `supabase start`
+├── supabase/                         # local CLI config (config.toml; the seed lives in apps/api/src/db/seed)
+├── doc-ai/                           # product, architecture, database, design and plan docs
+├── .github/workflows/                # ci.yml, deploy.yml, seed.yml
+└── Dockerfile                        # single production image (api serves web/dist)
 ```
 
-**Dependency rules** (verified in the review of each phase):
+**Dependency rules** (enforced by ESLint `no-restricted-imports` in `eslint.config.js`, so `npm run check` fails on a violation):
 
 - `modules/*` may import from `core/`, `db/`, `lib/`, `shared` — never from another module (if two modules need the same thing, promote it to `core/` or expose an explicit service).
-- `core/` does not import from `modules/` (it knows nothing about the domain).
-- `web/features/*` only imports from `components/`, `lib/`, `shared`, and itself.
-- `shared` imports from no one (leaf of the graph).
+- `core/`, `db/`, `lib/` and `config/` do not import from `modules/` (they know nothing about the domain).
+- `shared` imports from no workspace (leaf of the graph).
+- Web, runtime code (tests may render the whole `AppRoutes`): only `main.tsx` imports `App.tsx`; `pages/` is imported only by `App.tsx` and by other pages (a page may split into sibling files, e.g. `PlatformProductsTab` ↔ `platformProductCommon`); `components/`, `auth/`, `tenant/`, `styles/` never import `pages/`; `lib/` never imports `components/` either (it holds no UI). `auth/`, `tenant/` and `lib/` may use each other (session, active store and the query client are wired together), which is why the web rules are about direction toward `pages/`/`App`, not a strict layer stack.
 
 ### 3.3 Responsibilities per layer (backend)
 
@@ -165,13 +165,13 @@ After `/api/v1`, the API serves `apps/web/dist` (RNF-11, `core/http/web.ts`; mou
 - **React 19 + Vite + TypeScript**, React Router, TanStack Query (server state; no additional global store — session state lives in a context fed by `GET /auth/me`), Tailwind CSS v4 + Headless UI, UI in English.
 - **Guards by permission, not by role**: `shared` exports the same permission matrix the API uses; `<RequirePermission p="catalog:manage">` decides routes and action visibility. The API remains the authority (the UI guard is UX, not security).
 - **Active store**: for manager/employee it is implicit (their store). The Platform Admin has a store selector; the choice is sent as the `X-Tenant-Id` header on tenant-scoped calls (§5.2). Every tenant-scoped call goes through `useStoreScope()` (`apps/web/src/tenant/activeStore.ts`): its query key is `['store', storeId, …]` and its request options carry `X-Tenant-Id` only for a selected store — so store roles never send it and switching store can drop the previous store's cache by prefix.
-- Uniform pattern per feature: `api.ts` (typed fetch) → `hooks.ts` (React Query with invalidation) → `components/` (presentation).
+- Uniform pattern per page: one `pages/<Name>Page.tsx` per route holds its queries and mutations inline (TanStack Query over `lib/apiClient`, keys from `useStoreScope()` for tenant-scoped data, invalidation by key prefix) and composes the presentational pieces of `components/`; a component moves to `components/` once a second page needs it. No per-feature `api.ts`/`hooks.ts` layer exists (§3.1: no layer without a consumer).
 
 Route map:
 
 | Route | Access |
 |---|---|
-| `/login`, `/` (landing, built in the final polish phase per DP-01) | Public |
+| `/login`, `/` (landing, DP-01; a signed-in visitor is sent to the role home) | Public |
 | `/home` → store home (greeting header + KPI strip, out-of-stock products with their size run and aging, a bounded table of up to 7 open replenishment lists — RF-25) | manager, employee (Platform Admin with a store selected) |
 | `/activity` → store-wide availability-events feed, paginated with date filters (RF-42) | `activity:read` (all roles, §6) |
 | `/availability` (sidebar "Availability"; products with their size run, out-of-stock sizes marked in the run and aged per DP-07), `/availability/:id` (single size: detail + event history), `/replenishment`, `/replenishment/:id` | per permission matrix |
@@ -294,7 +294,7 @@ Initial matrix:
 
 ## 7. API surface (`/api/v1`)
 
-All routes: `authenticate` + per-user rate limit + `authorize` (login and health skip auth and are limited per IP — RNF-07). Pagination `page`/`pageSize` (default 20, max 100) with `{ items, page, pageSize, total }`. Errors: `{ error: { code, message, details? } }`.
+All routes: `authenticate` + per-user rate limit + `authorize` (login and health skip auth and are limited per IP — RNF-07). This section is the surface's source of truth: `apps/api/src/app.surface.test.ts` parses every `METHOD /path` written here and fails if the app serves a route this section does not mention or vice versa; the same test asserts each route's single limiter family (RNF-07) and its `validate()` calls (RNF-08) from the router stacks. Pagination `page`/`pageSize` (default 20, max 100) with `{ items, page, pageSize, total }`. Errors: `{ error: { code, message, details? } }`.
 
 | Family | Endpoints | Permission |
 |---|---|---|
@@ -325,7 +325,7 @@ Why these endpoint shapes (each parameter has a real consumer — never symmetry
 
 ## 8. Non-functional requirements
 
-- **Security**: HttpOnly cookie `SameSite=Lax` `Secure` in prod (one `repma_session` cookie whose value is the JSON `{ accessToken, refreshToken }`, AD-12/AD-23); helmet with CSP (`img-src 'self' <Storage origin>` — the origin derived from `SUPABASE_URL`, where the `product-images` bucket's public URLs live, RNF-04); CORS allowlist with credentials; body ≤100 kb (JSON/urlencoded — an oversize body → `413 PAYLOAD_TOO_LARGE`, malformed JSON → `400 VALIDATION_ERROR`, both in the error envelope), images ≤5 MB (multipart, only on `POST /products/:id/image`, JPEG/PNG by magic bytes); rate limit on **all** families, keyed per authenticated user (reads 100/min, writes 30/min, shop-floor writes — flag events RF-20 + item autosave RF-28/RF-40 — 120/min; the public routes per IP — login 10/min, health under the read limit — RNF-07: store staff share one NAT'd IP); Zod whitelist validation on body/query/params; forced RLS (§5.3); `trust proxy`.
+- **Security**: HttpOnly cookie `SameSite=Lax` `Secure` in prod (one `repma_session` cookie whose value is the JSON `{ accessToken, refreshToken }`, AD-12/AD-23); helmet with CSP (`img-src 'self' <Storage origin>` — the origin derived from `SUPABASE_URL`, where the `product-images` bucket's public URLs live, RNF-04); CORS allowlist with credentials; body ≤100 kb (JSON/urlencoded — an oversize body → `413 PAYLOAD_TOO_LARGE`, malformed JSON → `400 VALIDATION_ERROR`, both in the error envelope), images ≤5 MB (multipart, only on `POST /products/:id/image`, JPEG/PNG by magic bytes); rate limit on **all** families, keyed per authenticated user (reads 100/min, writes 30/min, shop-floor writes — flag events RF-20 + item autosave RF-28/RF-40 — 120/min; the public routes per IP — login 10/min, health under the read limit — RNF-07: store staff share one NAT'd IP); Zod whitelist validation on body/query/params on **every** route through `validate()` with a `shared` schema — a route with no query or params still validates an empty object (`emptyQuery`), so any unexpected parameter is a 400; bodiless routes (GET, DELETE, `POST /auth/logout`) never read the body; forced RLS (§5.3); `trust proxy`.
 - **Errors**: typed `AppError` + central handler; Zod errors are mapped to 400 with per-field issues; unexpected errors → opaque 500 + structured log (pino) with request id; credentials (`Cookie`, `Authorization`, `Set-Cookie`) are redacted from request logs.
 - **Config**: `config/env.ts` validates with Zod at startup (fail-fast). Variables: `DATABASE_URL` (`repma_api` role), `SUPABASE_URL` (from which the JWKS endpoint is derived, AD-20), `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY` (password login and token refresh, AD-23 — never used for data), `PORT`, `FRONTEND_URLS`, `NODE_ENV`.
 - **Testing** (pyramid):

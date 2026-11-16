@@ -71,7 +71,7 @@ export function UserMenu({ session, rail = false }: { session: AuthSession; rail
             type="button"
             disabled={logout.isPending}
             onClick={() => logout.mutate()}
-            className="mt-sm flex min-h-[44px] w-full items-center gap-sm rounded-sm px-3 text-left text-body transition-colors data-focus:bg-surface-hover"
+            className="mt-sm flex min-h-[44px] w-full items-center gap-sm rounded-sm px-3 text-left text-body transition-colors data-focus:bg-surface-hover data-focus:text-accent-bright"
           >
             <span className="icon" aria-hidden>
               logout

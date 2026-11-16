@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
-import { Navigate, useLocation } from 'react-router';
+import { Link, Navigate, useLocation } from 'react-router';
 import { loginBody, type AuthSession, type LoginBody } from 'shared';
 import { useSession } from '../auth/AuthContext';
 import type { LoginRedirectState } from '../auth/guards';
@@ -149,8 +149,13 @@ export function LoginPage() {
           </button>
         </form>
       </div>
-      {/* Reserved slot: the demo-credentials hint arrives with the landing page (DP-01, 9.1). */}
-      <div aria-hidden className="h-[56px] w-full max-w-[400px]" />
+      {/* login.md §Layout: the demo credentials live on the landing (DP-01). */}
+      <p className="w-full max-w-[400px] text-center text-caption text-text-secondary">
+        Trying the demo?{' '}
+        <Link to="/" className="text-accent-bright underline-offset-2 hover:underline">
+          See the demo accounts
+        </Link>
+      </p>
     </main>
   );
 }

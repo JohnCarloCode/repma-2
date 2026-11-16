@@ -290,7 +290,7 @@ function StatusSelect({
               <ListboxOption
                 key={option.value}
                 value={option.value}
-                className="group flex h-[40px] cursor-pointer items-center gap-sm rounded-sm px-sm text-body text-text data-focus:bg-surface-hover"
+                className="group flex h-[40px] cursor-pointer items-center gap-sm rounded-sm px-sm text-body text-text data-focus:bg-surface-hover data-focus:text-accent-bright"
               >
                 <span className="icon invisible text-accent-bright group-data-selected:visible" aria-hidden>
                   check

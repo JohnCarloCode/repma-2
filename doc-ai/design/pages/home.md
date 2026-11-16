@@ -143,10 +143,9 @@ Selector change invalidates all tenant-scoped queries (`../shared/layout.md`); t
 ## As built (5.2)
 - **Greeting header** reuses `<PageHeader>` (title = greeting, subtitle = "`<store>` · `<long date>`", action = "New list"); first name = first word of the session's `fullName` (the greeting drops the comma part if the name is empty); date via `Intl` `en-US` long weekday/month/day. Banding and date computed at render (no timer).
 - **KPI strip**: query key `scope.key('home', 'summary')`; labels "Open lists" / "Items to replenish" / "Sizes out of stock" (sentence case of the mock's labels); `outOfStock` is the one `accent-bright` value. Pending keeps the static labels under the value skeletons. Failed: the muted line's retry is a `button-text` "Retry".
-- **"New list"** mounts 4.6's `NewListModal`, which now also invalidates `scope.key('home')` (the summary — this flow's invalidation is done in 5.2; the detail flows' wiring stays 5.3's).
+- **"New list"** mounts 4.6's `NewListModal`, which also invalidates `scope.key('home')` (the summary).
 - **Block titles** (`h2`, from the prototype): "Open replenishment work", "Out of stock", "Recent activity" — each block a `section` named by its title.
 - **"View all"** is a `button-text` link (`accent-bright`, underline on hover — DESIGN.md wins over the prototype's text-colored underline) with no arrow on any block: "View all (N)" / "View all".
-- Interim (closed by **5.3**, see below): the three blocks rendered only their title + skeleton at their row bounds (7 / 10 / 4); the route `/home` and its nav item shipped with 5.2.
 
 ## As built (5.3)
 - **Query keys sit under the existing families**, so the flows that already invalidated those families refresh Home with no extra wiring: open work `scope.key('replenishment','lists',{status,pageSize:7})`, out of stock `scope.key('availability','list',{outOfStock:true,pageSize:10})`, activity `scope.key('activity',{pageSize:4})`; the summary stays `scope.key('home','summary')`, one cache entry shared by the strip and the open-work "View all (N)" (`useHomeSummary`). §Flows' remaining wiring: the flag flow (`/availability/:id`), item writes (`ListItems` settle), list metadata/status saves (`useUpdateList`) and both `DeleteListModal` outcomes now also invalidate `scope.key('home')` (create did since 5.2).

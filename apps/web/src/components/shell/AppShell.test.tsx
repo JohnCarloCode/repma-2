@@ -38,12 +38,12 @@ describe('nav visibility matrix (layout.md §Navigation, full registry)', () => 
 });
 
 describe('shell', () => {
-  it.each(ROLES)('%s: wordmark, the shipped nav item active on its route, name and role label', async (role) => {
+  it.each(ROLES)('%s: wordmark, the nav item active on its route, name and role label', async (role) => {
     server.use(authMe(withName(role, 'Ada Lovelace')));
     renderAt('/activity', <AppRoutes />);
 
     const nav = await mainNav();
-    // Shipped routes only (interim registry), in layout.md's order; Catalog and Platform by permission.
+    // layout.md's order; Catalog and Platform by permission.
     expect(within(nav).getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual([
       '/home',
       '/replenishment',

@@ -75,7 +75,7 @@ There is no "is this size in my assortment" flag on `GET /products`, so the page
 - **"In assortment"**: N = the length of the product's run in the cross-reference (its sizes in this store's assortment), M = all the product's sizes (inactive included — the same count as the Sizes column). N ≥ 1 → check + "In assortment", plus the mono caption "N of M sizes" when N < M; N = 0 → "—". While the cross-reference loads the cell shows a skeleton bar (no verdict); when it fails every cell shows "—" and an inline `alert` line above the table ("Assortment status could not be loaded." + text "Retry", refetching only the cross-reference) — the table never waits for it.
 - **Inactive products**: muted name + `badge-inactive` in Status (the muting lives in the Product cell; `<DataTable>` has no per-row class).
 - **Empty states**: with filters → "No results for these filters" + "Clear filters"; default (Active, no search/category) → "No active products in the catalog", no action.
-- **Rows** are not interactive yet: row → slide-over and the per-size add flow are 6.6 (now built — see §As built (6.6)).
+- **Rows**: row → slide-over and the per-size add flow — see §As built (6.6).
 
 ## As built (6.6)
 

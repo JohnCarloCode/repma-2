@@ -201,6 +201,28 @@ describe('auth endpoints', () => {
       expect(res.status).toBe(400);
       expect(res.body.error.code).toBe('VALIDATION_ERROR');
     });
+    it('a query param on login, me or logout → 400 "Unknown field" (RNF-08)', async () => {
+      const agent = request.agent(app);
+      const ip = freshIp();
+      const query = await agent
+        .post('/api/v1/auth/login?next=x')
+        .set('X-Forwarded-For', ip)
+        .send({ email: users.manager.email, password: PASSWORD });
+      expect(query.status).toBe(400);
+      expect(query.body.error.details).toEqual([{ path: 'next', message: 'Unknown field' }]);
+
+      const loggedIn = await agent
+        .post('/api/v1/auth/login')
+        .set('X-Forwarded-For', ip)
+        .send({ email: users.manager.email, password: PASSWORD });
+      expect(loggedIn.status).toBe(200);
+      const me = await agent.get('/api/v1/auth/me?x=1').set('X-Forwarded-For', ip);
+      expect(me.status).toBe(400);
+      expect(me.body.error.details).toEqual([{ path: 'x', message: 'Unknown field' }]);
+      const logout = await agent.post('/api/v1/auth/logout?x=1').set('X-Forwarded-For', ip);
+      expect(logout.status).toBe(400);
+      expect(sessionSetCookie(logout)).toBeUndefined();
+    });
   });
 
   describe('login rate limit (RNF-07: 10/min per IP, pre-auth)', () => {

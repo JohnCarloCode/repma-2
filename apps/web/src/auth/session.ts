@@ -10,7 +10,7 @@ interface Home {
 }
 
 /**
- * Each role's landing route — the one definition `*`, /login and /unauthorized
+ * Each role's landing route — the one definition `*`, /, /login and /unauthorized
  * share (layout.md §Route guards rule 4; login.md, unauthorized.md): store
  * roles land on /home, the platform admin on /platform/tenants — a platform
  * route, so it works with no store selected.

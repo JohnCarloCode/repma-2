@@ -51,17 +51,27 @@ app.use(cors({ origin: frontendUrls, credentials: true })); // RNF-05
 app.use(express.json({ limit: '100kb' })); // RNF-06
 app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
-const v1 = express.Router();
+// architecture.md §7 — every module router under /api/v1 by mount path. The
+// surface audit (app.surface.test.ts) walks this table, so it sees exactly
+// what is served; `''` mounts at the root (the catalog spans `/categories`
+// and `/products`).
+export const v1Routers = [
+  ['/auth', authRouter],
+  ['/tenants', tenantsRouter],
+  ['/users', usersRouter],
+  ['/availability', availabilityRouter],
+  ['/replenishment-lists', replenishmentRouter],
+  ['/home', homeRouter],
+  ['', catalogRouter],
+] as const;
+
+export const v1 = express.Router();
 
 // RNF-10; public, so limited per IP under the read family (RNF-07).
 v1.get('/health', rateLimit('read', byIp), createHealthHandler(() => pingDatabase()));
-v1.use('/auth', authRouter);
-v1.use('/tenants', tenantsRouter);
-v1.use('/users', usersRouter);
-v1.use('/availability', availabilityRouter);
-v1.use('/replenishment-lists', replenishmentRouter);
-v1.use('/home', homeRouter);
-v1.use(catalogRouter); // `/categories` (+ `/products`, plan 6.1)
+for (const [path, router] of v1Routers) {
+  v1.use(path || '/', router);
+}
 
 app.use('/api/v1', v1);
 

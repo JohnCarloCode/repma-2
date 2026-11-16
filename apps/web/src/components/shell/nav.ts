@@ -6,8 +6,6 @@ export interface NavItem {
   /** Material Symbols glyph (DESIGN.md §Iconography · Navigation). */
   icon: string;
   permission: Permission;
-  /** Interim: the route has not shipped yet, so the item is not rendered. Each route's sub-task drops the flag. */
-  pending?: true;
 }
 
 export interface NavSection {
@@ -36,12 +34,6 @@ export const NAV: readonly NavSection[] = [
     ],
   },
 ];
-
-/** Shipped items only (drops the interim `pending` ones). */
-export const SHIPPED_NAV: readonly NavSection[] = NAV.map((section) => ({
-  ...section,
-  items: section.items.filter((item) => !item.pending),
-}));
 
 /**
  * The sections `subject` sees: items filtered by permission — never by role —

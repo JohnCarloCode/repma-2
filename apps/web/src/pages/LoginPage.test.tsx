@@ -33,7 +33,7 @@ async function signIn(emailValue = 'employee@repma.test', passwordValue = 'secre
 }
 
 describe('/login form', () => {
-  it('renders the card: heading, autofill-ready fields, submit — and no recovery or signup links', async () => {
+  it('renders the card: heading, autofill-ready fields, submit — no recovery or signup links, only the demo-accounts hint', async () => {
     server.use(authMe(null));
     await openLogin();
 
@@ -42,7 +42,9 @@ describe('/login form', () => {
     expect(password()).toHaveAttribute('type', 'password');
     expect(password()).toHaveAttribute('autocomplete', 'current-password');
     expect(submit()).toHaveTextContent('Sign in');
-    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('link')).toHaveLength(1);
+    expect(screen.getByText(/Trying the demo\?/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'See the demo accounts' })).toHaveAttribute('href', '/');
   });
 
   it('validates on submit with the shared schema, then per field on blur; nothing is sent while invalid', async () => {

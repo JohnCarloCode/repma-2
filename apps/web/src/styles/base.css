@@ -23,9 +23,10 @@
     box-shadow: none;
   }
 
-  /* Focus is always visible: the accent-bright ring. */
+  /* Focus is always visible: the accent-bright ring — or `--focus-ring` where a region sets
+   * one (the filter band, an accent fill, uses on-accent). */
   :focus-visible {
-    outline: 2px solid var(--color-accent-bright);
+    outline: 2px solid var(--focus-ring, var(--color-accent-bright));
     outline-offset: 2px;
   }
 

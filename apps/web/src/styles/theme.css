@@ -27,10 +27,11 @@
   --color-accent-bright: color-mix(in oklab, var(--color-accent) 55%, white);
   --color-accent-soft: color-mix(in oklab, var(--color-accent) 22%, transparent);
   --color-on-accent: #ffffff;
+  --color-on-alert: #121212;
 
   --color-canvas: #121212;
   --color-surface: #1e1e1e;
-  --color-surface-hover: #252525;
+  --color-surface-hover: #242424;
   --color-surface-raised: #2c2c2e;
   --color-border: #2c2c2e;
   --color-border-strong: #3a3a3c;
@@ -121,6 +122,7 @@
   .repma-light {
     color-scheme: light;
 
+    --color-on-alert: #ffffff;
     --color-canvas: #f4f4f6;
     --color-surface: #ffffff;
     --color-surface-hover: #f2f2f4;
@@ -132,7 +134,7 @@
     --color-text-disabled: #a1a1a8;
     --color-alert: #d70015;
     --color-alert-soft: #fde9ea;
-    --color-live: #1a7f37;
+    --color-live: #197a35;
     --color-live-soft: #e5f4ea;
     --color-warning: #8a5a00;
     --color-warning-soft: #fff3d1;

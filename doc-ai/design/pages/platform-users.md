@@ -76,7 +76,7 @@ Defaults from ../shared/components.md apply. Page-specific:
 - Role changes are manager ↔ employee only and never touch the store (RN-01: the store is fixed at creation). Moving a user to another store — or into/out of the platform role — is deactivate + create new; the deactivated user's name keeps rendering on their events (RN-09), which is the point of the rule.
 
 ## As built (7.6)
-List + create (`pages/PlatformUsersPage.tsx`, route guard `user:manage`, not store-scoped; nav "Users" shipped). Edit/delete row actions are 7.7.
+List + create (`pages/PlatformUsersPage.tsx`, route guard `user:manage`, not store-scoped; nav "Users" shipped). Edit/delete row actions: see §As built (7.7).
 - Table: Name (+ muted "(you)" when the row id is the session user's), Email (muted), Role (role labels), Store (`tenant.name`, "—" for a Platform Admin), Status ("Active" / `badge-inactive`). No Created column (not in the table spec). A deactivated store is not badged in the table — the badge belongs to the edit modal (§Edge cases); the Status column is the user's own flag.
 - Query key `['users', { page, search, tenantId }]` (global); create invalidates the `['users']` prefix. URL params `search`, `tenantId`, `page`.
 - Store options (filter and create select) reuse the sidebar selector's source query (`['tenants','selector']`, `GET /tenants?pageSize=100`), so every tenants write already refreshes them. The **filter lists every store, inactive ones labelled "Name (inactive)"** — their users stay listed; the **create select lists active stores only**.

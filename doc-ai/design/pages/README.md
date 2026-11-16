@@ -10,7 +10,7 @@ Reminder: the app's UI language is English (RNF-19), same as the page docs and t
 
 | Route | Page | Description | Doc |
 |---|---|---|---|
-| `/` | Landing | Product pitch for recruiters: what REPMA is, features, CTA to login with visible demo credentials. In scope, **built in the final polish phase** (DP-01); until then `/` redirects to `/login`. Its `.md` is created before that phase | _pending_ |
+| `/` | Landing | Product pitch for recruiters: what REPMA is, availability vs replenishment (DP-06), engineering highlights, visible demo credentials and a CTA to `/login` (DP-01); signed-in visitors go to their role home | [landing.md](landing.md) |
 | `/login` | Login | Email + password; redirects by role | [login.md](login.md) |
 
 ## Store zone (manager, employee, platform_admin with a selected store)

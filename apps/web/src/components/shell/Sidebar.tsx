@@ -48,7 +48,7 @@ function SidebarBody({ session, rail, onClose }: { session: AuthSession; rail: b
       {/* The logo tile keeps its x in both states: rail content starts 2px further in
           (14px padding) so it lines up with the expanded 16px padding. */}
       <div className={`flex min-h-[44px] items-center justify-between ${rail ? 'pl-[2px]' : ''}`}>
-        <Wordmark compact={rail} />
+        <Wordmark compact={rail} blink />
         {onClose && (
           <button type="button" aria-label="Close navigation" onClick={onClose} className={`${iconButton} text-text`}>
             <span className="icon" aria-hidden>

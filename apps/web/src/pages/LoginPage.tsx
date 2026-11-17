@@ -127,7 +127,7 @@ export function LoginPage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-base bg-canvas p-lg">
       <div className="w-full max-w-[400px] rounded-md border border-border bg-surface p-card">
-        <Wordmark />
+        <Wordmark blink />
         <h1 className="mt-[12px] mb-lg text-display">Sign in</h1>
         <form noValidate onSubmit={onSubmit} className="flex flex-col gap-base">
           {field('email', 'Email', { type: 'email', autoComplete: 'email' })}

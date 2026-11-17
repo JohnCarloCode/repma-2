@@ -80,7 +80,7 @@ export function LandingPage() {
     <div className="min-h-screen bg-canvas">
       <div className="mx-auto flex w-full max-w-[1080px] flex-col gap-xxl px-base py-lg tablet:px-lg">
         <header className="flex items-center justify-between gap-base">
-          <Wordmark />
+          <Wordmark letterTile />
           <Link to="/login" className={textButtonClass}>
             Sign in
           </Link>

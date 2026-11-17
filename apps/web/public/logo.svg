@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="40 68 432 404" role="img" aria-label="REPMA owl"><title>REPMA owl</title>
+  <defs>
+    <clipPath id="L"><rect x="0" y="0" width="256" height="512"/></clipPath>
+    <clipPath id="B"><path d="M256 100 C352 100 436 156 436 276 C436 388 362 452 256 452 C150 452 76 388 76 276 C76 156 160 100 256 100 Z"/></clipPath>
+    <clipPath id="R"><rect x="256" y="0" width="256" height="512"/></clipPath>
+  </defs>
+  <g id="ears" stroke-width="22" stroke-linejoin="round">
+    <path d="M120 186 C100 148 104 112 124 94 C154 92 198 104 228 122 Z" fill="#2F7FDB" stroke="#2F7FDB"/>
+    <path d="M392 186 C412 148 408 112 388 94 C358 92 314 104 284 122 Z" fill="#E23A74" stroke="#E23A74"/>
+  </g>
+  <g id="body">
+    <path d="M256 100 C352 100 436 156 436 276 C436 388 362 452 256 452 C150 452 76 388 76 276 C76 156 160 100 256 100 Z" fill="#2F7FDB" clip-path="url(#L)"/>
+    <path d="M256 100 C352 100 436 156 436 276 C436 388 362 452 256 452 C150 452 76 388 76 276 C76 156 160 100 256 100 Z" fill="#E23A74" clip-path="url(#R)"/>
+  </g>
+  <g id="belly">
+    <path d="M256 330 C320 330 354 372 354 408 C354 436 314 452 256 452 C198 452 158 436 158 408 C158 372 192 330 256 330 Z" fill="#FFFFFF" clip-path="url(#B)"/>
+  </g>
+  <g id="wings">
+    <path d="M100 262 C70 292 72 360 112 394 C142 384 152 332 144 286 C138 264 118 256 100 262 Z" fill="#1F5FB0"/>
+    <path d="M412 262 C442 292 440 360 400 394 C370 384 360 332 368 286 C374 264 394 256 412 262 Z" fill="#B02458"/>
+  </g>
+  <g id="eyes">
+    <circle cx="198" cy="218" r="72" fill="#FFFFFF"/>
+    <circle cx="314" cy="218" r="72" fill="#FFFFFF"/>
+    <circle cx="216" cy="228" r="34" fill="#0B1F3A"/>
+    <circle cx="296" cy="228" r="34" fill="#0B1F3A"/>
+    <circle cx="226" cy="218" r="10" fill="#FFFFFF"/>
+    <circle cx="306" cy="218" r="9" fill="#FFFFFF"/>
+  </g>
+  <path id="beak" d="M236 268 L276 268 L256 308 Z" fill="#FFC62E" stroke="#FFC62E" stroke-width="22" stroke-linejoin="round"/></svg>

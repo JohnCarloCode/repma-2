@@ -137,15 +137,24 @@ describe('<ProductPicker> — replenishment flow', () => {
     expect(capCard).toHaveTextContent('One size');
     expect(within(capCard).getByText('Inactive')).toBeInTheDocument(); // RN-12/RN-08: listed, flagged
     expect(capCard.querySelector('img')).toHaveAttribute('src', 'https://img.test/cap.png');
+    // Square, contained card image: the product is never cropped (product-picker.md §Layout).
+    expect(capCard.querySelector('img')).toHaveClass('aspect-square', 'object-contain');
+    expect(capCard.querySelector('img')).not.toHaveClass('object-cover');
+
+    // Fixed size from tablet up (stable height), cards at least 180px wide in as many columns as fit.
+    const panelEl = within(picker).getByRole('heading', { name: 'Add product' }).parentElement;
+    expect(panelEl).toHaveClass('tablet:h-[min(880px,calc(100dvh-48px))]', 'tablet:max-w-[min(1200px,calc(100vw-64px))]');
+    expect(grid).toHaveClass('tablet:grid-cols-[repeat(auto-fill,minmax(180px,1fr))]');
 
     const rail = within(picker).getByRole('navigation', { name: 'Categories' });
     expect(within(rail).getAllByRole('button').map((b) => b.textContent)).toEqual(['All', 'Footwear', 'Accessories']);
     expect(within(rail).getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true');
 
-    // The store's assortment, one page; availability state is never a filter (DP-06).
-    expect(api.lastParams().toString()).toBe('page=1&pageSize=24');
-    // Nothing selected yet: no panel, the CTA is disabled.
+    // The store's assortment, one page, in catalog order (RF-46): availability state is never a filter or the order (DP-06).
+    expect(api.lastParams().toString()).toBe('page=1&pageSize=24&sort=catalog');
+    // Nothing selected yet: no panel (the desktop column holds a hint), the CTA is disabled.
     expect(screen.queryByRole('region', { name: 'Selection' })).not.toBeInTheDocument();
+    expect(within(picker).getByText('Select a product to choose its size.')).toHaveClass('hidden', 'desktop:block');
     expect(cta()).toBeDisabled();
   });
 
@@ -163,7 +172,7 @@ describe('<ProductPicker> — replenishment flow', () => {
     await waitFor(() => expect(api.lastParams().get('page')).toBe('2'));
 
     await user.click(screen.getByRole('button', { name: 'Footwear' }));
-    await waitFor(() => expect(api.lastParams().toString()).toBe('page=1&pageSize=24&categoryId=c-foot'));
+    await waitFor(() => expect(api.lastParams().toString()).toBe('page=1&pageSize=24&categoryId=c-foot&sort=catalog'));
     expect(screen.getByRole('button', { name: 'Footwear' })).toHaveAttribute('aria-pressed', 'true');
 
     const before = api.requests.length;
@@ -171,10 +180,10 @@ describe('<ProductPicker> — replenishment flow', () => {
     expect(await screen.findByText('No results for these filters.')).toBeInTheDocument();
     // One request for the whole word: the 300ms debounce.
     expect(api.requests.length - before).toBe(1);
-    expect(api.lastParams().toString()).toBe('page=1&pageSize=24&search=zzz&categoryId=c-foot');
+    expect(api.lastParams().toString()).toBe('page=1&pageSize=24&search=zzz&categoryId=c-foot&sort=catalog');
 
     await user.click(screen.getByRole('button', { name: 'Clear filters' }));
-    await waitFor(() => expect(api.lastParams().toString()).toBe('page=1&pageSize=24'));
+    await waitFor(() => expect(api.lastParams().toString()).toBe('page=1&pageSize=24&sort=catalog'));
     expect(screen.getByRole('searchbox', { name: 'Search products' })).toHaveValue('');
     expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true');
   });
@@ -218,6 +227,12 @@ describe('<ProductPicker> — replenishment flow', () => {
     await user.click(card(/Wool Cap/));
     expect(screen.getByRole('group', { name: 'Wool Cap sizes' })).toBeInTheDocument();
     expect(cta()).toBeDisabled();
+
+    // The panel: a 320px right column from desktop (below the grid until then), the 64px thumb tier.
+    const capPanel = screen.getByRole('region', { name: 'Selection' });
+    expect(capPanel).toHaveClass('max-h-[45%]', 'desktop:w-[320px]', 'desktop:max-h-none');
+    expect(within(capPanel).getByRole('button', { name: 'Enlarge image of Wool Cap' })).toHaveClass('size-[64px]');
+    expect(screen.queryByText('Select a product to choose its size.')).not.toBeInTheDocument();
   });
 
   it('steps and validates the quantity (1–9999), disabling the CTA while invalid', async () => {

@@ -216,6 +216,88 @@ describe('/platform/catalog products table', () => {
   });
 });
 
+describe('/platform/catalog product order (RF-46)', () => {
+  const boot = product('p-boot', 'Hiking Boot');
+  const sandal = product('p-sandal', 'Beach Sandal', { isActive: false });
+  const three = [runner, boot, sandal];
+  const ORDERING = `/platform/catalog?categoryId=${FOOTWEAR_ID}`;
+  const HINT = 'To change the order of products, select a category (with no search and status All).';
+  const names = () =>
+    within(screen.getByRole('table', { name: 'Products' }))
+      .getAllByRole('row')
+      .slice(1)
+      .map((r) => within(r as HTMLElement).getAllByRole('cell')[1]!.textContent);
+
+  /** `PUT /categories/:id/products/order`, recording each body; the list answers with the last saved order. */
+  function orderApi(respond: () => Response | Promise<Response> = () => new HttpResponse(null, { status: 204 })) {
+    const puts: { categoryId: string; ids: string[] }[] = [];
+    let current = three;
+    const api = productsApi({ respondList: () => HttpResponse.json(envelope(current, { pageSize: 100 })) });
+    server.use(
+      http.put('*/api/v1/categories/:id/products/order', async ({ request, params }) => {
+        const { ids } = (await request.json()) as { ids: string[] };
+        puts.push({ categoryId: params.id as string, ids });
+        const res = await respond();
+        if (res.status === 204) current = ids.map((id) => three.find((p) => p.id === id)!);
+        return res;
+      }),
+    );
+    return { puts, api };
+  }
+
+  it('without a single category there are no moves, only the hint', async () => {
+    orderApi();
+    renderProducts();
+    await table();
+    expect(screen.getByText(HINT)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Move / })).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['a search', `${ORDERING}&search=boot`],
+    ['a status filter', `${ORDERING}&isActive=true`],
+  ])('a category with %s is no ordering mode either', async (_label, path) => {
+    orderApi();
+    renderProducts(path);
+    await table();
+    expect(screen.getByText(HINT)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Move / })).not.toBeInTheDocument();
+  });
+
+  it('one category, no search, status All: the whole category in one page, no pagination, first/last moves disabled', async () => {
+    const { api } = orderApi();
+    renderProducts(`${ORDERING}&page=2`);
+    await table();
+    expect(Object.fromEntries(api.lastUrl().searchParams)).toEqual({ categoryId: FOOTWEAR_ID, pageSize: '100' });
+    expect(screen.queryByText(HINT)).not.toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: /pagination/i })).not.toBeInTheDocument();
+    expect(names()).toEqual(['Trail Runner', 'HBHiking Boot', 'BSBeach Sandal']);
+    expect(screen.getByRole('button', { name: 'Move Trail Runner up' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Move Trail Runner down' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Move Beach Sandal down' })).toBeDisabled();
+  });
+
+  it('moving a product sends the whole category order — inactive included — and the table follows', async () => {
+    const { puts } = orderApi();
+    renderProducts(ORDERING);
+    await table();
+    await userEvent.click(screen.getByRole('button', { name: 'Move Beach Sandal up' }));
+
+    await waitFor(() => expect(puts).toEqual([{ categoryId: FOOTWEAR_ID, ids: ['p-runner', 'p-sandal', 'p-boot'] }]));
+    await waitFor(() => expect(names()).toEqual(['Trail Runner', 'BSBeach Sandal', 'HBHiking Boot']));
+  });
+
+  it('a failed save restores the previous order and toasts the API message', async () => {
+    orderApi(() => apiError(409, 'CONFLICT', 'The products changed since you loaded them; reload and try again'));
+    renderProducts(ORDERING);
+    await table();
+    await userEvent.click(screen.getByRole('button', { name: 'Move Trail Runner down' }));
+
+    expect(await screen.findByText('The products changed since you loaded them; reload and try again')).toBeInTheDocument();
+    await waitFor(() => expect(names()).toEqual(['Trail Runner', 'HBHiking Boot', 'BSBeach Sandal']));
+  });
+});
+
 describe('/platform/catalog create product — sizes editor', () => {
   it('preset buttons prefill editable rows (empty SKUs); rows can be added and removed', async () => {
     productsApi();

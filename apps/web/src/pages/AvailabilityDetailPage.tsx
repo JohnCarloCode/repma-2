@@ -266,7 +266,7 @@ function SummaryCard({ item }: { item: AvailabilityItem }) {
           <p className="mt-xs text-body text-text">{product.categoryName}</p>
         </div>
       </div>
-      <ProductThumb name={product.name} imageUrl={product.imageUrl} sizeClass="size-[72px]" />
+      <ProductThumb name={product.name} imageUrl={product.imageUrl} sizeClass="size-[88px] tablet:size-[120px]" />
     </section>
   );
 }
@@ -280,7 +280,7 @@ function SummarySkeleton() {
         <div className="h-[14px] w-[120px] rounded-sm bg-surface-raised" />
         <div className="h-[14px] w-[160px] rounded-sm bg-surface-raised" />
       </div>
-      <div className="size-[72px] flex-none rounded-sm bg-surface-raised" />
+      <div className="size-[88px] flex-none rounded-sm bg-surface-raised tablet:size-[120px]" />
     </div>
   );
 }

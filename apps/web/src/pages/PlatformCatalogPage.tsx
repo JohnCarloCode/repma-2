@@ -49,7 +49,7 @@ export function PlatformCatalogPage() {
 
   return (
     <main className="flex flex-col gap-lg">
-      <PageHeader title="Global catalog" action={action} />
+      <PageHeader title="Catalog admin" action={action} />
       <nav aria-label="Catalog sections" className="flex items-center gap-xs">
         <TabLink to="/platform/catalog?tab=categories" current={tab === 'categories'} label="Categories" />
         <TabLink to="/platform/catalog" current={tab === 'products'} label="Products" />
@@ -75,12 +75,13 @@ function TabLink({ to, current, label }: { to: string; current: boolean; label: 
     <Link
       to={to}
       aria-current={current ? 'page' : undefined}
-      className={`flex min-h-[44px] flex-col items-center justify-center gap-[6px] rounded-sm px-[14px] text-body-medium transition-colors hover:bg-surface-raised hover:text-accent-bright ${
-        current ? 'text-text' : 'text-text-secondary'
+      className={`flex min-h-[44px] items-center justify-center rounded-sm border px-base text-body-medium transition-colors ${
+        current
+          ? 'border-accent bg-accent text-on-accent'
+          : 'border-border-strong bg-surface text-text hover:bg-surface-raised'
       }`}
     >
       {label}
-      <span aria-hidden className={`h-[2px] w-[16px] ${current ? 'bg-accent-bright' : 'bg-transparent'}`} />
     </Link>
   );
 }

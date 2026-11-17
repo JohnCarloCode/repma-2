@@ -10,7 +10,7 @@ import { server } from '../test/server';
 const location = () => screen.getByTestId('location');
 const email = () => screen.getByLabelText('Email');
 const password = () => screen.getByLabelText('Password');
-const submit = () => screen.getByRole('button', { name: /Sign(ing)? in/ });
+const submit = () => screen.getByRole('button', { name: /Log(ging)? in/ });
 
 /** `POST /auth/login` answering with `status` (the session on 200, else the error envelope). */
 function loginAnswers(status: number, session: AuthSession = sessionFor('employee'), details?: unknown) {
@@ -23,7 +23,7 @@ function loginAnswers(status: number, session: AuthSession = sessionFor('employe
 
 async function openLogin(path: Parameters<typeof renderAt>[0] = '/login') {
   renderAt(path, <AppRoutes />);
-  await screen.findByRole('heading', { name: 'Sign in' });
+  await screen.findByRole('heading', { name: 'Log in' });
 }
 
 async function signIn(emailValue = 'employee@repma.test', passwordValue = 'secret') {
@@ -32,8 +32,23 @@ async function signIn(emailValue = 'employee@repma.test', passwordValue = 'secre
   await userEvent.click(submit());
 }
 
+describe('/login demo accounts', () => {
+  it('Try this user fills the credentials and says to click Sign in; nothing is submitted', async () => {
+    server.use(authMe(null));
+    await openLogin();
+
+    await userEvent.click(screen.getAllByRole('button', { name: 'Try this user' })[1]!);
+
+    expect(email()).toHaveValue('manager.downtown@repma.demo');
+    expect(password()).toHaveValue('repma-demo-2026');
+    expect(screen.getByRole('status')).toHaveTextContent('Click Log in to enter');
+    expect(submit()).toHaveFocus();
+    expect(location()).toHaveTextContent('/login');
+  });
+});
+
 describe('/login form', () => {
-  it('renders the card: heading, autofill-ready fields, submit — no recovery or signup links, only the demo-accounts hint', async () => {
+  it('renders the card: heading, autofill-ready fields, submit — no recovery or signup links, five demo accounts', async () => {
     server.use(authMe(null));
     await openLogin();
 
@@ -41,10 +56,10 @@ describe('/login form', () => {
     expect(email()).toHaveAttribute('autocomplete', 'email');
     expect(password()).toHaveAttribute('type', 'password');
     expect(password()).toHaveAttribute('autocomplete', 'current-password');
-    expect(submit()).toHaveTextContent('Sign in');
-    expect(screen.getAllByRole('link')).toHaveLength(1);
-    expect(screen.getByText(/Trying the demo\?/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'See the demo accounts' })).toHaveAttribute('href', '/');
+    expect(submit()).toHaveTextContent('Log in');
+    // The only link is the way back to the landing — no recovery or signup.
+    expect(screen.getAllByRole('link').map((a) => [a.textContent, a.getAttribute('href')])).toEqual([['arrow_backBack to home', '/']]);
+    expect(screen.getAllByRole('button', { name: 'Try this user' })).toHaveLength(5);
   });
 
   it('validates on submit with the shared schema, then per field on blur; nothing is sent while invalid', async () => {
@@ -86,7 +101,7 @@ describe('/login form', () => {
     await openLogin();
     await signIn();
 
-    expect(submit()).toHaveTextContent('Signing in…');
+    expect(submit()).toHaveTextContent('Logging in…');
     expect(submit()).toBeDisabled();
     expect(email()).toBeEnabled();
     expect(password()).toBeEnabled();
@@ -117,12 +132,12 @@ describe('/login form', () => {
   it.each([
     ['a 5xx', loginAnswers(500)],
     ['a network failure', http.post('*/api/v1/auth/login', () => HttpResponse.error())],
-  ])('%s: "Could not sign in. Try again." inline', async (_, handler) => {
+  ])('%s: "Could not log in. Try again." inline', async (_, handler) => {
     server.use(authMe(null), handler);
     await openLogin();
     await signIn();
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Could not sign in. Try again.');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not log in. Try again.');
   });
 
   it('400: the API field details map back onto the fields by name', async () => {
@@ -180,7 +195,7 @@ describe('/login redirects', () => {
   it('returns to the intended URL the guard preserved (path + search)', async () => {
     server.use(authMe(null), loginAnswers(200, sessionFor('manager')));
     renderAt('/activity?page=2', <AppRoutes />);
-    await screen.findByRole('heading', { name: 'Sign in' });
+    await screen.findByRole('heading', { name: 'Log in' });
 
     await signIn();
     expect(await screen.findByRole('heading', { name: 'Activity' })).toBeInTheDocument();
@@ -207,7 +222,7 @@ describe('/login redirects', () => {
       renderAt('/login', <AppRoutes />);
 
       await waitFor(() => expect(location()).toHaveTextContent(role === 'platform_admin' ? '/platform/tenants' : '/home'));
-      expect(screen.queryByRole('heading', { name: 'Sign in' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'Log in' })).not.toBeInTheDocument();
       expect(screen.queryByLabelText('Email')).not.toBeInTheDocument();
     },
   );

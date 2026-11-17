@@ -38,18 +38,21 @@ const PASSWORD = `list-test-${randomUUID()}`;
 const token = `avl${randomUUID().slice(0, 8)}`;
 const storeA = randomUUID();
 const storeB = randomUUID();
-const footwear = { id: randomUUID(), name: `${token} Footwear` };
-const apparel = { id: randomUUID(), name: `${token} Apparel` };
+// Category and product positions contradict the names, so `sort=catalog`
+// (RF-45, RF-46) is told apart from both name and aging order: Footwear
+// (position 0) before Apparel (1); Charlie before Zeta, Bravo before Alpha.
+const footwear = { id: randomUUID(), name: `${token} Footwear`, position: 0 };
+const apparel = { id: randomUUID(), name: `${token} Apparel`, position: 1 };
 
 // Store A's assortment. Expected order (RF-18): Zeta (oldest outage
 // 2026-01-01) → Alpha (outage 2026-01-10) → fully available by name: Bravo,
 // Charlie. Names are chosen so the aging order contradicts the name order.
-const zeta = { id: randomUUID(), name: `${token} Zeta Boot`, categoryId: footwear.id, isActive: true };
-const alpha = { id: randomUUID(), name: `${token} Alpha Tee`, categoryId: apparel.id, isActive: true };
-const bravo = { id: randomUUID(), name: `${token} Bravo Cap`, categoryId: apparel.id, isActive: false };
-const charlie = { id: randomUUID(), name: `${token} Charlie Sock`, categoryId: footwear.id, isActive: true };
+const zeta = { id: randomUUID(), name: `${token} Zeta Boot`, categoryId: footwear.id, isActive: true, position: 1 };
+const alpha = { id: randomUUID(), name: `${token} Alpha Tee`, categoryId: apparel.id, isActive: true, position: 1 };
+const bravo = { id: randomUUID(), name: `${token} Bravo Cap`, categoryId: apparel.id, isActive: false, position: 0 };
+const charlie = { id: randomUUID(), name: `${token} Charlie Sock`, categoryId: footwear.id, isActive: true, position: 0 };
 // Only in store B.
-const delta = { id: randomUUID(), name: `${token} Delta Scarf`, categoryId: apparel.id, isActive: true };
+const delta = { id: randomUUID(), name: `${token} Delta Scarf`, categoryId: apparel.id, isActive: true, position: 2 };
 const products = [zeta, alpha, bravo, charlie, delta];
 
 interface SizeFixture {
@@ -186,12 +189,15 @@ describe('GET /availability (RF-18, AD-22)', () => {
         (${storeB}, 'List B', ${`list-b-${storeB}`})
     `;
     for (const category of [footwear, apparel]) {
-      await admin`insert into categories (id, name, slug) values (${category.id}, ${category.name}, ${`list-${category.id}`})`;
+      await admin`
+        insert into categories (id, name, slug, position)
+        values (${category.id}, ${category.name}, ${`list-${category.id}`}, ${category.position})
+      `;
     }
     for (const product of products) {
       await admin`
-        insert into products (id, name, category_id, is_active, image_url)
-        values (${product.id}, ${product.name}, ${product.categoryId}, ${product.isActive},
+        insert into products (id, name, category_id, is_active, position, image_url)
+        values (${product.id}, ${product.name}, ${product.categoryId}, ${product.isActive}, ${product.position},
                 ${product === alpha ? expected.alpha.imageUrl : null})
       `;
     }
@@ -300,6 +306,18 @@ describe('GET /availability (RF-18, AD-22)', () => {
       const past = await list(users.employee, { pageSize: '3', page: '3' });
       expect(past.body).toEqual({ items: [], page: 3, pageSize: 3, total: 4 });
     });
+
+    it('sort=catalog follows the catalog order instead (RF-45, RF-46): category position, then product position', async () => {
+      const res = await list(users.employee, { sort: 'catalog' });
+      expect(res.body).toEqual({
+        items: [expected.charlie, expected.zeta, expected.bravo, expected.alpha],
+        page: 1,
+        pageSize: 20,
+        total: 4,
+      });
+      const apparelPage = await list(users.employee, { sort: 'catalog', categoryId: apparel.id, pageSize: '1', page: '2' });
+      expect(ids(apparelPage.body)).toEqual([alpha.id]);
+    });
   });
 
   describe('filters', () => {
@@ -383,7 +401,8 @@ describe('GET /availability (RF-18, AD-22)', () => {
       ['more than 100 productIds', { productId: Array.from({ length: 101 }, () => randomUUID()).join(',') }],
       ['outOfStock other than true', { outOfStock: 'false' }],
       ['a non-uuid categoryId', { categoryId: 'shoes' }],
-      ['a sort param (the order is fixed)', { sort: 'name' }],
+      ['a sort other than catalog', { sort: 'name' }],
+      ['an empty sort', { sort: '' }],
       ['pageSize over the max', { pageSize: '101' }],
       ['is_available', { is_available: 'false' }],
     ])('rejects %s → 400 VALIDATION_ERROR', async (_label, query) => {

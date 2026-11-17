@@ -10,7 +10,7 @@ REPMA lets a platform operator run multiple independent stores on top of one sha
 
 ## Live demo
 
-**<https://repma.onrender.com>** — the landing page lists the demo accounts. It runs on Render's free tier, so the first request after a while asleep can take up to a minute (cold start).
+**<https://repma.onrender.com>** — the demo accounts are listed below. It runs on Render's free tier, so the first request after a while asleep can take up to a minute (cold start).
 
 | Account | Role |
 |---|---|

@@ -108,7 +108,7 @@ export function ProductPicker(props: ProductPickerProps) {
       pending={pending}
       sheetOnMobile
       // Stable height: fixed at its maximum (viewport-capped) from tablet up, full-screen below.
-      className="flex max-w-[960px] flex-col tablet:h-[min(800px,calc(100dvh-32px))]"
+      className="flex flex-col tablet:h-[min(880px,calc(100dvh-48px))] tablet:max-w-[min(1200px,calc(100vw-64px))]"
     >
       {/* Mounted only while open (the Dialog unmounts its panel), so every session starts clean. */}
       <PickerBody {...props} pending={pending} setPending={setPending} />
@@ -136,9 +136,14 @@ function PickerBody(
     if (categoryId) query.set('categoryId', categoryId);
     return query;
   };
+  // Catalog order (RF-46), not the default aging one: building a list never leans on availability (DP-06).
   const stock = useQuery({
-    queryKey: scope.key('availability', 'picker', { page, search, categoryId }),
-    queryFn: () => api.get<Page<AvailabilityProduct>>(`/availability?${gridQuery()}`, scope.request),
+    queryKey: scope.key('availability', 'picker', { page, search, categoryId, sort: 'catalog' }),
+    queryFn: () => {
+      const query = gridQuery();
+      query.set('sort', 'catalog');
+      return api.get<Page<AvailabilityProduct>>(`/availability?${query}`, scope.request);
+    },
     enabled: !assortment,
   });
   // Global catalog route (no `X-Tenant-Id`); the cache keeps the API shape, the card shape is a `select`.
@@ -235,86 +240,94 @@ function PickerBody(
         />
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-base tablet:flex-row">
-        <CategoryRail
-          categories={categories.data?.items ?? []}
-          value={categoryId}
-          onChange={(value) => filter({ categoryId: value })}
-        />
-        {/* The grid zone keeps its height whatever the result count; it scrolls internally. */}
-        <div className="flex min-h-[120px] flex-1 flex-col gap-base overflow-y-auto">
-          {products.isPending ? (
-            <GridSkeleton />
-          ) : products.isError ? (
-            <ErrorState message={products.error.message} onRetry={() => void products.refetch()} />
-          ) : products.data.items.length === 0 ? (
-            search || categoryId ? (
-              <EmptyState
-                icon="search"
-                title="No results for these filters."
-                action={{ label: 'Clear filters', onClick: () => filter({ search: '', categoryId: '' }) }}
-              />
-            ) : (
-              <EmptyState
-                icon="inventory_2"
-                title={assortment ? 'No active products in the catalog.' : 'No items in the assortment yet.'}
-              />
-            )
-          ) : (
-            <>
-              <ul aria-label="Products" className={gridClass}>
-                {products.data.items.map((item) => (
-                  <li key={item.id}>
-                    <ProductCard product={item} selected={item.id === product?.id} onSelect={selectProduct} />
-                  </li>
-                ))}
-              </ul>
-              {products.data.total > products.data.pageSize && (
-                <Pagination data={products.data} onPageChange={setPage} />
-              )}
-            </>
-          )}
-        </div>
-      </div>
-
-      {product && (
-        <section
-          aria-label="Selection"
-          className="flex max-h-[45%] flex-none flex-col gap-[12px] overflow-y-auto border-t border-border pt-base"
-        >
-          <div className="flex items-center gap-[12px]">
-            <ProductThumb name={product.name} imageUrl={product.imageUrl} sizeClass="size-[44px]" />
-            <div className="flex min-w-0 flex-col gap-[2px]">
-              <span className="flex flex-wrap items-center gap-sm">
-                <span className="text-body-medium text-text">{product.name}</span>
-                {!product.isActive && <InactiveBadge />}
-              </span>
-              <span className="text-caption text-text-secondary">{product.categoryName}</span>
-            </div>
-          </div>
-          <SizeRun
-            sizes={product.sizes}
-            label={`${product.name} sizes`}
-            onSelect={selectSize}
-            selectedSizeId={size?.sizeId ?? null}
-            disabledSizeIds={disabledSizeIds}
-            disabledLabel={disabledLabel}
+      {/* Below desktop the selection panel stacks under the browse zone; from desktop it is a fixed
+          column on the right, so picking a product never shrinks the grid. */}
+      <div className="flex min-h-0 flex-1 flex-col gap-base desktop:flex-row">
+        <div className="flex min-h-0 flex-1 flex-col gap-base tablet:flex-row">
+          <CategoryRail
+            categories={categories.data?.items ?? []}
+            value={categoryId}
+            onChange={(value) => filter({ categoryId: value })}
           />
-          {assortment && product.sizes.every((s) => disabledSizeIds.has(s.sizeId)) ? (
-            <p className="text-caption text-text-secondary">No sizes available to add</p>
-          ) : (
-            <DisabledCaption product={product} disabledSizeIds={disabledSizeIds} disabledLabel={disabledLabel} />
-          )}
-          {error && (
-            <p role="alert" className="text-caption text-alert">
-              {error}
-            </p>
-          )}
-          {!assortment && (
-            <QuantityStepper value={quantity} valid={quantityValid} onChange={setQuantity} onStep={stepQuantity} />
-          )}
-        </section>
-      )}
+          {/* The grid zone keeps its height whatever the result count; it scrolls internally. */}
+          <div className="flex min-h-[120px] flex-1 flex-col gap-base overflow-y-auto">
+            {products.isPending ? (
+              <GridSkeleton />
+            ) : products.isError ? (
+              <ErrorState message={products.error.message} onRetry={() => void products.refetch()} />
+            ) : products.data.items.length === 0 ? (
+              search || categoryId ? (
+                <EmptyState
+                  icon="search"
+                  title="No results for these filters."
+                  action={{ label: 'Clear filters', onClick: () => filter({ search: '', categoryId: '' }) }}
+                />
+              ) : (
+                <EmptyState
+                  icon="inventory_2"
+                  title={assortment ? 'No active products in the catalog.' : 'No items in the assortment yet.'}
+                />
+              )
+            ) : (
+              <>
+                <ul aria-label="Products" className={gridClass}>
+                  {products.data.items.map((item) => (
+                    <li key={item.id}>
+                      <ProductCard product={item} selected={item.id === product?.id} onSelect={selectProduct} />
+                    </li>
+                  ))}
+                </ul>
+                {products.data.total > products.data.pageSize && (
+                  <Pagination data={products.data} onPageChange={setPage} />
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
+        {product ? (
+          <section
+            aria-label="Selection"
+            className={`${selectionColumnClass} flex max-h-[45%] flex-col gap-[12px] overflow-y-auto border-t pt-base`}
+          >
+            <div className="flex items-center gap-[12px]">
+              <ProductThumb name={product.name} imageUrl={product.imageUrl} />
+              <div className="flex min-w-0 flex-col gap-[2px]">
+                <span className="flex flex-wrap items-center gap-sm">
+                  <span className="text-body-medium text-text">{product.name}</span>
+                  {!product.isActive && <InactiveBadge />}
+                </span>
+                <span className="text-caption text-text-secondary">{product.categoryName}</span>
+              </div>
+            </div>
+            <SizeRun
+              sizes={product.sizes}
+              label={`${product.name} sizes`}
+              onSelect={selectSize}
+              selectedSizeId={size?.sizeId ?? null}
+              disabledSizeIds={disabledSizeIds}
+              disabledLabel={disabledLabel}
+            />
+            {assortment && product.sizes.every((s) => disabledSizeIds.has(s.sizeId)) ? (
+              <p className="text-caption text-text-secondary">No sizes available to add</p>
+            ) : (
+              <DisabledCaption product={product} disabledSizeIds={disabledSizeIds} disabledLabel={disabledLabel} />
+            )}
+            {error && (
+              <p role="alert" className="text-caption text-alert">
+                {error}
+              </p>
+            )}
+            {!assortment && (
+              <QuantityStepper value={quantity} valid={quantityValid} onChange={setQuantity} onStep={stepQuantity} />
+            )}
+          </section>
+        ) : (
+          <p className={`${selectionColumnClass} hidden text-body text-text-secondary desktop:block`}>
+            Select a product to choose its size.
+          </p>
+        )}
+      </div>
 
       <div className="flex flex-none flex-wrap justify-end gap-sm">
         <button type="button" className={secondaryButtonClass} disabled={pending} onClick={onClose}>
@@ -333,7 +346,13 @@ function PickerBody(
   );
 }
 
-const gridClass = 'grid grid-cols-2 gap-[12px] desktop:grid-cols-4';
+// From tablet up: as many columns of cards at least 180px wide as the grid zone allows
+// (product-picker.md §Implementation contract — Layout).
+const gridClass = 'grid grid-cols-2 gap-[12px] tablet:grid-cols-[repeat(auto-fill,minmax(180px,1fr))]';
+
+/** The selection panel's slot: under the browse zone, a 320px right column from desktop. */
+const selectionColumnClass =
+  'flex-none border-border desktop:max-h-none desktop:w-[320px] desktop:border-t-0 desktop:border-l desktop:pt-0 desktop:pl-base';
 
 const chipClass =
   'inline-flex h-[44px] flex-none items-center rounded-sm px-[12px] text-body text-left transition-colors ' +
@@ -390,7 +409,7 @@ function ProductCard({
         selected ? 'border-accent-bright bg-accent-soft' : 'border-border bg-surface'
       }`}
     >
-      <ProductThumb name={product.name} imageUrl={product.imageUrl} sizeClass="aspect-[4/5] w-full" zoom={false} />
+      <ProductThumb name={product.name} imageUrl={product.imageUrl} sizeClass="aspect-square w-full" zoom={false} />
       <span className="line-clamp-2 text-body-medium text-text">{product.name}</span>
       <span className="mt-auto flex flex-wrap items-center gap-sm">
         <span className="text-caption text-text-secondary">{count === 1 ? 'One size' : `${count} sizes`}</span>
@@ -474,7 +493,7 @@ function GridSkeleton() {
     <div role="status" aria-label="Loading" className={gridClass}>
       {Array.from({ length: 8 }, (_, i) => (
         <div key={i} className="flex flex-col gap-sm rounded-md border border-border p-sm">
-          <div className="aspect-[4/5] rounded-sm bg-surface-raised" />
+          <div className="aspect-square rounded-sm bg-surface-raised" />
           <div className="h-[14px] w-3/4 rounded-sm bg-surface-raised" />
           <div className="h-[10px] w-1/3 rounded-sm bg-surface-raised" />
         </div>

@@ -3,8 +3,8 @@ import { ONE_SIZE_LABEL, SIZE_PRESETS, type ReplenishmentStatus, type Role } fro
 // The demo dataset (database.md §9). Pure data: `seed.ts` writes it.
 // Product images: one per product, see images.ts.
 
-// Demo-only credential, public by design: shown on the landing page and in
-// the README (database.md §9). Never reuse it for a real account.
+// Demo-only credential, public by design: listed in the
+// README (database.md §9). Never reuse it for a real account.
 export const DEMO_PASSWORD = 'repma-demo-2026';
 
 export type StoreKey = 'downtown' | 'north';

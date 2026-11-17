@@ -203,7 +203,7 @@ function ProductLine({ product, linkState }: { product: AvailabilityProduct; lin
   const since = oldestOutage(product.sizes);
   return (
     <li className="flex flex-wrap items-start gap-base px-base py-[10px]">
-      <div className="flex min-w-0 flex-[0_1_240px] items-center gap-[12px] pt-[6px]">
+      <div className="flex min-w-0 flex-[0_1_272px] items-center gap-[12px]">
         <ProductThumb name={product.name} imageUrl={product.imageUrl} />
         <div className="flex min-w-0 flex-col gap-[2px]">
           <span className="flex flex-wrap items-center gap-sm">
@@ -234,8 +234,8 @@ function AvailabilitySkeleton() {
     <div role="status" aria-label="Loading" className={`${cardClass} divide-y divide-border`}>
       {Array.from({ length: 6 }, (_, line) => (
         <div key={line} className="flex flex-wrap items-start gap-base px-base py-[10px]">
-          <div className="flex min-w-0 flex-[0_1_240px] items-center gap-[12px] pt-[6px]">
-            <div className="size-[32px] flex-none rounded-sm bg-surface-raised" />
+          <div className="flex min-w-0 flex-[0_1_272px] items-center gap-[12px]">
+            <div className="size-[64px] flex-none rounded-sm bg-surface-raised" />
             <div className="h-[14px] flex-1 rounded-sm bg-surface-raised" />
           </div>
           <div className="flex min-w-0 flex-[1_1_280px] flex-wrap gap-sm">

@@ -65,6 +65,19 @@ export const reorderCategoriesBody = z.object({
 
 export type ReorderCategoriesBody = z.output<typeof reorderCategoriesBody>;
 
+// RF-46 — `PUT /categories/:id/products/order` body: every product id of that
+// category (inactive ones included), once each, in the new display order. The
+// API answers 409 when the set is not exactly the category's stored products.
+export const reorderProductsBody = z.object({
+  ids: z
+    .array(z.uuid())
+    .min(1)
+    .max(100)
+    .refine((ids) => new Set(ids).size === ids.length, 'Each product must appear once'),
+});
+
+export type ReorderProductsBody = z.output<typeof reorderProductsBody>;
+
 // RF-38 / AD-21 — size presets for UI prefill (the sizes editor in the
 // platform catalog's product modal); key order is button order
 // (`Object.values`). Prefill only: the Platform Admin edits labels freely per
@@ -86,7 +99,8 @@ export const SIZE_PRESETS = {
 // RF-15 — `GET /products` query: pagination plus optional filters,
 // intersected. `search` matches the product name and the SKU of any of its
 // sizes (blank after trimming = no filter); `isActive` is `true`/`false` on
-// the product's own flag (absent = both). No sort param: ordered by name.
+// the product's own flag (absent = both). No sort param: in catalog order —
+// the category's (RF-45), then the product's within it (RF-46).
 export const productListQuery = paginationQuery.extend({
   categoryId: z.uuid().optional(),
   search: z.string().trim().max(100).optional(),

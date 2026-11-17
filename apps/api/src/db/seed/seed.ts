@@ -114,17 +114,29 @@ export async function seed(env: SeedEnv): Promise<void> {
         where c.id = o.id
       `;
 
-      const productRows = PRODUCTS.map((p) => ({
+      // Display order within each category (RF-46): the seed products first, in data order; any other keeps its place after them.
+      const productRows = PRODUCTS.map((p, index) => ({
         id: seedId(`product:${p.code}`),
         name: p.name,
         category_id: seedId(`category:${p.category}`),
         description: p.description,
+        position: PRODUCTS.slice(0, index).filter((other) => other.category === p.category).length,
       }));
       await tx`
-        insert into products ${tx(productRows, 'id', 'name', 'category_id', 'description')}
+        insert into products ${tx(productRows, 'id', 'name', 'category_id', 'description', 'position')}
         on conflict (id) do update set
           name = excluded.name, category_id = excluded.category_id, description = excluded.description,
-          is_active = true
+          position = excluded.position, is_active = true
+      `;
+      await tx`
+        update products p set position = o.rn - 1 + (
+          select count(*) from products sp where sp.category_id = p.category_id and sp.id in ${tx(productRows.map((p) => p.id))}
+        )
+        from (
+          select id, row_number() over (partition by category_id order by position, name, id) as rn from products
+          where id not in ${tx(productRows.map((p) => p.id))}
+        ) o
+        where p.id = o.id
       `;
 
       const sizeRows = PRODUCTS.flatMap((p) =>

@@ -83,20 +83,20 @@ async function openEdit(name: string) {
 }
 
 describe('/platform/catalog guard and nav (platform-catalog.md)', () => {
-  it.each(['manager', 'employee'] as const)('%s: no Global catalog item, the URL lands on /unauthorized', async (role) => {
+  it.each(['manager', 'employee'] as const)('%s: no Catalog admin item, the URL lands on /unauthorized', async (role) => {
     renderCatalog('/platform/catalog', role);
     expect(await screen.findByRole('heading', { name: 'Unauthorized access' })).toBeInTheDocument();
     expect(location()).toBe('/unauthorized');
     const nav = screen.getByRole('navigation', { name: 'Main' });
-    expect(within(nav).queryByRole('link', { name: 'Global catalog' })).toBeNull();
+    expect(within(nav).queryByRole('link', { name: 'Catalog admin' })).toBeNull();
   });
 
-  it('platform admin: Global catalog nav item, active on the route — no store needed', async () => {
+  it('platform admin: Catalog admin nav item, active on the route — no store needed', async () => {
     categoriesApi();
     renderCatalog('/platform/catalog');
     const nav = await screen.findByRole('navigation', { name: 'Main' });
-    expect(within(nav).getByRole('link', { name: 'Global catalog' })).toHaveAttribute('aria-current', 'page');
-    expect(await screen.findByRole('heading', { level: 1, name: 'Global catalog' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Catalog admin' })).toHaveAttribute('aria-current', 'page');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Catalog admin' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Select a store to continue' })).not.toBeInTheDocument();
   });
 });
@@ -105,7 +105,7 @@ describe('/platform/catalog tabs (URL-held)', () => {
   it('defaults to Products when the URL has no (or an unknown) tab', async () => {
     categoriesApi();
     renderCatalog('/platform/catalog?tab=nope');
-    await screen.findByRole('heading', { level: 1, name: 'Global catalog' });
+    await screen.findByRole('heading', { level: 1, name: 'Catalog admin' });
     expect(within(tabs()).getByRole('link', { name: 'Products' })).toHaveAttribute('aria-current', 'page');
     expect(within(tabs()).getByRole('link', { name: 'Categories' })).not.toHaveAttribute('aria-current');
     expect(screen.queryByRole('table', { name: 'Categories' })).not.toBeInTheDocument();
@@ -115,7 +115,7 @@ describe('/platform/catalog tabs (URL-held)', () => {
   it('switching writes the tab to the URL (dropping the other tab’s params); the header action follows', async () => {
     categoriesApi();
     renderCatalog('/platform/catalog?search=boot&page=2');
-    await screen.findByRole('heading', { level: 1, name: 'Global catalog' });
+    await screen.findByRole('heading', { level: 1, name: 'Catalog admin' });
 
     await userEvent.click(within(tabs()).getByRole('link', { name: 'Categories' }));
     expect(await table()).toBeInTheDocument();

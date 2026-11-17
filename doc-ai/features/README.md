@@ -9,5 +9,7 @@ One feature = one `NNN-name/` directory with at least `spec.md` (copied from `_t
 | 003 | Real-time availability updates (SSE, tenant-scoped stream) | proposed | [003-realtime-availability/spec.md](003-realtime-availability/spec.md) |
 | 004 | Installable mobile PWA (app shell, offline fallback — no offline mutations) | proposed | [004-mobile-pwa/spec.md](004-mobile-pwa/spec.md) |
 | 005 | Availability insights (`/insights`, analytics computed from the event ledger) | proposed | [005-availability-insights/spec.md](005-availability-insights/spec.md) |
+| 006 | Product order within a category (RF-46; catalog order in every product list and both picker flows) | done | [006-product-order/spec.md](006-product-order/spec.md) |
+| 007 | Product catalog import / export (CSV, dry-run preview, create-or-update by SKU) | proposed | [007-catalog-import-export/spec.md](007-catalog-import-export/spec.md) |
 
 Statuses: `proposed` → `in development` → `done` / `discarded`.

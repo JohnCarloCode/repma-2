@@ -10,7 +10,7 @@ Reminder: the app's UI language is English (RNF-19), same as the page docs and t
 
 | Route | Page | Description | Doc |
 |---|---|---|---|
-| `/` | Landing | Product pitch for recruiters: what REPMA is, availability vs replenishment (DP-06), engineering highlights, visible demo credentials and a CTA to `/login` (DP-01); signed-in visitors go to their role home | [landing.md](landing.md) |
+| `/` | Landing | Marketing page: hero, interactive size-flag demo, screens strip, roles table; "Try the demo" goes to `/login` | [landing.md](landing.md) |
 | `/login` | Login | Email + password; redirects by role | [login.md](login.md) |
 
 ## Store zone (manager, employee, platform_admin with a selected store)
@@ -38,7 +38,7 @@ Reminder: the app's UI language is English (RNF-19), same as the page docs and t
 | Route | Page | Description | Doc |
 |---|---|---|---|
 | `/unauthorized` | 403 | Permission guard blocked the route; link back to role home | [unauthorized.md](unauthorized.md) |
-| `*` | — | Redirect to the role home (`/platform/tenants` for platform_admin, `/home` for store roles; `/login` without session); not a page of its own | — |
+| `*` | — | Unknown route: redirect to the role home (`/platform/tenants` for platform_admin, `/home` for store roles; `/login` without session); not a page of its own | — |
 
 ## Cross-cutting (lives in `../shared/`, not here)
 

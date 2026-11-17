@@ -18,7 +18,7 @@ Detail screen skeleton (DESIGN.md §Screen Skeletons): header → summary card �
   3. **"since `<date of the latest event>`"** — or "no events recorded" when the history is empty.
   4. **Category**.
 
-  Product image thumb on the right of the card. This page is the one place where a lone badge carries the state, because its subject is a single size and there is no run to carry it (DESIGN.md §Badges). **No quantity figure** — nothing on this page computes or renders a unit count.
+  Product image thumb on the right of the card (detail tier, components.md §Image preview). This page is the one place where a lone badge carries the state, because its subject is a single size and there is no run to carry it (DESIGN.md §Badges). **No quantity figure** — nothing on this page computes or renders a unit count.
 - **Event history table** below, under an h2 "Event history", with `<Pagination>`; the history page lives in the URL (`?page=N`, standing rule for list state).
 
 ## Content

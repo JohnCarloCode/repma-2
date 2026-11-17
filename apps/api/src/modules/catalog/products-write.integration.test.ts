@@ -26,6 +26,8 @@ const token = `pw${randomUUID().slice(0, 8)}`;
 const store = { id: randomUUID(), name: `${token} Store`, slug: `${token}-store` };
 const shoes = { id: randomUUID(), name: `${token} Shoes`, slug: `${token}-shoes` };
 const bags = { id: randomUUID(), name: `${token} Bags`, slug: `${token}-bags` };
+// RF-46's own category, so its product set is exactly what that suite creates.
+const kits = { id: randomUUID(), name: `${token} Kits`, slug: `${token}-kits` };
 // Products created through the API, deleted in afterAll.
 const created: string[] = [];
 
@@ -35,11 +37,13 @@ interface Fixture {
   id: string;
   token: string;
 }
-const users: Record<'admin' | 'editor' | 'manager' | 'employee', Fixture> = {
+const users: Record<'admin' | 'editor' | 'orderer' | 'manager' | 'employee', Fixture> = {
   admin: { role: 'platform_admin', tenantId: null, id: '', token: '' },
   // The write limiter is real (30/min per user): PATCH calls go out as a
   // second Platform Admin so POST and PATCH suites never share a bucket.
   editor: { role: 'platform_admin', tenantId: null, id: '', token: '' },
+  // The RF-46 suite (product order) goes out as a third one, for the same reason.
+  orderer: { role: 'platform_admin', tenantId: null, id: '', token: '' },
   manager: { role: 'manager', tenantId: store.id, id: '', token: '' },
   employee: { role: 'employee', tenantId: store.id, id: '', token: '' },
 };
@@ -77,7 +81,8 @@ describe('products writes (RF-16)', () => {
     await admin`insert into tenants (id, name, slug) values (${store.id}, ${store.name}, ${store.slug})`;
     await admin`
       insert into categories (id, name, slug) values
-        (${shoes.id}, ${shoes.name}, ${shoes.slug}), (${bags.id}, ${bags.name}, ${bags.slug})
+        (${shoes.id}, ${shoes.name}, ${shoes.slug}), (${bags.id}, ${bags.name}, ${bags.slug}),
+        (${kits.id}, ${kits.name}, ${kits.slug})
     `;
     const signIn = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, { auth: { persistSession: false } });
     for (const [key, user] of Object.entries(users)) {
@@ -106,7 +111,7 @@ describe('products writes (RF-16)', () => {
     await admin`delete from tenants where id = ${store.id}`;
     await admin`delete from product_sizes where product_id in (select id from products where name like ${`${token} %`})`;
     await admin`delete from products where name like ${`${token} %`}`;
-    await admin`delete from categories where id in ${admin([shoes.id, bags.id])}`;
+    await admin`delete from categories where id in ${admin([shoes.id, bags.id, kits.id])}`;
     await admin.end();
   });
 
@@ -370,6 +375,117 @@ describe('products writes (RF-16)', () => {
       expect(back.body.isActive).toBe(true);
       const readd = await auth(request(app).post('/api/v1/availability'), users.manager).send({ sizeId: unassorted.id });
       expect(readd.status).toBe(201);
+    });
+  });
+
+  describe('product order within a category (RF-46)', () => {
+    const NOT_FOUND_CATEGORY = { error: { code: 'NOT_FOUND', message: 'Category not found' } };
+    const kitProducts: string[] = [];
+
+    function reorder(categoryId: string, body: object, user: Fixture = users.orderer) {
+      return auth(request(app).put(`/api/v1/categories/${categoryId}/products/order`), user).send(body);
+    }
+
+    async function positions(categoryId: string): Promise<string[]> {
+      const rows = await admin<{ id: string }[]>`
+        select id from products where category_id = ${categoryId} order by position, name, id
+      `;
+      return rows.map((row) => row.id);
+    }
+
+    async function listed(categoryId: string): Promise<string[]> {
+      const res = await auth(request(app).get('/api/v1/products').query({ categoryId, pageSize: 100 }), users.manager);
+      return res.body.items.map((item: { id: string }) => item.id);
+    }
+
+    beforeAll(async () => {
+      // Names in reverse of creation order: creation order, not the name, decides.
+      for (const name of ['Order C', 'Order B', 'Order A']) {
+        const res = await create({ ...product(name), categoryId: kits.id }, users.orderer);
+        expect(res.status).toBe(201);
+        kitProducts.push(res.body.id);
+      }
+    });
+
+    it('a new product goes last in its category', async () => {
+      expect(await positions(kits.id)).toEqual(kitProducts);
+      expect(await listed(kits.id)).toEqual(kitProducts);
+    });
+
+    it('204: positions rewritten 0..n-1 and GET /products follows them — inactive products included', async () => {
+      const retired = await patch(kitProducts[0]!, { isActive: false }, users.orderer);
+      expect(retired.status).toBe(200);
+      const ids = [kitProducts[2]!, kitProducts[0]!, kitProducts[1]!];
+      const res = await reorder(kits.id, { ids });
+      expect(res.status).toBe(204);
+      expect(res.headers['ratelimit-limit']).toBe('30');
+      const rows = await admin<{ id: string; position: number }[]>`
+        select id, position from products where category_id = ${kits.id} order by position
+      `;
+      expect(rows).toEqual(ids.map((id, position) => ({ id, position })));
+      expect(await listed(kits.id)).toEqual(ids);
+    });
+
+    it('a product moved to another category goes last there; staying put keeps its place', async () => {
+      const moved = (await create(product('Order Mover'), users.orderer)).body;
+      const before = await positions(kits.id);
+      const same = await patch(before[0]!, { categoryId: kits.id, name: `${token} Order Renamed` }, users.orderer);
+      expect(same.status).toBe(200);
+      expect(await positions(kits.id)).toEqual(before);
+
+      const res = await patch(moved.id, { categoryId: kits.id }, users.orderer);
+      expect(res.status).toBe(200);
+      expect(await positions(kits.id)).toEqual([...before, moved.id]);
+      kitProducts.push(moved.id);
+    });
+
+    it('a set that is not exactly the category\'s products → 409, nothing changes', async () => {
+      const before = await positions(kits.id);
+      const [shoe] = await admin<{ id: string }[]>`select id from products where category_id <> ${kits.id} and name like ${`${token} %`} limit 1`;
+      for (const ids of [before.slice(1), [...before.slice(1), shoe!.id], [...before, randomUUID()]]) {
+        const res = await reorder(kits.id, { ids: [...ids].reverse() });
+        expect(res.status).toBe(409);
+        expect(res.body.error.code).toBe('CONFLICT');
+      }
+      expect(await positions(kits.id)).toEqual(before);
+    });
+
+    it('an unknown category → 404', async () => {
+      const res = await reorder(randomUUID(), { ids: [randomUUID()] });
+      expect(res.status).toBe(404);
+      expect(res.body).toEqual(NOT_FOUND_CATEGORY);
+    });
+
+    it.each([
+      ['an empty list', { ids: [] }],
+      ['a repeated id', { ids: [randomUUID(), randomUUID()].flatMap((id) => [id, id]) }],
+      ['a malformed id', { ids: ['nope'] }],
+      ['an unknown key', { ids: [randomUUID()], extra: 1 }],
+    ])('rejects %s → 400 VALIDATION_ERROR', async (_label, body) => {
+      const res = await reorder(kits.id, body);
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('a malformed category id or a query parameter → 400', async () => {
+      expect((await reorder('nope', { ids: kitProducts })).status).toBe(400);
+      const query = await auth(request(app).put(`/api/v1/categories/${kits.id}/products/order?x=1`), users.orderer).send({
+        ids: kitProducts,
+      });
+      expect(query.status).toBe(400);
+    });
+
+    it('without a session → 401', async () => {
+      const res = await request(app).put(`/api/v1/categories/${kits.id}/products/order`).send({ ids: kitProducts });
+      expect(res.status).toBe(401);
+    });
+
+    it.each(['manager', 'employee'] as const)('%s (no catalog:manage) → 403, nothing changes', async (role) => {
+      const before = await positions(kits.id);
+      const res = await reorder(kits.id, { ids: [...before].reverse() }, users[role]);
+      expect(res.status).toBe(403);
+      expect(res.body).toEqual(FORBIDDEN);
+      expect(await positions(kits.id)).toEqual(before);
     });
   });
 });

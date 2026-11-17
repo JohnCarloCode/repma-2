@@ -98,10 +98,42 @@ export function reorderCategories(ids: string[]): Promise<'mismatch' | 'ok'> {
   }, 'global');
 }
 
+// RF-46 — the new display order within a category: `ids` must be exactly the
+// category's stored products, inactive included (locked, so a concurrent
+// create or move waits and can't slip in unordered); otherwise 'mismatch' and
+// nothing changes. Positions become 0..n-1. 'not_found' for an unknown category.
+export function reorderProducts(categoryId: string, ids: string[]): Promise<'not_found' | 'mismatch' | 'ok'> {
+  return withTenantContext(async (tx) => {
+    const [category] = await tx
+      .select({ id: categories.id })
+      .from(categories)
+      .where(eq(categories.id, categoryId))
+      .for('update');
+    if (!category) return 'not_found';
+    const stored = new Set(
+      (await tx.select({ id: products.id }).from(products).where(eq(products.categoryId, categoryId)).for('update')).map(
+        (r) => r.id,
+      ),
+    );
+    if (stored.size !== ids.length || ids.some((id) => !stored.has(id))) return 'mismatch';
+    const list = sql.join(
+      ids.map((id) => sql`${id}`),
+      sql`, `,
+    );
+    await tx.execute(sql`
+      update products p set position = o.ord - 1
+      from unnest(array[${list}]::uuid[]) with ordinality as o(id, ord)
+      where p.id = o.id
+    `);
+    return 'ok';
+  }, 'global');
+}
+
 // RF-15 — global repository, like categories (database.md §7.3). Two reads in
 // one transaction: (1) the page of products — filters on the product, `search`
 // on its name or any of its sizes' SKU (an EXISTS, so a product matching on
-// several sizes is still one row); ordered by name, id as the tiebreaker; (2)
+// several sizes is still one row); in catalog order — the category's (RF-45),
+// then the product's within it (RF-46), names and id breaking ties; (2)
 // every size of exactly those products, in `position` order (label breaks ties).
 export function listProducts(query: ProductListQuery): Promise<{ items: Product[]; total: number }> {
   const { limit, offset } = pageToLimitOffset(query);
@@ -129,7 +161,13 @@ export function listProducts(query: ProductListQuery): Promise<{ items: Product[
       .from(products)
       .innerJoin(categories, eq(categories.id, products.categoryId))
       .where(where)
-      .orderBy(asc(products.name), asc(products.id))
+      .orderBy(
+        asc(categories.position),
+        asc(categories.name),
+        asc(products.position),
+        asc(products.name),
+        asc(products.id),
+      )
       .limit(limit)
       .offset(offset);
     const [totalRow] = await tx.select({ total: count() }).from(products).where(where);
@@ -177,6 +215,11 @@ async function selectProduct(tx: Tx, id: string): Promise<Product | null> {
   return product ?? null;
 }
 
+// RF-46 — the position after the category's last product (inactive included).
+function lastInCategory(categoryId: string) {
+  return sql`(select coalesce(max(position) + 1, 0) from products where category_id = ${categoryId})`;
+}
+
 async function categoryExists(tx: Tx, id: string): Promise<boolean> {
   const [row] = await tx.select({ id: categories.id }).from(categories).where(eq(categories.id, id));
   return row !== undefined;
@@ -213,7 +256,12 @@ export async function insertProduct(
 
       const [product] = await tx
         .insert(products)
-        .values({ name: body.name, description: body.description ?? null, categoryId: body.categoryId })
+        .values({
+          name: body.name,
+          description: body.description ?? null,
+          categoryId: body.categoryId,
+          position: lastInCategory(body.categoryId),
+        })
         .returning({ id: products.id });
       const inserted = await tx
         .insert(productSizes)
@@ -248,12 +296,20 @@ export async function insertProduct(
 }
 
 // RF-16 / RN-08 — edit name/description/category and/or retire/reactivate
-// (`is_active`, soft: sizes, assortments and history are untouched).
-// `updated_at` is set by the trigger.
+// (`is_active`, soft: sizes, assortments and history are untouched). A product
+// moved to another category goes last there (RF-46). `updated_at` is set by
+// the trigger.
 export function updateProduct(id: string, body: UpdateProductBody): Promise<Product | 'not_found' | 'category_not_found'> {
   return withTenantContext(async (tx) => {
     if (body.categoryId && !(await categoryExists(tx, body.categoryId))) return 'category_not_found';
-    const [row] = await tx.update(products).set(body).where(eq(products.id, id)).returning({ id: products.id });
+    const moved = body.categoryId
+      ? { position: sql`case when ${products.categoryId} = ${body.categoryId} then ${products.position} else ${lastInCategory(body.categoryId)} end` }
+      : {};
+    const [row] = await tx
+      .update(products)
+      .set({ ...body, ...moved })
+      .where(eq(products.id, id))
+      .returning({ id: products.id });
     if (!row) return 'not_found';
     return (await selectProduct(tx, row.id))!;
   }, 'global');

@@ -10,7 +10,7 @@ import { env } from '../../config/env.js';
 // Sub-task 6.1 — RF-15 `GET /products`: `catalog:read`, read limiter, global
 // router (no tenantContext), each product with its sizes embedded in
 // `position` order, filters `categoryId`/`search` (name + size SKU)/`isActive`,
-// ordered by name. Requires the local Supabase stack. The catalog is global
+// in catalog order (category position — RF-45 —, then product position — RF-46). Requires the local Supabase stack. The catalog is global
 // and shared with the seed and other suites, so every assertion is scoped to
 // this file's own categories or token-named rows.
 
@@ -38,14 +38,16 @@ const authAdmin = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, 
 const PASSWORD = `products-test-${randomUUID()}`;
 const token = `prd${randomUUID().slice(0, 8)}`;
 const store = randomUUID();
-const footwear = { id: randomUUID(), name: `${token} Footwear` };
-const apparel = { id: randomUUID(), name: `${token} Apparel` };
+// Positions contradict the names: Footwear (0) before Apparel (1), and within
+// Footwear Charlie (0) before Bravo (1). The listing must follow the positions.
+const footwear = { id: randomUUID(), name: `${token} Footwear`, position: 0 };
+const apparel = { id: randomUUID(), name: `${token} Apparel`, position: 1 };
 
-// Inserted out of name order: the listing must follow the name.
 const charlie = {
   id: randomUUID(),
   name: `${token} Charlie Cap`,
   categoryId: footwear.id,
+  position: 0,
   isActive: false,
   description: null,
   imageUrl: null,
@@ -54,6 +56,7 @@ const bravo = {
   id: randomUUID(),
   name: `${token} Bravo Boot`,
   categoryId: footwear.id,
+  position: 1,
   isActive: true,
   description: 'Leather boot',
   imageUrl: 'http://127.0.0.1:54321/storage/v1/object/public/products/bravo.jpg',
@@ -62,6 +65,7 @@ const alpha = {
   id: randomUUID(),
   name: `${token} Alpha Tee`,
   categoryId: apparel.id,
+  position: 0,
   isActive: true,
   description: null,
   imageUrl: null,
@@ -127,12 +131,15 @@ describe('GET /products (RF-15)', () => {
   beforeAll(async () => {
     await admin`insert into tenants (id, name, slug) values (${store}, 'Products', ${`products-${store}`})`;
     for (const category of [footwear, apparel]) {
-      await admin`insert into categories (id, name, slug) values (${category.id}, ${category.name}, ${`products-${category.id}`})`;
+      await admin`
+        insert into categories (id, name, slug, position)
+        values (${category.id}, ${category.name}, ${`products-${category.id}`}, ${category.position})
+      `;
     }
     for (const p of products) {
       await admin`
-        insert into products (id, name, category_id, is_active, description, image_url)
-        values (${p.id}, ${p.name}, ${p.categoryId}, ${p.isActive}, ${p.description}, ${p.imageUrl})
+        insert into products (id, name, category_id, is_active, position, description, image_url)
+        values (${p.id}, ${p.name}, ${p.categoryId}, ${p.isActive}, ${p.position}, ${p.description}, ${p.imageUrl})
       `;
     }
     for (const s of sizes) {
@@ -196,22 +203,22 @@ describe('GET /products (RF-15)', () => {
     it('is global: the platform admin reads it without X-Tenant-Id', async () => {
       const res = await list(users.admin, { search: token });
       expect(res.status).toBe(200);
-      expect(res.body.items).toEqual([expected.alpha, expected.bravo, expected.charlie]);
+      expect(res.body.items).toEqual([expected.charlie, expected.bravo, expected.alpha]);
     });
   });
 
   describe('shape and order', () => {
-    it('returns products by name, each with every size embedded in position order (inactive included)', async () => {
+    it('returns products in their in-category position, each with every size embedded in position order (inactive included)', async () => {
       const res = await list(users.employee, { categoryId: footwear.id });
       expect(res.status).toBe(200);
-      expect(res.body).toEqual({ items: [expected.bravo, expected.charlie], page: 1, pageSize: 20, total: 2 });
+      expect(res.body).toEqual({ items: [expected.charlie, expected.bravo], page: 1, pageSize: 20, total: 2 });
     });
 
     it('paginates products, never splitting their sizes', async () => {
       const first = await list(users.employee, { search: token, pageSize: '2' });
-      expect(first.body).toEqual({ items: [expected.alpha, expected.bravo], page: 1, pageSize: 2, total: 3 });
+      expect(first.body).toEqual({ items: [expected.charlie, expected.bravo], page: 1, pageSize: 2, total: 3 });
       const second = await list(users.employee, { search: token, pageSize: '2', page: '2' });
-      expect(second.body).toEqual({ items: [expected.charlie], page: 2, pageSize: 2, total: 3 });
+      expect(second.body).toEqual({ items: [expected.alpha], page: 2, pageSize: 2, total: 3 });
     });
   });
 

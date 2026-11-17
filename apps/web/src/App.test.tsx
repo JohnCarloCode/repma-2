@@ -70,7 +70,7 @@ describe('route guards & redirects', () => {
     server.use(authMe(null));
     renderAt('/activity?page=2', <AppRoutes />);
 
-    expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Log in' })).toBeInTheDocument();
     expect(location()).toHaveTextContent('/login');
     expect(location()).toHaveAttribute('data-state', JSON.stringify({ from: '/activity?page=2' }));
   });
@@ -106,11 +106,14 @@ describe('route guards & redirects', () => {
     await waitFor(() => expect(location()).toHaveTextContent('/login'));
   });
 
-  it('/ is the public landing (DP-01; its own suite: pages/LandingPage.test.tsx)', async () => {
-    server.use(authMe(null));
+  it('/ is the public landing, with or without a session; its CTA goes to /login', async () => {
+    server.use(authMe(sessionFor('manager')));
     renderAt('/', <AppRoutes />);
-    expect(await screen.findByRole('link', { name: 'Sign in to the demo' })).toBeInTheDocument();
-    expect(location()).toHaveTextContent(/^\/$/);
+    expect(await screen.findByRole('heading', { level: 1, name: /Every store knows what's out/ })).toBeInTheDocument();
+    expect(location()).toHaveTextContent('/');
+    await userEvent.click(screen.getAllByRole('link', { name: 'Try the demo' })[0]!);
+    // A session on /login redirects to the role home.
+    expect(await screen.findByRole('heading', { level: 1, name: /^Good (morning|afternoon|evening)/ })).toBeInTheDocument();
   });
 });
 
@@ -130,7 +133,7 @@ describe('/unauthorized', () => {
     server.use(authMe(null));
     renderAt('/unauthorized', <AppRoutes />);
 
-    await userEvent.click(await screen.findByRole('link', { name: 'Sign in' }));
+    await userEvent.click(await screen.findByRole('link', { name: 'Log in' }));
     expect(location()).toHaveTextContent('/login');
   });
 });

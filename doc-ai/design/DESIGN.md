@@ -317,7 +317,7 @@ components:
 REPMA is an internal B2B multi-tenant availability & replenishment tool: stores flag which product sizes are out of stock and keep manual replenishment lists — no stock quantities are ever shown (RN-05). The visual language is a **dark technical dashboard**: it must convey *technical reliability* and *control*. It is not a social app and not a game. Think of a Power BI dashboard simplified for a store manager on a laptop or an employee holding a tablet on the shop floor.
 
 **Key characteristics**
-- **Dark by default, light available** (§Themes). Same tokens, same structure, two value sets. Dark is the default because it suits long data reading and makes figures stand out.
+- **Light by default, dark available** (§Themes). Same tokens, same structure, two value sets. Light is the default because store staff read it on bright shop floors and the status badges (out of stock / available) stay easy to tell apart.
 - **Cards are the unit.** 16px radius, 20px padding, 1px `{colors.border}` border. **No box-shadows anywhere** — separation is surface contrast + 1px borders.
 - **Numbers are monospaced.** Every figure that is data (KPIs, counts, sizes, SKUs, elapsed times) uses JetBrains Mono, so columns align and values read like instrument readouts.
 - **Color is functional, never decorative**: the configurable accent = "act here / this is the thread"; red = alert (out of stock, destructive); green = live / available / done. Everything else is grayscale.
@@ -335,7 +335,7 @@ Implementation contract (visual only, no runtime feature implied):
 - Contrast is verified for the default (on-accent on accent ≈ 8.9:1; accent-bright on surface ≈ 5.5:1). **Whoever changes the accent must re-check both ratios** (§Accessibility).
 
 ### Themes
-Two themes share every token name: `colors` (dark, default) and `colors-light`. The theme is a class on the app root (`repma-dark` / `repma-light`) that swaps the variable values; components never know which theme is active. The accent is the same configurable value in both — only its derived tones change (on light, `accent-bright` is a slightly darker accent, because a lightened garnet would not read on white). How the user picks a theme is not specified by any RF yet; until it is, the app ships dark and the light set exists as tokens.
+Two themes share every token name: `colors` (dark, default) and `colors-light`. The theme is a class on the app root (`repma-dark` / `repma-light`) that swaps the variable values; components never know which theme is active. The accent is the same configurable value in both — only its derived tones change (on light, `accent-bright` is a slightly darker accent, because a lightened garnet would not read on white). How the user picks a theme is not specified by any RF yet; until it is, the app ships light (`<html class="repma-light">`) and the dark set stays as the token defaults.
 
 ### Surfaces, borders, text
 `canvas` → `surface` → `surface-raised` is the whole depth scale. Row hover uses `surface-hover`. Borders are `border` (1px, everywhere) and `border-strong` (inputs, the out-of-stock outline). Text is white (`text`) or gray (`text-secondary`) — never another color for plain text.
@@ -360,7 +360,7 @@ Each semantic tone has a `-soft` pair for backgrounds; text on a soft background
 ## Typography
 - **Inter** for all UI: page titles 24px semibold, card titles 18px semibold, body 14px regular, labels 12px medium.
 - **JetBrains Mono** (fallback Fira Code) for data: KPI values 32px bold; sizes, SKUs, counts, elapsed figures 13px medium inside tables and runs. `font-variant-numeric: tabular-nums` everywhere numbers stack.
-- **Wordmark**: "REPMA" in Inter 14px semibold, letter-spacing 0.14em, next to the 32px owl mark (`apps/web/public/logo.svg`: flat blaugrana owl, also the favicon; it blinks in the sidebar and the login card via `logo-blink.svg`, static elsewhere, and the blink stops under `prefers-reduced-motion`). The landing page still uses the old accent-fill "R" `logo-tile` until it adopts the owl.
+- **Wordmark**: "REPMA" in Inter 14px semibold, letter-spacing 0.14em, next to the 32px owl mark (`apps/web/public/logo.svg`: flat blaugrana owl, also the favicon; it blinks in the sidebar and the login card via `logo-blink.svg`, static elsewhere, and the blink stops under `prefers-reduced-motion`).
 
 ### Iconography
 **Material Symbols Rounded**, one configuration product-wide: `opsz 20, wght 400, FILL 0, GRAD 0` (outlined). Shipped as a subset — only the glyphs below are loaded; adding an icon means adding it to the subset **and** to this list (subset = `apps/web/src/styles/icons.json` + `npm run icons -w web`, which regenerates the self-hosted font).

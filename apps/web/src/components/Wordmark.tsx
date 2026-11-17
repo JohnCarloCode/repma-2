@@ -1,34 +1,26 @@
 /**
  * DESIGN.md §Typography "Wordmark": the 32px owl mark + "REPMA" (login card,
  * sidebar). `compact` keeps only the logo mark (collapsed rail, layout.md §Collapse).
- * `blink` swaps in the blinking owl (sidebar only). `letterTile` keeps the old "R" tile for the landing page until it adopts the owl.
+ * `blink` swaps in the blinking owl (sidebar only).
  */
 export function Wordmark({
   compact = false,
   blink = false,
-  letterTile = false,
 }: {
   compact?: boolean;
   blink?: boolean;
-  letterTile?: boolean;
 }) {
   return (
     <div className="flex items-center gap-sm">
-      {letterTile ? (
-        <span
-          aria-hidden
-          className="flex size-[32px] shrink-0 items-center justify-center rounded-sm bg-accent text-body-medium text-on-accent"
-        >
-          R
-        </span>
-      ) : (
+      {/* App-icon tile: the owl's belly is white and vanishes on a light surface. */}
+      <div className="flex size-[36px] shrink-0 items-center justify-center rounded-sm bg-text">
         <img
           src={blink ? "/logo-blink.svg" : "/logo.svg"}
           alt=""
           aria-hidden
-          className="size-[32px] shrink-0 object-contain"
+          className="size-[28px] object-contain"
         />
-      )}
+      </div>
       <span
         className={
           compact ? "sr-only" : "text-body font-[600] tracking-[0.14em]"

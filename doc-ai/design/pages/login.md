@@ -7,7 +7,7 @@
 Single entry point to the application (DP-01: everything is behind login, no signup, no password recovery). Used by every role: platform_admin, manager, employee. Authenticates via email/password and establishes the HttpOnly cookie session (RF-01) — the page never sees or stores a token (AD-12).
 
 ## Layout
-NO app shell (per `../shared/layout.md`: public pages don't use it). A single centered card (`card` from DESIGN.md) on the `canvas` background, max-width ~400px, vertically centered. Inside: product wordmark, heading at `display` size (per DESIGN.md typography table: "login heading"), then the form. Below the card, one caption line: "Trying the demo? See the demo accounts" — the link goes to `/`, where the credentials live (landing.md §Flows); the login form itself is never prefilled.
+NO app shell (per `../shared/layout.md`: public pages don't use it). A single centered card (`card` from DESIGN.md) on the `canvas` background, max-width ~400px, vertically centered. Inside: product wordmark, heading at `display` size (per DESIGN.md typography table: "login heading"), then the form. Below it, a second card of the same width, "Demo accounts" (§Demo accounts).
 
 ## Content
 Form (single column, per DESIGN.md §Forms):
@@ -20,6 +20,9 @@ Form (single column, per DESIGN.md §Forms):
 - Heading: "Sign in". Submit: `button-primary`, full-width, label "Sign in"; pending label "Signing in…" (disabled while pending).
 - No "Forgot your password?" link, no signup link (DP-01 — users are created by the Platform Admin, RF-10; a forgotten password is reset by the Platform Admin, RF-11).
 - Inline error area between the fields and the submit button for non-field errors (401/429), rendered in `error` tone.
+
+## Demo accounts
+A card under the form lists the five seed users (database.md §9): role + store, email in `font-mono`, and a `button-secondary` "Try this user". Clicking it fills the email and the shared demo password into the form, clears any error, moves focus to the submit button and shows an inline `role="status"` line in the form card: "Email and password filled in for <email>. Click Sign in to enter." Nothing is submitted: the visitor presses Sign in. The card notes that the demo is shared and public. The form is never prefilled on load.
 
 ## States
 - **Field validation**: per `../shared/components.md` Forms — validate on submit, then per-field on blur. Messages: "Enter a valid email address", "Password is required".

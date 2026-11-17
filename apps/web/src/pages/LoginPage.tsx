@@ -1,13 +1,24 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
-import { Link, Navigate, useLocation } from 'react-router';
+import { Navigate, useLocation } from 'react-router';
 import { loginBody, type AuthSession, type LoginBody } from 'shared';
 import { useSession } from '../auth/AuthContext';
 import type { LoginRedirectState } from '../auth/guards';
 import { authMeKey, roleHome } from '../auth/session';
 import { Wordmark } from '../components/Wordmark';
+import { secondaryButtonClass } from '../components/buttons';
 import { textInputClass } from '../components/form';
 import { api, ApiError } from '../lib/apiClient';
+
+// Demo-only credentials, public by design (database.md §9: the seed users and password).
+const DEMO_PASSWORD = 'repma-demo-2026';
+const DEMO_ACCOUNTS = [
+  { role: 'Platform Admin', scope: 'all stores', email: 'admin@repma.demo' },
+  { role: 'Manager', scope: 'Downtown Store', email: 'manager.downtown@repma.demo' },
+  { role: 'Employee', scope: 'Downtown Store', email: 'employee.downtown@repma.demo' },
+  { role: 'Manager', scope: 'North Store', email: 'manager.north@repma.demo' },
+  { role: 'Employee', scope: 'North Store', email: 'employee.north@repma.demo' },
+];
 
 type Field = keyof LoginBody;
 type FieldErrors = Partial<Record<Field, string>>;
@@ -48,12 +59,15 @@ export function LoginPage() {
   const location = useLocation();
   const queryClient = useQueryClient();
   const passwordRef = useRef<HTMLInputElement>(null);
+  const submitRef = useRef<HTMLButtonElement>(null);
 
   const [values, setValues] = useState<LoginBody>({ email: '', password: '' });
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   // components.md §Forms: validate on submit, then per field on blur.
   const [submitted, setSubmitted] = useState(false);
+  // The demo account whose credentials were just filled in (login.md §Demo accounts).
+  const [filledEmail, setFilledEmail] = useState<string | null>(null);
 
   const login = useMutation({
     mutationFn: (body: LoginBody) => api.post<AuthSession>('/auth/login', body),
@@ -88,6 +102,15 @@ export function LoginPage() {
 
   const revalidate = (field: Field) => () => {
     if (submitted) setFieldErrors((current) => ({ ...current, [field]: fieldErrorsOf(values)[field] }));
+  };
+
+  const tryUser = (demoEmail: string) => {
+    setValues({ email: demoEmail, password: DEMO_PASSWORD });
+    setFieldErrors({});
+    setFormError(null);
+    setSubmitted(false);
+    setFilledEmail(demoEmail);
+    submitRef.current?.focus();
   };
 
   const onSubmit = (event: FormEvent) => {
@@ -140,7 +163,13 @@ export function LoginPage() {
               <span>{formError}</span>
             </div>
           )}
+          {filledEmail && (
+            <p role="status" className="rounded-sm bg-info-soft p-[12px] text-info">
+              Email and password filled in for {filledEmail}. Click Sign in to enter.
+            </p>
+          )}
           <button
+            ref={submitRef}
             type="submit"
             disabled={login.isPending}
             className="h-[44px] w-full rounded-sm bg-accent px-base text-body-medium text-on-accent transition-colors hover:bg-accent-hover active:bg-accent-active disabled:opacity-60"
@@ -149,13 +178,29 @@ export function LoginPage() {
           </button>
         </form>
       </div>
-      {/* login.md §Layout: the demo credentials live on the landing (DP-01). */}
-      <p className="w-full max-w-[400px] text-center text-caption text-text-secondary">
-        Trying the demo?{' '}
-        <Link to="/" className="text-accent-bright underline-offset-2 hover:underline">
-          See the demo accounts
-        </Link>
-      </p>
+      <section aria-labelledby="demo-accounts" className="w-full max-w-[400px] rounded-md border border-border bg-surface p-card">
+        <h2 id="demo-accounts" className="text-body-medium">
+          Demo accounts
+        </h2>
+        <p className="mt-xs text-caption text-text-secondary">
+          A shared public demo: other visitors may change the data.
+        </p>
+        <ul className="mt-base flex flex-col divide-y divide-border">
+          {DEMO_ACCOUNTS.map((account) => (
+            <li key={account.email} className="flex items-center justify-between gap-base py-sm">
+              <div className="min-w-0">
+                <div className="text-body-medium">
+                  {account.role} <span className="text-caption text-text-secondary">· {account.scope}</span>
+                </div>
+                <div className="truncate font-mono text-caption text-text-secondary">{account.email}</div>
+              </div>
+              <button type="button" onClick={() => tryUser(account.email)} className={`${secondaryButtonClass} shrink-0`}>
+                Try this user
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
     </main>
   );
 }

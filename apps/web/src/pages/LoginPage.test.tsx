@@ -32,8 +32,23 @@ async function signIn(emailValue = 'employee@repma.test', passwordValue = 'secre
   await userEvent.click(submit());
 }
 
+describe('/login demo accounts', () => {
+  it('Try this user fills the credentials and says to click Sign in; nothing is submitted', async () => {
+    server.use(authMe(null));
+    await openLogin();
+
+    await userEvent.click(screen.getAllByRole('button', { name: 'Try this user' })[1]!);
+
+    expect(email()).toHaveValue('manager.downtown@repma.demo');
+    expect(password()).toHaveValue('repma-demo-2026');
+    expect(screen.getByRole('status')).toHaveTextContent('Click Sign in to enter');
+    expect(submit()).toHaveFocus();
+    expect(location()).toHaveTextContent('/login');
+  });
+});
+
 describe('/login form', () => {
-  it('renders the card: heading, autofill-ready fields, submit — no recovery or signup links, only the demo-accounts hint', async () => {
+  it('renders the card: heading, autofill-ready fields, submit — no recovery or signup links, five demo accounts', async () => {
     server.use(authMe(null));
     await openLogin();
 
@@ -42,9 +57,8 @@ describe('/login form', () => {
     expect(password()).toHaveAttribute('type', 'password');
     expect(password()).toHaveAttribute('autocomplete', 'current-password');
     expect(submit()).toHaveTextContent('Sign in');
-    expect(screen.getAllByRole('link')).toHaveLength(1);
-    expect(screen.getByText(/Trying the demo\?/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'See the demo accounts' })).toHaveAttribute('href', '/');
+    expect(screen.queryAllByRole('link')).toHaveLength(0);
+    expect(screen.getAllByRole('button', { name: 'Try this user' })).toHaveLength(5);
   });
 
   it('validates on submit with the shared schema, then per field on blur; nothing is sent while invalid', async () => {

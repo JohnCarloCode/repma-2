@@ -18,7 +18,7 @@ dark canvas ({colors.canvas}); no topbar at ≥ 744px (mobile pins a fixed mobil
   ↑ full height, {colors.surface} with a 1px {colors.border} right edge, no shadow (DESIGN.md §Elevation)
 ```
 
-Public pages (landing, `/login`) do NOT use this shell. `/unauthorized` uses it when there is a session, bare when there is not.
+The public page (`/login`) does NOT use this shell. `/unauthorized` uses it when there is a session, bare when there is not.
 
 ## Sidebar
 

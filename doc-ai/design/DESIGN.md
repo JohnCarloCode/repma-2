@@ -360,7 +360,7 @@ Each semantic tone has a `-soft` pair for backgrounds; text on a soft background
 ## Typography
 - **Inter** for all UI: page titles 24px semibold, card titles 18px semibold, body 14px regular, labels 12px medium.
 - **JetBrains Mono** (fallback Fira Code) for data: KPI values 32px bold; sizes, SKUs, counts, elapsed figures 13px medium inside tables and runs. `font-variant-numeric: tabular-nums` everywhere numbers stack.
-- **Wordmark**: "REPMA" in Inter 14px semibold, letter-spacing 0.14em, next to the 32px `logo-tile` (accent fill, white "R").
+- **Wordmark**: "REPMA" in Inter 14px semibold, letter-spacing 0.14em, next to the 32px owl mark (`apps/web/public/logo.svg`: flat blaugrana owl, also the favicon; it blinks in the sidebar and the login card via `logo-blink.svg`, static elsewhere, and the blink stops under `prefers-reduced-motion`). The landing page still uses the old accent-fill "R" `logo-tile` until it adopts the owl.
 
 ### Iconography
 **Material Symbols Rounded**, one configuration product-wide: `opsz 20, wght 400, FILL 0, GRAD 0` (outlined). Shipped as a subset — only the glyphs below are loaded; adding an icon means adding it to the subset **and** to this list (subset = `apps/web/src/styles/icons.json` + `npm run icons -w web`, which regenerates the self-hosted font).

@@ -1,3 +1,5 @@
+<p align="center"><img src="apps/web/public/logo.svg" alt="REPMA owl logo" width="120"></p>
+
 # REPMA
 
 **Multi-tenant availability & replenishment platform for retail chains.**

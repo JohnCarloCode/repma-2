@@ -7,7 +7,7 @@
 Single entry point to the application (DP-01: everything is behind login, no signup, no password recovery). Used by every role: platform_admin, manager, employee. Authenticates via email/password and establishes the HttpOnly cookie session (RF-01) — the page never sees or stores a token (AD-12).
 
 ## Layout
-NO app shell (per `../shared/layout.md`: public pages don't use it). A single centered card (`card` from DESIGN.md) on the `canvas` background, max-width ~400px, vertically centered. Inside: product wordmark, heading at `display` size (per DESIGN.md typography table: "login heading"), then the form. Below it, a second card of the same width, "Demo accounts" (§Demo accounts).
+NO app shell (per `../shared/layout.md`: public pages don't use it). A "Back to home" link (arrow + label, directly above the login card) returns to the public landing at `/`. A single centered card (`card` from DESIGN.md) on the `canvas` background, max-width ~400px, vertically centered. Inside: product wordmark, heading at `display` size (per DESIGN.md typography table: "login heading"), then the form. Next to it, a second card of the same width, "Demo accounts" (§Demo accounts): side by side from the tablet breakpoint up, stacked in a column on mobile.
 
 ## Content
 Form (single column, per DESIGN.md §Forms):
@@ -17,19 +17,19 @@ Form (single column, per DESIGN.md §Forms):
 | Email | `text-input`, type=email, autocomplete=email | required, valid email format |
 | Password | `text-input`, type=password, autocomplete=current-password | required, non-empty |
 
-- Heading: "Sign in". Submit: `button-primary`, full-width, label "Sign in"; pending label "Signing in…" (disabled while pending).
+- Heading: "Log in". Submit: `button-primary`, full-width, label "Log in"; pending label "Logging in…" (disabled while pending).
 - No "Forgot your password?" link, no signup link (DP-01 — users are created by the Platform Admin, RF-10; a forgotten password is reset by the Platform Admin, RF-11).
 - Inline error area between the fields and the submit button for non-field errors (401/429), rendered in `error` tone.
 
 ## Demo accounts
-A card under the form lists the five seed users (database.md §9): role + store, email in `font-mono`, and a `button-secondary` "Try this user". Clicking it fills the email and the shared demo password into the form, clears any error, moves focus to the submit button and shows an inline `role="status"` line in the form card: "Email and password filled in for <email>. Click Sign in to enter." Nothing is submitted: the visitor presses Sign in. The card notes that the demo is shared and public. The form is never prefilled on load.
+A card under the form lists the five seed users (database.md §9): role + store, email in `font-mono`, and a `button-secondary` "Try this user". Clicking it fills the email and the shared demo password into the form, clears any error, moves focus to the submit button and shows an inline `role="status"` line in the form card: "Email and password filled in for <email>. Click Log in to enter." Nothing is submitted: the visitor presses Sign in. The card notes that the demo is shared and public. The form is never prefilled on load.
 
 ## States
 - **Field validation**: per `../shared/components.md` Forms — validate on submit, then per-field on blur. Messages: "Enter a valid email address", "Password is required".
 - **Submitting**: submit button disabled + pending label. Fields stay enabled (user can correct a typo before response).
 - **Credential error (401)**: single generic inline message — "Incorrect email or password." Same message for wrong credentials, deactivated user, or deactivated store (RF-05): the API returns a uniform 401 and the UI must never reveal which case it was.
 - **Rate limited (429, RNF-07: login capped at 10/min)**: friendly inline message — "Too many attempts. Wait a minute and try again." Not a toast, not a raw error code.
-- **Network/5xx**: inline "Could not sign in. Try again." No toasts on this page — errors render inline in the card.
+- **Network/5xx**: inline "Could not log in. Try again." No toasts on this page — errors render inline in the card.
 - Already authenticated user visiting `/login`: redirect immediately to their role home (see Flows), no form flash.
 
 ## Flows

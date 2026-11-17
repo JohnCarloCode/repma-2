@@ -15,7 +15,7 @@ Per `../shared/layout.md`: **with a session it renders inside the app shell** (t
 - Single action, `button-primary` styled link to the user's role home:
   - platform_admin → `/platform/tenants`, label "Go to stores".
   - manager / employee → `/home`, label "Go to Home".
-  - No session → `/login`, label "Sign in" (rare: direct navigation without session; guards normally send 401s to `/login`).
+  - No session → `/login`, label "Log in" (rare: direct navigation without session; guards normally send 401s to `/login`).
 
 ## States
 None beyond the static render — no queries, so no loading/empty/error states.

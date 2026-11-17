@@ -132,23 +132,19 @@ export function ReplenishmentDetailPage() {
   return (
     <main className="flex flex-col gap-lg">
       <div className="flex flex-col gap-xs">
-        {/* One row; on mobile it wraps in the same order: arrow + name, then status and a full-width delete. */}
+        {backLink}
+        {/* Title left; status select and delete right, one centred row (wraps on mobile). */}
         <header className="flex flex-wrap items-center gap-sm">
-          <div className="flex min-w-0 basis-full items-center gap-sm tablet:flex-1 tablet:basis-0">
-            {backLink}
+          <div className="min-w-0 basis-full tablet:flex-1 tablet:basis-0">
             {canManage ? (
               <NameEditor key={data.name} list={data} />
             ) : (
               <h1 className="min-w-0 text-display break-words">{data.name}</h1>
             )}
           </div>
-          <StatusControl list={data} canManage={canManage} />
+          {canManage && <StatusSelect list={data} />}
           {canManage && (
-            <button
-              type="button"
-              onClick={() => setDeleting(true)}
-              className={`${dangerButtonClass} w-full tablet:w-auto`}
-            >
+            <button type="button" onClick={() => setDeleting(true)} className={dangerButtonClass}>
               <span className="icon" aria-hidden>
                 delete
               </span>
@@ -159,6 +155,9 @@ export function ReplenishmentDetailPage() {
         <p className="text-caption text-text-secondary tabular-nums">
           Created {formatDate(data.createdAt)} · {data.creatorName ?? '—'}
         </p>
+        <div>
+          <ListStatusBadge status={data.status} />
+        </div>
       </div>
 
       {data.items.length > 0 && <ProgressCard list={data} done={done} canManage={canManage} />}
@@ -274,35 +273,29 @@ function NameEditor({ list }: { list: ReplenishmentList }) {
 }
 
 /**
- * The list's state (RF-30): the badge, and for editors the adjacent select with all three
- * statuses — any transition, no state machine. It shows the picked status while the PATCH
- * is in flight; an error toasts and falls back to the server's status.
+ * The list's state (RF-30): the select with all three statuses — any transition, no state
+ * machine; the badge under the title reads the server's status. An error toasts.
  */
-function StatusControl({ list, canManage }: { list: ReplenishmentList; canManage: boolean }) {
+function StatusSelect({ list }: { list: ReplenishmentList }) {
   const update = useUpdateList(list.id);
   const toast = useToast();
   const shown = (update.isPending && update.variables.status) || list.status;
 
   return (
-    <div className="flex items-center gap-sm">
-      <ListStatusBadge status={shown} />
-      {canManage && (
-        <select
-          aria-label="Status"
-          value={shown}
-          onChange={(e) =>
-            update.mutate({ status: e.target.value as ReplenishmentStatus }, { onError: (err) => toast.error(err) })
-          }
-          className={`${textInputClass} w-auto pr-xl`}
-        >
-          {REPLENISHMENT_STATUSES.map((status) => (
-            <option key={status} value={status}>
-              {LIST_STATUS_LABEL[status]}
-            </option>
-          ))}
-        </select>
-      )}
-    </div>
+    <select
+      aria-label="Status"
+      value={shown}
+      onChange={(e) =>
+        update.mutate({ status: e.target.value as ReplenishmentStatus }, { onError: (err) => toast.error(err) })
+      }
+      className={`${textInputClass} w-[140px]! pr-xl`}
+    >
+      {REPLENISHMENT_STATUSES.map((status) => (
+        <option key={status} value={status}>
+          {LIST_STATUS_LABEL[status]}
+        </option>
+      ))}
+    </select>
   );
 }
 

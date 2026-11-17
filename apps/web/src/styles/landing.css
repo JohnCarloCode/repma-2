@@ -1,0 +1,282 @@
+/* Marketing landing (design/pages/landing.md). A deliberate exception to "components consume tokens only":
+   the landing is always light and has its own palette, defined below and scoped under `.landing` so nothing
+   leaks into the app. Every selector is prefixed with `.landing`; keyframes are prefixed `landing-`. */
+@import '@fontsource/inter/latin-700.css';
+
+
+/* Layout: Mobbin-style stack of wide bands. Big left-aligned statements, full-width framed product media,
+   one interactive moment (the size row) in the problem section. Light page, product shown in its native dark UI. */
+.landing {
+  --bg: #F5F6F9;
+  --ink: #0B1F3A;
+  --ink-2: #566178;
+  --panel: #E8ECF3;
+  --panel-2: #DCE2ED;
+  --line: #D5DBE6;
+  --blue: #004D98;
+  --garnet: #A50044;
+  --gold: #EDBB00;
+  --chip: #FFFFFF;
+  --chip-ink: #0B1F3A;
+  --on-ink: #F5F6F9;
+  --frame: #0F1115;
+  --foot-bg: #0B1F3A;
+  --foot-ink: #F2F4F8;
+  --foot-ink-2: #9AA7BD;
+  --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  color-scheme: light;
+  --gutter-l: max(16px, env(safe-area-inset-left, 0px));
+  --gutter-r: max(16px, env(safe-area-inset-right, 0px));
+}
+html:has(.landing) { scroll-behavior: smooth; }
+.landing { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 17px; line-height: 1.55; -webkit-font-smoothing: antialiased; overflow-x: clip; }
+.landing a { color: inherit; }
+.landing h1, .landing h2, .landing h3, .landing p { margin: 0; }
+.landing h1, .landing h2, .landing h3 { text-wrap: balance; letter-spacing: -0.035em; font-weight: 600; line-height: 1.04; }
+.landing :focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; border-radius: 6px; }
+
+.landing .w { width: 100%; max-width: 1232px; margin: 0 auto; padding-left: var(--gutter-l); padding-right: var(--gutter-r); }
+.landing .band { padding-block: clamp(72px, 11vw, 150px); }
+
+/* Nav */
+.landing .nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--bg); }
+.landing .nav .w { display: flex; align-items: center; gap: 28px; height: 68px; }
+.landing .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 700; letter-spacing: 0.14em; font-size: 15px; }
+.landing .brand img { height: 34px; width: auto; }
+.landing .nav-links { display: flex; gap: 26px; margin-left: 12px; }
+.landing .nav-links a { text-decoration: none; font-size: 15px; font-weight: 500; color: var(--ink-2); }
+.landing .nav-links a:hover { color: var(--ink); }
+.landing .nav-actions { margin-left: auto; display: flex; gap: 8px; }
+
+.landing .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 22px; border-radius: 999px; font: 600 15px/1 var(--sans); text-decoration: none; border: 1.5px solid var(--ink); background: var(--ink); color: var(--on-ink); cursor: pointer; transition: transform .15s ease, background .15s ease; }
+.landing .btn:hover { transform: translateY(-1px); }
+.landing .btn.ghost { background: transparent; color: var(--ink); }
+.landing .btn.ghost:hover { background: var(--panel); }
+.landing .btn.lg { min-height: 48px; padding: 0 26px; font-size: 16px; }
+
+/* Hero */
+.landing .hero { padding-top: clamp(48px, 8vw, 104px); text-align: center; }
+.landing .hero h1 { font-size: clamp(2.1rem, 4.6vw, 3.75rem); line-height: 1.08; max-width: 22ch; margin: 0 auto; }
+.landing .hero h1 img { display: inline-block; height: 0.82em; width: auto; vertical-align: -0.08em; margin-inline: 0.04em; }
+.landing .hero .lede { max-width: 52ch; margin: 20px auto 0; font-size: clamp(1rem, 1.5vw, 1.125rem); color: var(--ink-2); }
+.landing .hero .cta { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 28px; }
+.landing .stage { margin-top: clamp(48px, 7vw, 88px); background: var(--panel); border-radius: clamp(20px, 3vw, 36px); padding: clamp(12px, 3vw, 40px); }
+.landing .screen { border-radius: clamp(10px, 1.6vw, 18px); overflow: hidden; background: var(--frame); aspect-ratio: 16 / 9; border: 1px solid #3A3D45; box-shadow: inset 0 -1px 0 rgba(255,255,255,.16), 0 30px 60px -30px rgba(11,31,58,.5); }
+.landing .screen video, .landing .screen img { width: 100%; height: 100%; object-fit: cover; }
+.landing .hero .stage { max-width: 1040px; margin-inline: auto; }
+.landing .facts { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 44px; margin-top: 40px; color: var(--ink-2); font-size: 15px; font-weight: 500; }
+.landing .facts span { white-space: nowrap; }
+
+/* Statement */
+.landing .statement h2 { font-size: clamp(2.2rem, 5.6vw, 4.2rem); max-width: 17ch; }
+.landing .statement .sub { margin-top: 28px; max-width: 34ch; font-size: clamp(1.4rem, 3.2vw, 2.1rem); line-height: 1.25; letter-spacing: -0.02em; font-weight: 500; color: var(--ink-2); }
+
+/* Interactive size row */
+.landing .lab { margin-top: clamp(44px, 6vw, 72px); background: var(--panel); border-radius: clamp(20px, 3vw, 32px); padding: clamp(18px, 3.4vw, 44px); display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: clamp(20px, 4vw, 56px); align-items: start; }
+.landing .lab h3 { font-size: 1.05rem; letter-spacing: -0.01em; font-weight: 600; }
+.landing .lab .hint { color: var(--ink-2); font-size: 15px; margin-top: 4px; }
+.landing .rows { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+.landing .row { background: var(--bg); border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.landing .row .name { font-weight: 600; font-size: 16px; letter-spacing: -0.01em; }
+.landing .row .cat { color: var(--ink-2); font-size: 13px; }
+.landing .sizes { display: flex; flex-wrap: wrap; gap: 8px; }
+.landing .size { min-width: 52px; height: 44px; padding: 0 12px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-radius: 10px; border: 1.5px dashed transparent; background: var(--chip); color: var(--chip-ink); font: 700 14px/1 var(--mono); cursor: pointer; transition: border-color .15s, background .15s; }
+.landing .size:hover { background: var(--panel-2); }
+.landing .size[aria-pressed="true"] { border-color: var(--garnet); }
+.landing .size .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--garnet); display: none; }
+.landing .size[aria-pressed="true"] .dot { display: block; }
+.landing .tally { margin-top: 14px; font: 500 14px/1.4 var(--mono); color: var(--ink-2); }
+.landing .log { list-style: none; padding: 0; margin: 20px 0 0; display: flex; flex-direction: column; }
+.landing .log li { padding: 12px 0; border-top: 1px solid var(--line); font-size: 15px; display: flex; flex-direction: column; gap: 2px; }
+.landing .log li:first-child { border-top: 0; }
+.landing .log b { font-weight: 600; }
+.landing .log time { color: var(--ink-2); font-size: 13px; }
+.landing .log .back { color: var(--blue); }
+.landing .log .out { color: var(--garnet); }
+
+/* Strip */
+.landing .strip-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 16px 40px; }
+.landing .strip-head h2 { font-size: clamp(2rem, 4.6vw, 3.4rem); max-width: 16ch; }
+.landing .strip-head p { color: var(--ink-2); max-width: 36ch; }
+.landing .strip { margin-top: 44px; display: flex; gap: clamp(14px, 2vw, 24px); overflow-x: auto; scroll-snap-type: none; padding-bottom: 18px; padding-left: max(var(--gutter-l), calc((100% - 1200px) / 2)); padding-right: max(var(--gutter-r), calc((100% - 1200px) / 2)); scroll-padding-left: max(var(--gutter-l), calc((100% - 1200px) / 2)); scrollbar-width: none; }
+.landing .strip::-webkit-scrollbar { display: none; }
+.landing .shot { flex: 0 0 min(76vw, 520px); scroll-snap-align: start; margin: 0; display: flex; flex-direction: column; gap: 14px; }
+.landing .shot .screen { aspect-ratio: 16 / 10; }
+.landing .shot figcaption { font-size: 15px; color: var(--ink-2); }
+.landing .shot figcaption b { color: var(--ink); font-weight: 600; }
+
+/* Features */
+.landing .feat { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: clamp(28px, 6vw, 88px); align-items: center; }
+.landing .feat + .feat { margin-top: clamp(72px, 10vw, 140px); }
+.landing .feat.flip { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
+.landing .feat.flip .copy { order: 2; }
+.landing .feat h3 { font-size: clamp(1.9rem, 3.6vw, 2.9rem); }
+.landing .feat p { margin-top: 20px; color: var(--ink-2); max-width: 44ch; }
+.landing .feat ul { margin: 22px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 15.5px; }
+.landing .feat li { padding-top: 10px; border-top: 1px solid var(--line); }
+.landing .feat .stage { margin-top: 0; padding: clamp(10px, 2vw, 26px); }
+
+/* Steps */
+.landing .steps-h { font-size: clamp(2rem, 4.6vw, 3.4rem); max-width: 14ch; }
+.landing .steps { margin-top: 56px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(24px, 4vw, 56px); counter-reset: s; }
+.landing .step { border-top: 2px solid var(--ink); padding-top: 22px; }
+.landing .step::before { counter-increment: s; content: counter(s); display: block; font: 700 14px/1 var(--mono); color: var(--garnet); margin-bottom: 18px; }
+.landing .step h3 { font-size: 1.6rem; letter-spacing: -0.025em; }
+.landing .step p { margin-top: 12px; color: var(--ink-2); font-size: 16px; }
+
+/* Roles */
+.landing .roles-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.45fr); gap: clamp(28px, 6vw, 88px); align-items: start; }
+.landing .roles-grid h2 { font-size: clamp(2rem, 4.6vw, 3.4rem); }
+.landing .roles-grid .copy p { margin-top: 22px; color: var(--ink-2); max-width: 40ch; }
+.landing .tbl { overflow-x: auto; background: var(--panel); border-radius: 24px; padding: 8px clamp(14px, 2.4vw, 28px); }
+.landing table { width: 100%; border-collapse: collapse; min-width: 480px; font-size: 15px; }
+.landing th, .landing td { text-align: left; padding: 15px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.landing tr:last-child td { border-bottom: 0; }
+.landing th { font-weight: 600; font-size: 14px; color: var(--ink-2); }
+.landing td.y, .landing td.n, .landing th.c { text-align: center; width: 92px; }
+.landing td.y { color: var(--blue); font-weight: 600; }
+.landing td.n { color: var(--ink-2); opacity: .6; }
+.landing td:first-child { font-weight: 500; }
+
+/* Final CTA */
+.landing .final { text-align: left; }
+.landing .final h2 { font-size: clamp(2.6rem, 7.4vw, 5.6rem); max-width: 14ch; }
+.landing .final p { margin-top: 24px; color: var(--ink-2); max-width: 46ch; font-size: 1.1rem; }
+.landing .final .cta { margin-top: 36px; display: flex; flex-wrap: wrap; gap: 12px; }
+
+/* Footer */
+.landing .foot { background: var(--foot-bg); color: var(--foot-ink); border-radius: clamp(24px, 4vw, 48px) clamp(24px, 4vw, 48px) 0 0; overflow: hidden; }
+.landing .foot .w { padding-top: clamp(56px, 8vw, 96px); }
+.landing .foot-top { display: flex; flex-wrap: wrap; gap: 36px 80px; justify-content: space-between; align-items: flex-start; }
+.landing .foot .brand img { height: 56px; }
+.landing .foot .tag { margin-top: 18px; max-width: 32ch; color: var(--foot-ink-2); font-size: 15px; }
+.landing .foot nav { display: flex; flex-direction: column; gap: 10px; font-size: 15px; }
+.landing .foot nav b { color: var(--foot-ink-2); font-weight: 500; font-size: 13px; margin-bottom: 4px; }
+.landing .foot nav a { text-decoration: none; }
+.landing .foot nav a:hover { text-decoration: underline; }
+.landing .mark { margin-top: clamp(40px, 6vw, 80px); font-weight: 700; letter-spacing: -0.05em; line-height: .72; font-size: clamp(5.5rem, 27vw, 24rem); color: rgba(255,255,255,.07); white-space: nowrap; height: .58em; overflow: hidden; user-select: none; }
+.landing .legal { padding-block: 18px; font-size: 13px; color: var(--foot-ink-2); }
+
+@media (max-width: 860px) {
+  .landing .nav-links { display: none; }
+  .landing .lab, .landing .feat, .landing .feat.flip, .landing .roles-grid, .landing .steps { grid-template-columns: minmax(0, 1fr); }
+  .landing .feat.flip .copy { order: 0; }
+  .landing .steps { gap: 36px; }
+}
+@media (max-width: 520px) {
+  .landing .nav .w { gap: 12px; }
+  .landing .nav .btn { padding: 0 16px; }
+  .landing .brand span { letter-spacing: 0.1em; }
+  .landing .facts { gap: 10px 24px; }
+  .landing .facts span { white-space: normal; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html:has(.landing) { scroll-behavior: auto; }
+  .landing .btn, .landing .size { transition: none; }
+}
+
+
+/* Motion (Mobbin-style): load-in for the hero, scroll-driven reveals, text that fills from gray to ink,
+   a typed line and a nav that gains an edge on scroll. CSS only; off for reduced-motion and unsupported browsers. */
+.landing .typed { display: flex; justify-content: center; margin-top: 32px; }
+.landing .typed span { display: inline-block; max-width: 100%; overflow: hidden; white-space: nowrap; font: 600 clamp(.8rem, 2.4vw, 1.3rem)/1.5 var(--mono); border-right: 2px solid var(--garnet); padding-right: 4px; }
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes landing-rise { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: none; } }
+  @keyframes landing-type { from { width: 0; } to { width: 36ch; } }
+  @keyframes landing-caret { 50% { border-color: transparent; } }
+  .landing .hero h1, .landing .hero .lede, .landing .hero .cta, .landing .typed, .landing .hero .stage { animation: landing-rise .8s cubic-bezier(.2,.7,.2,1) both; }
+  .landing .hero .lede { animation-delay: .12s; }
+  .landing .hero .cta { animation-delay: .24s; }
+  .landing .typed { animation-delay: .4s; }
+  .landing .hero .stage { animation-delay: .5s; }
+  .landing .typed span { width: 0; animation: landing-type 1.8s steps(36) 1s forwards, landing-caret .8s step-end infinite; }
+  @supports (animation-timeline: view()) {
+    @keyframes landing-fill { from { color: var(--ink-2); opacity: .55; } to { color: var(--ink); opacity: 1; } }
+    @keyframes landing-zoom { from { transform: scale(.94); } to { transform: none; } }
+    @keyframes landing-edge { to { box-shadow: 0 1px 0 var(--line); } }
+    .landing .facts, .landing .statement h2, .landing .lab, .landing .strip-head, .landing .feat, .landing .steps-h, .landing .step, .landing .roles-grid, .landing .final .w > * {
+      animation: landing-rise linear both; animation-timeline: view(); animation-range: entry 0% entry 55%;
+    }
+    .landing .statement .sub { animation: landing-fill linear both; animation-timeline: view(); animation-range: entry 30% cover 40%; }
+    .landing .feat .screen, .landing .hero .screen { animation: landing-zoom linear both; animation-timeline: view(); animation-range: entry 0% cover 35%; }
+    .landing .nav { animation: landing-edge linear both; animation-timeline: scroll(root); animation-range: 0 90px; }
+  }
+}
+
+/* Product panels: the screen hangs from the top of the panel and runs off its bottom edge (no bottom border or gap). */
+.landing .stage, .landing .feat .stage { overflow: hidden; padding: clamp(12px, 3vw, 40px) clamp(12px, 3vw, 40px) 0; }
+.landing .feat .stage { padding: clamp(10px, 2vw, 26px) clamp(10px, 2vw, 26px) 0; }
+.landing .stage .screen { border-bottom: 0; border-radius: clamp(10px, 1.6vw, 18px) clamp(10px, 1.6vw, 18px) 0 0; box-shadow: none; transform-origin: bottom center; }
+.landing .shot .screen { border: 1px solid #3A3D45; border-radius: clamp(10px, 1.6vw, 18px); box-shadow: 0 30px 60px -30px rgba(11,31,58,.5); transform-origin: center; }
+
+/* Header: plain bar at the top; after scrolling it floats as a rounded blue pill. */
+.landing .nav { background: transparent; top: 12px; margin-bottom: -68px; pointer-events: none; }
+.landing .nav .w { pointer-events: auto; }
+.landing .hero { padding-top: calc(68px + clamp(32px, 5vw, 64px)); }
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: scroll()) {
+    @keyframes landing-pill { to { max-width: 1040px; background-color: var(--ink); border-radius: 999px; padding-inline: 24px; } }
+    @keyframes landing-onblue { to { color: var(--on-ink); } }
+    @keyframes landing-btnghost { to { background: transparent; border-color: rgba(245, 246, 249, .55); color: var(--on-ink); } }
+    @keyframes landing-btnblue { to { background: var(--on-ink); border-color: var(--on-ink); color: var(--ink); } }
+    .landing .nav { animation: none; }
+    .landing .nav .w, .landing .brand, .landing .nav-links a, .landing .nav .btn { animation-timeline: scroll(root); animation-range: 0 90px; animation-fill-mode: both; animation-timing-function: linear; animation-duration: 1ms; }
+    .landing .nav .w { animation-name: landing-pill; }
+    .landing .brand, .landing .nav-links a { animation-name: landing-onblue; }
+    .landing .nav .btn { animation-name: landing-btnblue; }
+    .landing .nav .btn.ghost { animation-name: landing-btnghost; }
+  }
+}
+
+/* Anchor targets land below the floating header (68px bar + 12px offset + air). */
+.landing section[id] { scroll-margin-top: 104px; }
+
+/* Footer wordmark: last thing in the footer, flush with its bottom edge and bleeding off the right edge,
+   so the crop looks intentional. The legal line moves above it. */
+.landing .foot .w { display: flex; flex-direction: column; padding-bottom: 0; }
+.landing .foot .legal { order: 2; }
+.landing .foot .mark { order: 3; width: 100vw; margin: 8px calc(50% - 50vw) 0; padding-left: 2vw; font-size: 31vw; line-height: .72; text-align: left; letter-spacing: -0.05em; }
+
+/* Landing scrollbar: navy track and a lighter thumb, so the footer reads full width next to it. */
+html:has(.landing) { scrollbar-color: #3A5278 #0B1F3A; }
+
+/* "Any shop" band: examples as plain chips next to the copy. */
+.landing .roles-grid .copy p + p { margin-top: 14px; }
+.landing .biz { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start; }
+.landing .biz li { padding: 12px 20px; border-radius: 999px; background: var(--panel); font-weight: 600; font-size: 1.05rem; letter-spacing: -0.01em; }
+
+/* Roles band mirrors the "any shop" band above it: table on the left, copy on the right (copy first on mobile). */
+.landing .roles-grid.flip { grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); }
+.landing .roles-grid.flip .copy { order: 2; }
+@media (max-width: 860px) {
+  .landing .roles-grid.flip { grid-template-columns: minmax(0, 1fr); }
+  .landing .roles-grid.flip .copy { order: 0; }
+}
+
+/* Final CTA: centred card in the REPMA accent red (the app's --color-accent), white text. */
+.landing .cta-card { --repma-red: #8E1B3B; display: flex; flex-direction: column; align-items: center; text-align: center; background: var(--repma-red); color: #fff; border-radius: clamp(24px, 4vw, 40px); padding: clamp(44px, 8vw, 96px) clamp(20px, 5vw, 64px); }
+.landing .cta-card h2 { font-size: clamp(2.2rem, 5.4vw, 4.2rem); max-width: 18ch; }
+.landing .cta-card p { margin-top: 20px; max-width: 46ch; font-size: 1.1rem; color: rgba(255, 255, 255, .86); }
+.landing .cta-card .cta { margin-top: 32px; justify-content: center; }
+.landing .cta-card .btn { background: #fff; border-color: #fff; color: var(--repma-red); }
+.landing .cta-card .btn:hover { background: #F5F6F9; }
+
+/* Contact: header/footer links styled as the links around them, a modal dialog, a secondary button on the red CTA. */
+.landing .foot nav button { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
+.landing .foot nav button:hover { text-decoration: underline; }
+.landing .cta-card .btn.ghost { background: transparent; border-color: rgba(255, 255, 255, .7); color: #fff; }
+.landing .cta-card .btn.ghost:hover { background: rgba(255, 255, 255, .14); }
+.landing .contact { margin: auto; width: calc(100vw - 32px); max-width: 440px; border: 0; border-radius: 24px; padding: 32px; background: var(--bg); color: var(--ink); font-family: var(--sans); }
+.landing .contact::backdrop { background: rgba(11, 31, 58, .55); }
+.landing .contact h2 { font-size: 1.9rem; padding-right: 40px; }
+.landing .contact p { margin-top: 12px; color: var(--ink-2); }
+.landing .contact-close { position: absolute; top: 16px; right: 16px; width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; border: 0; background: var(--panel); color: var(--ink); cursor: pointer; }
+.landing .contact-close:hover { background: var(--panel-2); }
+.landing .contact-link { display: flex; flex-direction: column; gap: 2px; margin-top: 12px; padding: 16px 20px; border-radius: 16px; background: var(--panel); text-decoration: none; overflow-wrap: anywhere; }
+.landing .contact-link:first-of-type { margin-top: 24px; }
+.landing .contact-link span { font-weight: 600; }
+.landing .contact-link code { font: 500 13.5px/1.4 var(--mono); color: var(--ink-2); }
+.landing .contact-link:hover { background: var(--panel-2); }
+
+@media (max-width: 520px) { .landing .nav .btn.ghost { display: none; } }

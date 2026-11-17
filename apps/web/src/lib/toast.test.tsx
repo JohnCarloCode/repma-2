@@ -27,7 +27,7 @@ describe('errorMessage (components.md §Toasts — error mapping)', () => {
 
   it('replaces 401 and 429 with their own copy', () => {
     expect(errorMessage(new ApiError(401, 'UNAUTHORIZED', 'Authentication required'))).toBe(
-      'Your session has expired. Sign in again.',
+      'Your session has expired. Log in again.',
     );
     expect(errorMessage(new ApiError(429, 'RATE_LIMITED', 'Too many requests, try again later'))).toBe(
       'Too many requests. Wait a minute and try again.',

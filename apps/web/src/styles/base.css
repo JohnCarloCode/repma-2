@@ -1,8 +1,8 @@
-/* Base styles (DESIGN.md §Overview, §Elevation, §Accessibility, §Motion). The app ships dark
- * (<html class="repma-dark">); the light value set exists as tokens (.repma-light, theme.css). */
+/* Base styles (DESIGN.md §Overview, §Elevation, §Accessibility, §Motion). The app ships light
+ * (<html class="repma-light">); the dark values are the token defaults on :root (theme.css). */
 @layer base {
   :root {
-    color-scheme: dark;
+    color-scheme: light;
   }
 
   body {

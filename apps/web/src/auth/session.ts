@@ -28,7 +28,7 @@ export const ROLE_LABEL: Readonly<Record<Role, string>> = {
   employee: 'Employee',
 };
 
-const SIGN_IN: Home = { path: '/login', label: 'Sign in' };
+const SIGN_IN: Home = { path: '/login', label: 'Log in' };
 
 export function roleHome(session: AuthSession | null): Home {
   return session ? ROLE_HOME[session.role] : SIGN_IN;

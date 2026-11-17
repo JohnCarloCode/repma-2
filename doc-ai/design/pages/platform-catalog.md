@@ -1,4 +1,4 @@
-# Global catalog — `/platform/catalog`
+# Catalog admin — `/platform/catalog`
 
 > Guard: `catalog:manage` · Zone: platform
 > API: `GET/POST /categories`, `PATCH /categories/:id`, `PUT /categories/order`, `PUT /categories/:id/products/order`, `GET/POST /products`, `PATCH /products/:id`, `POST /products/:id/sizes`, `PATCH /products/:id/sizes/:sizeId`, `POST /products/:id/image`
@@ -7,7 +7,7 @@
 Platform Admin management of the global catalog: categories, products and their sizes (RF-13..17, RN-02). Every product has ≥1 size — label, per-size unique SKU, position, `is_active`; non-sized products carry a single size labeled "One size". Distinct from the read-only store view at `/catalog`. Platform-zone page: no `X-Tenant-Id` on any call (architecture.md §5.2 — the catalog router is global).
 
 ## Layout
-Shell per ../shared/layout.md. Below the `<PageHeader>` ("Global catalog"), **two tabs**: "Categories" and "Products". Active tab lives in the URL (`?tab=categories|products`, default `products`) — shareable and refresh-safe, consistent with the filter-state convention in ../shared/components.md. Each tab renders the standard list skeleton (filter band → `<DataTable>` → `<Pagination>` where paginated). The primary action button in the header follows the active tab ("New category" / "New product").
+Shell per ../shared/layout.md. Below the `<PageHeader>` ("Catalog admin"), **two tabs**: "Categories" and "Products". Active tab lives in the URL (`?tab=categories|products`, default `products`) — shareable and refresh-safe, consistent with the filter-state convention in ../shared/components.md. Each tab renders the standard list skeleton (filter band → `<DataTable>` → `<Pagination>` where paginated). The primary action button in the header follows the active tab ("New category" / "New product").
 
 ## Content
 

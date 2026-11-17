@@ -26,7 +26,7 @@ const GENERIC_ERROR = 'Something went wrong. Try again.';
 export function errorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) return GENERIC_ERROR;
   if (error.code === NETWORK_ERROR) return error.message;
-  if (error.status === 401) return 'Your session has expired. Sign in again.';
+  if (error.status === 401) return 'Your session has expired. Log in again.';
   if (error.status === 429) return 'Too many requests. Wait a minute and try again.';
   if (error.status >= 500 || error.code === 'HTTP_ERROR') return GENERIC_ERROR;
   return error.message;

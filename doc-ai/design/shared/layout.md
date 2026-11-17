@@ -18,7 +18,7 @@ dark canvas ({colors.canvas}); no topbar at ≥ 744px (mobile pins a fixed mobil
   ↑ full height, {colors.surface} with a 1px {colors.border} right edge, no shadow (DESIGN.md §Elevation)
 ```
 
-The public page (`/login`) does NOT use this shell. `/unauthorized` uses it when there is a session, bare when there is not.
+The public pages (`/` landing, `/login`) do NOT use this shell. `/unauthorized` uses it when there is a session, bare when there is not.
 
 ## Sidebar
 
@@ -55,7 +55,7 @@ Sits directly below the wordmark, above the navigation, visible to every role �
 | — | Catalog | `/catalog` | `assortment:manage` |
 | Platform | Stores | `/platform/tenants` | `tenant:manage` |
 | Platform | Users | `/platform/users` | `user:manage` |
-| Platform | Global catalog | `/platform/catalog` | `catalog:manage` |
+| Platform | Catalog admin | `/platform/catalog` | `catalog:manage` |
 
 - The store items are ordered by operating frequency — Replenishment and Availability are the daily work, Activity is review, Catalog is occasional assortment growth — so Catalog closes the section.
 - "Catalog" is gated by `assortment:manage`, not `catalog:read`: every store role holds `catalog:read` (the ProductPicker reads the catalog endpoints from the replenishment flow, RF-39), so it cannot discriminate; the page exists to grow the assortment, which is manager work. Employees therefore never see this item (see `../pages/catalog.md` and `architecture.md` §6).

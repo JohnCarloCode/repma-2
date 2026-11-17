@@ -32,7 +32,7 @@ describe('nav visibility matrix (layout.md §Navigation, full registry)', () => 
   it('platform admin: every store item plus the Platform section', () => {
     expect(visible('platform_admin')).toEqual([
       { items: ['Home', 'Replenishment', 'Availability', 'Activity', 'Catalog'] },
-      { title: 'Platform', items: ['Stores', 'Users', 'Global catalog'] },
+      { title: 'Platform', items: ['Stores', 'Users', 'Catalog admin'] },
     ]);
   });
 });
@@ -86,8 +86,8 @@ describe('shell', () => {
     expect(await screen.findByRole('heading', { name: 'Unauthorized access' })).toBeInTheDocument();
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('link', { name: 'Sign in' }));
-    expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('link', { name: 'Log in' }));
+    expect(await screen.findByRole('heading', { name: 'Log in' })).toBeInTheDocument();
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
   });
 });
@@ -114,7 +114,7 @@ describe('logout', () => {
     await userEvent.click(screen.getByRole('button', { name: /Test User/ }));
     await userEvent.click(await screen.findByRole('menuitem', { name: 'Log out' }));
 
-    expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Log in' })).toBeInTheDocument();
     expect(location()).toHaveTextContent(/^\/login$/);
     expect(location()).toHaveAttribute('data-state', JSON.stringify({ from: '/activity?page=2' }));
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();

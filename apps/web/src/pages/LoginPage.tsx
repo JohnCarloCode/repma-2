@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
-import { Navigate, useLocation } from 'react-router';
+import { Link, Navigate, useLocation } from 'react-router';
 import { loginBody, type AuthSession, type LoginBody } from 'shared';
 import { useSession } from '../auth/AuthContext';
 import type { LoginRedirectState } from '../auth/guards';
@@ -45,7 +45,7 @@ function fieldErrorsOf(values: LoginBody): FieldErrors {
 function formErrorOf(error: ApiError): string {
   if (error.status === 401) return 'Incorrect email or password.';
   if (error.status === 429) return 'Too many attempts. Wait a minute and try again.';
-  return 'Could not sign in. Try again.';
+  return 'Could not log in. Try again.';
 }
 
 /**
@@ -148,10 +148,22 @@ export function LoginPage() {
   );
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-base bg-canvas p-lg">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-base bg-canvas p-lg tablet:flex-row">
+      <div className="flex w-full max-w-[400px] flex-col gap-sm">
+      <Link
+        to="/"
+        className="group inline-flex min-h-[44px] items-center gap-sm rounded-sm self-start pr-sm text-body-medium text-text-secondary hover:text-text"
+      >
+        <span className="inline-flex size-[32px] items-center justify-center rounded-sm bg-surface-raised text-text transition-colors group-hover:bg-surface-hover group-hover:text-accent-bright">
+          <span className="icon" aria-hidden>
+            arrow_back
+          </span>
+        </span>
+        Back to home
+      </Link>
       <div className="w-full max-w-[400px] rounded-md border border-border bg-surface p-card">
         <Wordmark blink />
-        <h1 className="mt-[12px] mb-lg text-display">Sign in</h1>
+        <h1 className="mt-[12px] mb-lg text-display">Log in</h1>
         <form noValidate onSubmit={onSubmit} className="flex flex-col gap-base">
           {field('email', 'Email', { type: 'email', autoComplete: 'email' })}
           {field('password', 'Password', { type: 'password', autoComplete: 'current-password' })}
@@ -165,7 +177,7 @@ export function LoginPage() {
           )}
           {filledEmail && (
             <p role="status" className="rounded-sm bg-info-soft p-[12px] text-info">
-              Email and password filled in for {filledEmail}. Click Sign in to enter.
+              Email and password filled in for {filledEmail}. Click Log in to enter.
             </p>
           )}
           <button
@@ -174,9 +186,10 @@ export function LoginPage() {
             disabled={login.isPending}
             className="h-[44px] w-full rounded-sm bg-accent px-base text-body-medium text-on-accent transition-colors hover:bg-accent-hover active:bg-accent-active disabled:opacity-60"
           >
-            {login.isPending ? 'Signing in…' : 'Sign in'}
+            {login.isPending ? 'Logging in…' : 'Log in'}
           </button>
         </form>
+      </div>
       </div>
       <section aria-labelledby="demo-accounts" className="w-full max-w-[400px] rounded-md border border-border bg-surface p-card">
         <h2 id="demo-accounts" className="text-body-medium">

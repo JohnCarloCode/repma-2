@@ -11,6 +11,7 @@ import { AvailabilityDetailPage } from './pages/AvailabilityDetailPage';
 import { AvailabilityPage } from './pages/AvailabilityPage';
 import { CatalogPage } from './pages/CatalogPage';
 import { HomePage } from './pages/HomePage';
+import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { PlatformCatalogPage } from './pages/PlatformCatalogPage';
 import { PlatformTenantsPage } from './pages/PlatformTenantsPage';
@@ -27,6 +28,7 @@ function RoleHomeRedirect() {
 export function AppRoutes() {
   return (
     <Routes>
+      <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
 
       {/* The shell wraps every guarded route, and /unauthorized when there is a session (layout.md). */}

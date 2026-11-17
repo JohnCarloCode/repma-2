@@ -103,6 +103,21 @@ describe('demo seed', () => {
     for (const { labels } of sizes) expect(labels).toEqual(['XS', 'S', 'M', 'L', 'XL', '2XL']);
   });
 
+  it('orders each category\'s products as in the seed data (RF-46)', async () => {
+    const rows = await admin<{ category: string; skus: string[] }[]>`
+      select c.slug as category, array_agg(s.sku order by p.position, p.name, p.id) as skus
+      from products p join categories c on c.id = p.category_id
+      join product_sizes s on s.product_id = p.id and s.position = 0
+      where c.slug in ${admin(CATEGORIES.map((c) => c.slug))}
+      group by c.slug
+    `;
+    for (const { category, skus } of rows) {
+      const expected = PRODUCTS.filter((p) => p.category === category).map((p) => skuOf(p.code, p.sizes[0]!));
+      expect(skus.slice(0, expected.length)).toEqual(expected);
+    }
+    expect(rows).toHaveLength(CATEGORIES.length);
+  });
+
   it('gives the two stores overlapping assortments with exclusives on both sides', async () => {
     const [counts] = await admin<{ shared: number; downtown_only: number; north_only: number }[]>`
       select

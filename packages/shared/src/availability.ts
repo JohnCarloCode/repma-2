@@ -36,8 +36,12 @@ export interface AvailabilityFeedEvent extends AvailabilityItemEvent {
 // still returns their complete run. `productId` is one or more product ids,
 // comma-separated in a single param (at most 100 — the page-size cap), the
 // `/catalog` cross-reference (RF-18, RF-35); repeats are tolerated, an empty
-// or non-uuid entry is a 400. No sort param: the order is fixed (RF-18).
+// or non-uuid entry is a 400. `sort` absent = the aging order (RF-18, DP-07);
+// `sort=catalog` (its only value) = the catalog order of `GET /products`
+// (RF-45, RF-46) — the replenishment-flow picker's, so building a list never
+// leans on availability (DP-06).
 export const availabilityListQuery = paginationQuery.extend({
+  sort: z.literal('catalog').optional(),
   search: z.string().trim().max(100).optional(),
   categoryId: z.uuid().optional(),
   outOfStock: z.literal('true').transform(() => true).optional(),

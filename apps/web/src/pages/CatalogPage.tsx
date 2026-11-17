@@ -93,7 +93,7 @@ export function CatalogPage() {
       header: 'Product',
       cell: (product) => (
         <span className={`flex items-center gap-[12px] ${product.isActive ? '' : 'text-text-secondary'}`}>
-          <ProductThumb name={product.name} imageUrl={product.imageUrl} sizeClass="size-[40px]" />
+          <ProductThumb name={product.name} imageUrl={product.imageUrl} />
           <span className="text-body-medium">{product.name}</span>
         </span>
       ),
@@ -304,7 +304,7 @@ function ProductSheet({
     >
       <div className="flex flex-col gap-lg">
         <div className="flex items-start gap-base">
-          <ProductThumb name={product.name} imageUrl={product.imageUrl} sizeClass="size-[96px]" />
+          <ProductThumb name={product.name} imageUrl={product.imageUrl} sizeClass="size-[120px]" />
           <div className="flex min-w-0 flex-col gap-xs">
             <span className="text-text-secondary">{product.categoryName}</span>
             {!product.isActive && (

@@ -9,6 +9,7 @@ import type {
   Product,
   ProductListQuery,
   ReorderCategoriesBody,
+  ReorderProductsBody,
   UpdateCategoryBody,
   UpdateProductBody,
   UpdateProductSizeBody,
@@ -27,6 +28,7 @@ import {
   listProducts as listProductRows,
   productExists,
   reorderCategories as reorderCategoryRows,
+  reorderProducts as reorderProductRows,
   setProductImage,
   updateCategory as updateCategoryRow,
   updateProduct as updateProductRow,
@@ -65,6 +67,16 @@ export async function updateCategory(id: string, body: UpdateCategoryBody): Prom
 export async function reorderCategories(body: ReorderCategoriesBody): Promise<void> {
   if ((await reorderCategoryRows(body.ids)) === 'mismatch') {
     throw new AppError(409, 'CONFLICT', 'The categories changed since you loaded them; reload and try again');
+  }
+}
+
+// RF-46 — as RF-45, within one category: a product added to it, moved in or
+// out since the client read it is a 409; an unknown category a 404.
+export async function reorderProducts(categoryId: string, body: ReorderProductsBody): Promise<void> {
+  const result = await reorderProductRows(categoryId, body.ids);
+  if (result === 'not_found') throw new AppError(404, 'NOT_FOUND', 'Category not found');
+  if (result === 'mismatch') {
+    throw new AppError(409, 'CONFLICT', 'The products changed since you loaded them; reload and try again');
   }
 }
 

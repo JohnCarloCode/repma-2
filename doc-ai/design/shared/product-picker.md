@@ -8,32 +8,38 @@ Choosing a product should feel like browsing a catalog, not filling a form: imag
 
 ## Anatomy
 
-Modal (max-w 960px on desktop; full-screen sheet on mobile), two zones:
+Modal (up to 1200px wide from tablet; full-screen sheet on mobile): a browse zone (categories + grid) and a selection panel — beside the grid on desktop, below it on tablet and mobile:
 
 **It renders above the entire shell at every breakpoint** — portalled at the document root, `{layers.dialog}` over a `{layers.dialog-scrim}` scrim (DESIGN.md §Elevation · Layering, `components.md` §Modals & confirms, `layout.md` §Layering with dialogs). On mobile the sheet covers the fixed mobile header, hamburger included; on tablet it covers the collapsed rail and the expanded panel; on desktop it covers the sidebar. No shell chrome stays visible or tappable beside an open picker — and since the picker is where a shop-floor tap lands most often, chrome showing through it is a tap that goes to the wrong layer, not just a visual seam.
 
 
 ```
-┌────────────────────────────────────────────────┐
-│ [Search products…         ]  flow title        │
-├──────────┬─────────────────────────────────────┤
-│ Categories│  Product grid (image, name,        │
-│ · All     │  size count) — 3-4 col desktop,    │
-│ · Footwear│  2 col tablet, 1-2 col mobile      │
-│ · Apparel │                                    │
-│ · …       │  [pagination / load more]          │
-├──────────┴─────────────────────────────────────┤
-│ Selection panel (visible once a product is     │
-│ chosen): image · name · size tiles · quantity  │
-│                        [Cancel] [Primary CTA]  │
-└────────────────────────────────────────────────┘
-```
+Desktop (≥1280px)
+┌──────────────────────────────────────────────────────────────┐
+│ flow title                                                   │
+│ [Search products…                                          ] │
+├───────────┬───────────────────────────────┬──────────────────┤
+│ Categories│  Product grid: square cards   │ Selection panel  │
+│ · All     │  (image, name, size count),   │ (320px): image · │
+│ · …       │  ≥180px wide, as many columns │ name · size tiles│
+│           │  as fit (3 at 1200px)         │ · quantity       │
+│           │  [pagination]                 │ — or a hint until│
+│           │                               │ a product is     │
+│           │                               │ chosen           │
+├───────────┴───────────────────────────────┴──────────────────┤
+│                                         [Close] [Primary CTA]│
+└──────────────────────────────────────────────────────────────┘
 
+Tablet (744–1279px): same, with the selection panel below the
+categories + grid row (shown once a product is chosen).
+Mobile (<744px): full-screen sheet; category chips above a
+2-column grid; selection panel below.
+```
 - **Category rail** (left; horizontal chips on mobile): "All" + `GET /categories`. Single-select, resets grid pagination.
-- **Search**: debounced 300ms, matches product name and size SKU. The endpoint depends on the flow (see Consumers): the assortment flow browses the global catalog (`GET /products?search=&categoryId=`); the replenishment flow browses the store's assortment (`GET /availability?search=&categoryId=`, AD-22 shape — a list only references sizes the store carries, RN-12).
+- **Search**: debounced 300ms, matches product name and size SKU. The endpoint depends on the flow (see Consumers): the assortment flow browses the global catalog (`GET /products?search=&categoryId=`); the replenishment flow browses the store's assortment (`GET /availability?search=&categoryId=&sort=catalog`, AD-22 shape — a list only references sizes the store carries, RN-12). Both flows show products in **catalog order** (RF-45, RF-46) — the Platform Admin's — never availability's aging order (DP-06).
 - **Product grid**: card per product — image (fallback: initials placeholder on `{colors.surface-raised}`), name, caption with size count ("3 sizes" / "One size"). Inactive handling is per flow: the assortment flow never shows inactive products (RN-08 — no new assortment additions); the replenishment flow shows products already in the assortment even when inactive, with `badge-inactive` (membership, not activity, is the criterion — RN-12/RN-08).
 - **Stable height**: the modal's height is fixed at its maximum (a full grid page, viewport-capped) and never changes with the result count. Switching category, searching or paginating only swaps the grid's content — the grid zone keeps its height (scrolling internally when needed) and short result sets leave the remaining space empty. The modal must not resize while open.
-- **Selection panel**: appears when a product card is selected. Size tiles (label, e.g. `36 37 38 … One size`), then the flow's extra fields, if any (e.g. quantity stepper in the replenishment flow). The tiles are the **same primitive as the availability size run** — `<SizeRun>` / `run-tile-*` in `components.md` and DESIGN.md §Size run — not a look-alike: `run-tile-selected` marks the chosen size, `run-tile-disabled` the unavailable ones. They inherit the run's **44×44px** geometry, so the picker's size step is as tappable as the list it feeds; the selection panel budgets height for a wrapped run of 44px tiles (this is part of the modal's fixed maximum height, above).
+- **Selection panel**: appears when a product card is selected — in its own right column on desktop, so choosing a product never shrinks the grid (until then the column shows a hint, "Select a product to choose its size."); below the grid on tablet and mobile. Size tiles (label, e.g. `36 37 38 … One size`), then the flow's extra fields, if any (e.g. quantity stepper in the replenishment flow). The tiles are the **same primitive as the availability size run** — `<SizeRun>` / `run-tile-*` in `components.md` and DESIGN.md §Size run — not a look-alike: `run-tile-selected` marks the chosen size, `run-tile-disabled` the unavailable ones. They inherit the run's **44×44px** geometry, so the picker's size step is as tappable as the list it feeds; the selection panel budgets height for a wrapped run of 44px tiles (this is part of the modal's fixed maximum height, above).
 
 ## Size tile states (per consuming context)
 
@@ -69,9 +75,9 @@ Focus trap per `components.md` modals; grid cards and tiles are buttons (keyboar
 
 - `disabledSizeIds: ReadonlySet<string>` — keyed on `sizeId` (the list's `items[].sizeId` against `AvailabilitySize.sizeId`); `disabledLabel` is the caption ("Already on the list"), shown in each disabled tile's tooltip and accessible name and as a visible line under the run ("Already on the list: 38, 40") so the state never rests on color alone.
 - `onConfirm(selection) => Promise` with `selection = { sizeId, quantity, product, size }` (`product`/`size` are the picked `AvailabilityProduct`/`AvailabilitySize`, for a consumer that renders the new row optimistically). **Promise contract**: while it is pending the CTA shows `pendingLabel` and is disabled, "Close" is disabled and the dialog can't be dismissed (components.md §Modals behavior). Resolved → the dialog stays open, the product stays selected, the size selection clears and the quantity returns to 1; the consumer's updated `disabledSizeIds` flips the tile. Rejected → the selection and quantity are kept for a retry; the consumer surfaces the error (toast, 409 included) — the picker swallows the rejection and renders no error of its own.
-- Grid source: `GET /availability?page&pageSize=24&search&categoryId` (no `outOfStock` ever — DP-06), query key `scope.key('availability', 'picker', { page, search, categoryId })` (so invalidating `scope.key('availability')` refreshes it); categories `['categories', { pageSize: 100 }]`. Paging is the shared `<Pagination>` (Previous / Next) inside the grid zone, shown only when there is more than one page; a filter change resets to page 1. Search reuses the filter band's `SearchField` (300ms debounce).
+- Grid source: `GET /availability?page&pageSize=24&search&categoryId&sort=catalog` (no `outOfStock` ever, and the catalog order instead of the default aging one — DP-06, RF-46), query key `scope.key('availability', 'picker', { page, search, categoryId, sort: 'catalog' })` (so invalidating `scope.key('availability')` refreshes it); categories `['categories', { pageSize: 100 }]`. Paging is the shared `<Pagination>` (Previous / Next) inside the grid zone, shown only when there is more than one page; a filter change resets to page 1. Search reuses the filter band's `SearchField` (300ms debounce).
 - Every open is a clean session (search, category, page, selection, quantity reset): the dialog unmounts its body on close.
-- Layout: `<Modal sheetOnMobile>` — full-screen sheet below 744px; from tablet up max-w 960px at a fixed `min(800px, 100dvh − 32px)` height. Inside: search → (category chips / rail 180px) + grid zone (`flex-1`, scrolls internally; 2 columns, 4 from desktop) → selection panel (capped at 45% of the body, scrolls internally) → actions ("Close", CTA). Cards: a full-width portrait image (4:5, `object-cover`) or initials placeholder, name (2 lines), "N sizes" / "One size", `badge-inactive` for an inactive product.
+- Layout: `<Modal sheetOnMobile>` — full-screen sheet below 744px; from tablet up `min(1200px, 100vw − 64px)` wide at a fixed `min(880px, 100dvh − 48px)` height. Inside: search → [(category chips / rail 180px) + grid zone (`flex-1`, scrolls internally)] + selection panel → actions ("Close", CTA). Grid: 2 columns on mobile; from tablet up `repeat(auto-fill, minmax(180px, 1fr))` — as many columns of ≥180px cards as the zone fits (2 at 744px, 3 at 1024px, 5 just below 1280px, 3 on desktop beside the panel — ~200px cards). Selection panel: below the browse zone on mobile/tablet (capped at 45% of it, scrolls internally); from desktop a 320px right column (left rule, full height, scrolls internally) whose slot shows the hint while nothing is selected. Its product thumb is the 64px list tier (`components.md` §Image preview). Cards: a full-width square image box on `{colors.surface-raised}`, the image `object-contain` (never cropped — `<ProductThumb zoom={false}>`), or initials placeholder; name (2 lines), "N sizes" / "One size", `badge-inactive` for an inactive product.
 - Quantity stepper: −/+ 44px `button-secondary` squares around a `text-input` (`inputMode=numeric`, right-aligned); valid = integer 1–9999 (the API's bounds); invalid → `aria-invalid` + caption "Enter a whole number from 1 to 9999." and the CTA disabled — nothing is sent.
 ## Implementation contract (assortment flow, plan 6.3)
 

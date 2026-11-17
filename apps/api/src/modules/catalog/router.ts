@@ -46,6 +46,15 @@ catalogRouter.patch(
   controller.updateCategory,
 );
 
+// RF-46 — the display order of every product of one category, in one request.
+catalogRouter.put(
+  '/categories/:id/products/order',
+  authenticate,
+  rateLimit('write', byUser),
+  authorize('catalog:manage'),
+  controller.reorderProducts,
+);
+
 catalogRouter.get(
   '/products',
   authenticate,

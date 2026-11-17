@@ -17,11 +17,11 @@ Standard shell (`../shared/layout.md`). List screen skeleton per `../shared/comp
 - "Status" select (All / Active / Inactive) → `?isActive=`. Default: Active.
 - All filter + page state in the URL.
 
-### Products table (`GET /products`, paginated; sizes embedded in each item)
+### Products table (`GET /products`, paginated, in catalog order — RF-45, RF-46; sizes embedded in each item)
 
 | Column | Content |
 |---|---|
-| Product | Image thumb (40px, placeholder if none) + name |
+| Product | Image thumb (64px list tier, components.md §Image preview; placeholder if none) + name |
 | Sizes | Size count ("3 sizes"; "1 size" for single-"One size" products), muted caption |
 | Category | category name |
 | Status | `badge-inactive` ("Inactive") when `is_active = false`; nothing when active |
@@ -80,7 +80,7 @@ There is no "is this size in my assortment" flag on `GET /products`, so the page
 ## As built (6.6)
 
 - **Opening**: a row click or Enter on the focused row (`<DataTable onRowClick>`, components.md §DataTable) opens `<Sheet>` titled with the product name — not a route, the URL stays `/catalog` (+ filters). No extra fetch: the sheet reads the product from the current products page (falling back to the row it was opened from), so a products refetch reaches an open sheet. Escape / scrim / footer "Close" (tertiary) close it; focus returns to the row.
-- **Body**: 96px thumb (placeholder initials when no image), category, `badge-inactive` for an inactive product, the aggregate status (the row's "In assortment" cell: check + "N of M sizes"), the description when present, then the **Sizes** list (`ul` "Sizes"): label (muted + `badge-inactive` when the size is inactive), SKU as a mono caption, and the per-size state right-aligned.
+- **Body**: 120px thumb (detail tier) (placeholder initials when no image), category, `badge-inactive` for an inactive product, the aggregate status (the row's "In assortment" cell: check + "N of M sizes"), the description when present, then the **Sizes** list (`ul` "Sizes"): label (muted + `badge-inactive` when the size is inactive), SKU as a mono caption, and the per-size state right-aligned.
 - **Per-size state** (from the cross-reference `scope.key('availability','catalog',ids)`: `AvailabilitySize.sizeId` = `ProductSize.id`, its `id` = the link target): in the assortment → "In assortment" link (`button-text` + check) to `/availability/:id`, shown even for an inactive product/size; otherwise active product **and** active size → `button-secondary` "Add to assortment"; otherwise "—" (RN-08). No separate permission check in the sheet: the route guard is already `assortment:manage`.
 - **Cross-reference loading / failed**: loading → a skeleton per size; failed → "—" per size plus the same alert + "Retry" as the page, inside the sheet. No add action until the cross-reference has answered (no verdict = no offer; the API stays the authority via 409).
 - **Add**: `POST /availability { sizeId }` with the store scope (`X-Tenant-Id` for platform_admin). One request in flight per size — that size's button reads "Adding…" (disabled) while the others stay usable; it stays pending until the invalidated queries have refetched, so it flips straight to its new state. Every outcome is a toast (unlike the picker's inline messages): 201 → "Added to assortment" + invalidate `scope.key('availability')` (sheet size + row cell); 409 → the API message + same invalidation; 400 with a `sizeId` detail (RN-08) → that detail's message + invalidate `['products']` (the size/product re-reads inactive and loses the action); anything else → the error toast, the size can be retried. Home not invalidated (flow step 3).

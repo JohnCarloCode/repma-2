@@ -63,7 +63,7 @@ Filter and group state live in the URL (shared convention). Filtering/grouping o
 | Column | Content | Notes |
 |---|---|---|
 | Done | Checkbox, gated `replenishment:manage` (disabled rendering without it) | Toggles `is_done` via `PATCH …/items/:itemId` — saves instantly (RF-40). Done rows render with muted text (check + muted, never color alone) |
-| Product | Product thumb (32px, `<ProductThumb>` — opens the image preview, components.md §Image preview) + product name | `body-medium` |
+| Product | Product thumb (64px list tier, `<ProductThumb>` — opens the image preview, components.md §Image preview) + product name | `body-medium` |
 | Size | Size label + size SKU (caption, muted) | |
 | Requested quantity | `quantity_requested` | Numeric input, min 1, right-aligned tabular-nums; **autosaves on blur/enter** when valid and changed (`PATCH …/items/:itemId`); plain number without `replenishment:manage` |
 | — | Remove row (`icon-button`) | Editors only; deletes immediately (`DELETE …/items/:itemId`) — no confirm; the toast offers "Undo" (see Flows) |

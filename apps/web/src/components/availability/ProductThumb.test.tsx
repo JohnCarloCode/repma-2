@@ -70,5 +70,21 @@ describe('ProductThumb image preview (components.md §Image preview)', () => {
     );
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
     expect(screen.getByText('TJ')).toBeInTheDocument();
+    expect(document.querySelector('img')).toHaveClass('object-contain'); // the picker's tiles: never cropped either
+  });
+
+  it('defaults to the 64px list tier and contains the image, never crops it', () => {
+    render(
+      <>
+        <ProductThumb name="Home Jersey 2025" imageUrl={url} />
+        <ProductThumb name="Away Jersey 2025" imageUrl={url} sizeClass="size-[120px]" />
+      </>,
+    );
+    const [list, detail] = screen.getAllByRole('button');
+    expect(list).toHaveClass('size-[64px]');
+    expect(detail).toHaveClass('size-[120px]');
+    expect(detail).not.toHaveClass('size-[64px]');
+    expect(list?.querySelector('img')).toHaveClass('object-contain');
+    expect(list?.querySelector('img')).not.toHaveClass('object-cover');
   });
 });

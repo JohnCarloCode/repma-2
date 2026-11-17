@@ -8,6 +8,7 @@ import {
   idParams,
   productListQuery,
   reorderCategoriesBody,
+  reorderProductsBody,
   sizeParams,
   updateCategoryBody,
   updateProductBody,
@@ -40,6 +41,14 @@ export async function updateCategory(req: Request, res: Response): Promise<void>
 export async function reorderCategories(req: Request, res: Response): Promise<void> {
   validate(emptyQuery, req.query);
   await service.reorderCategories(validate(reorderCategoriesBody, req.body));
+  res.status(204).end();
+}
+
+// RF-46 — 204: the client re-reads the category's products.
+export async function reorderProducts(req: Request, res: Response): Promise<void> {
+  const { id } = validate(idParams, req.params);
+  validate(emptyQuery, req.query);
+  await service.reorderProducts(id, validate(reorderProductsBody, req.body));
   res.status(204).end();
 }
 

@@ -3,8 +3,9 @@ import { useState, type KeyboardEvent, type SyntheticEvent } from 'react';
 
 /**
  * A product thumb: the image, or a placeholder with the name's initials when
- * the product has none. `sizeClass` sets the square (32px on list lines,
- * larger on the detail's summary card).
+ * the product has none. `sizeClass` sets the square: two tiers, 64px on list
+ * lines (the default) and 120px on detail surfaces (components.md §Image preview).
+ * The image is contained, never cropped, on the box's raised background.
  *
  * An image thumb is a button that opens it enlarged (components.md §Image
  * preview). `zoom={false}` keeps it a plain image, for a thumb that sits
@@ -13,7 +14,7 @@ import { useState, type KeyboardEvent, type SyntheticEvent } from 'react';
 export function ProductThumb({
   name,
   imageUrl,
-  sizeClass = 'size-[32px]',
+  sizeClass = 'size-[64px]',
   zoom = true,
 }: {
   name: string;
@@ -36,7 +37,7 @@ export function ProductThumb({
       </span>
     );
   }
-  if (!zoom) return <img src={imageUrl} alt="" className={`${box} object-cover`} />;
+  if (!zoom) return <img src={imageUrl} alt="" className={`${box} object-contain`} />;
 
   // React events bubble through the dialog's portal to this thumb's ancestors, so clicks and
   // keys stop here: a thumb inside a clickable row never also opens the row. Escape goes on —
@@ -51,7 +52,7 @@ export function ProductThumb({
         onClick={() => setOpen(true)}
         className={`${box} cursor-zoom-in overflow-hidden p-0`}
       >
-        <img src={imageUrl} alt="" className="size-full object-cover" />
+        <img src={imageUrl} alt="" className="size-full object-contain" />
       </button>
       <Dialog open={open} onClose={() => setOpen(false)}>
         <DialogBackdrop

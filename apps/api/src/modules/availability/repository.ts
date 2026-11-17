@@ -85,7 +85,9 @@ function latestEvents(tx: Tx) {
 // `assortment_items` and the events to the active store (database.md §7.3).
 // Two reads in one transaction: (1) the page of products — grouped over the
 // store's assorted sizes so filters and the sort key see the whole run; (2)
-// the complete runs of exactly those products. A run is never split.
+// the complete runs of exactly those products. A run is never split. The page
+// follows the aging order, or with `sort=catalog` the catalog order of
+// `GET /products` (RF-45, RF-46).
 export function listAssortment(
   query: AvailabilityListQuery,
 ): Promise<{ items: AvailabilityProduct[]; total: number }> {
@@ -102,11 +104,15 @@ export function listAssortment(
       .select({
         productId: products.id,
         name: products.name,
+        position: products.position,
+        categoryName: sql<string>`${categories.name}`.as('category_name'),
+        categoryPosition: sql<number>`${categories.position}`.as('category_position'),
         agingKey: sql`min(${latest.at}) filter (where not ${assortmentItems.isAvailable})`.as('aging_key'),
       })
       .from(assortmentItems)
       .innerJoin(productSizes, eq(productSizes.id, assortmentItems.sizeId))
       .innerJoin(products, eq(products.id, productSizes.productId))
+      .innerJoin(categories, eq(categories.id, products.categoryId))
       .leftJoin(latest, eq(latest.itemId, assortmentItems.id))
       .where(
         and(
@@ -115,7 +121,7 @@ export function listAssortment(
           query.productId ? inArray(products.id, query.productId) : undefined,
         ),
       )
-      .groupBy(products.id)
+      .groupBy(products.id, categories.id)
       .having(
         and(
           // Product-level selects over the whole run (RF-18, RF-24).
@@ -128,7 +134,13 @@ export function listAssortment(
     const page = await tx
       .select({ productId: matching.productId })
       .from(matching)
-      .orderBy(sql`${matching.agingKey} asc nulls last`, asc(matching.name), asc(matching.productId))
+      .orderBy(
+        ...(query.sort === 'catalog'
+          ? [asc(matching.categoryPosition), asc(matching.categoryName), asc(matching.position)]
+          : [sql`${matching.agingKey} asc nulls last`]),
+        asc(matching.name),
+        asc(matching.productId),
+      )
       .limit(limit)
       .offset(offset);
     const [totalRow] = await tx.select({ total: count() }).from(matching);

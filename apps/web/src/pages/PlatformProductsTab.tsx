@@ -35,6 +35,8 @@ const PARTIAL_FAILURE = 'The product was created, but the image upload failed. T
  * platform-catalog.md §Tab "Products": every product (retired ones included by default) with
  * search / category / status filters and pagination in the URL (`search`, `categoryId`,
  * `isActive`, `page`). Row actions: Edit (product fields, image, sizes) and Retire / Reactivate.
+ * Ordering mode (RF-46) — one category, no search, status All: the whole category in one page,
+ * with up/down moves that save its whole product order.
  */
 export function ProductsTab({ onCreate }: { onCreate: () => void }) {
   const list = useListParams(['search', 'categoryId', 'isActive'] as const);
@@ -42,10 +44,15 @@ export function ProductsTab({ onCreate }: { onCreate: () => void }) {
   const { search, categoryId } = list.filters;
   const status = list.filters.isActive === 'true' || list.filters.isActive === 'false' ? list.filters.isActive : 'all';
 
+  // Ordering mode: the table holds exactly the category's whole product set, as the PUT requires.
+  const ordering = Boolean(categoryId) && !search && status === 'all';
+  const orderKey = [...PRODUCTS, { categoryId, pageSize: 100 }];
+
   // Same key shape as the store-side /catalog: equal filters share one cache entry.
   const { data, isPending, isError, error, refetch } = useQuery({
-    queryKey: [...PRODUCTS, { page, search, categoryId, isActive: status }],
+    queryKey: ordering ? orderKey : [...PRODUCTS, { page, search, categoryId, isActive: status }],
     queryFn: () => {
+      if (ordering) return api.get<Page<Product>>(`/products?${new URLSearchParams({ categoryId, pageSize: '100' })}`);
       const query = new URLSearchParams({ page: String(page) });
       if (search) query.set('search', search);
       if (categoryId) query.set('categoryId', categoryId);
@@ -57,8 +64,33 @@ export function ProductsTab({ onCreate }: { onCreate: () => void }) {
   // `seq` remounts the edit modal on every opening, so it always starts from the row's current product.
   const [editing, setEditing] = useState<(Opened<Product> & { seq: number }) | null>(null);
   const [toggling, setToggling] = useState<Opened<Product>>(null);
+  const reorder = useReorderProducts(categoryId, orderKey);
+
+  const orderColumn: Column<Product> = {
+    header: 'Order',
+    cell: (product) => {
+      const index = data!.items.indexOf(product);
+      return (
+        <span className="inline-flex">
+          <RowAction
+            icon="expand_less"
+            label={`Move ${product.name} up`}
+            disabled={index === 0 || reorder.isPending}
+            onClick={() => reorder.move(data!.items, index, index - 1)}
+          />
+          <RowAction
+            icon="expand_more"
+            label={`Move ${product.name} down`}
+            disabled={index === data!.items.length - 1 || reorder.isPending}
+            onClick={() => reorder.move(data!.items, index, index + 1)}
+          />
+        </span>
+      );
+    },
+  };
 
   const columns: Column<Product>[] = [
+    ...(ordering ? [orderColumn] : []),
     {
       header: 'Product',
       cell: (product) => (
@@ -133,6 +165,11 @@ export function ProductsTab({ onCreate }: { onCreate: () => void }) {
           ))}
         </select>
       </FilterBand>
+      {!ordering && (
+        <p className="text-caption text-text-secondary">
+          To change the order of products, select a category (with no search and status All).
+        </p>
+      )}
       {isPending ? (
         <LoadingState columns={columns.length} />
       ) : isError ? (
@@ -146,7 +183,7 @@ export function ProductsTab({ onCreate }: { onCreate: () => void }) {
       ) : (
         <>
           <DataTable label="Products" columns={columns} rows={data.items} rowKey={(product) => product.id} />
-          <Pagination data={data} onPageChange={list.setPage} />
+          {!ordering && <Pagination data={data} onPageChange={list.setPage} />}
         </>
       )}
       {editing && (
@@ -166,6 +203,40 @@ export function ProductsTab({ onCreate }: { onCreate: () => void }) {
       )}
     </>
   );
+}
+
+/**
+ * RF-46 — as the Categories tab's RF-45 moves: the table reorders at once and the whole category
+ * order is saved; a failure restores the previous order with an error toast (a 409 says the
+ * products changed). Every products query is then re-read (`/catalog`, the picker).
+ */
+function useReorderProducts(categoryId: string, key: readonly unknown[]) {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const mutation = useMutation({
+    mutationFn: (ordered: Product[]) =>
+      api.put<void>(`/categories/${categoryId}/products/order`, { ids: ordered.map((p) => p.id) }),
+    onMutate: async (ordered) => {
+      await queryClient.cancelQueries({ queryKey: key });
+      const previous = queryClient.getQueryData<Page<Product>>(key);
+      if (previous) queryClient.setQueryData<Page<Product>>(key, { ...previous, items: ordered });
+      return { previous };
+    },
+    onError: (err, _ordered, context) => {
+      if (context?.previous) queryClient.setQueryData(key, context.previous);
+      toast.error(err);
+    },
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: PRODUCTS }),
+  });
+  return {
+    isPending: mutation.isPending,
+    move: (items: Product[], from: number, to: number) => {
+      const ordered = [...items];
+      const [moved] = ordered.splice(from, 1);
+      ordered.splice(to, 0, moved!);
+      mutation.mutate(ordered);
+    },
+  };
 }
 
 /**

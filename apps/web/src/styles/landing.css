@@ -49,7 +49,7 @@ html:has(.landing) { scroll-behavior: smooth; }
 .landing .nav-links a:hover { color: var(--ink); }
 .landing .nav-actions { margin-left: auto; display: flex; gap: 8px; }
 
-.landing .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 22px; border-radius: 999px; font: 600 15px/1 var(--sans); text-decoration: none; border: 1.5px solid var(--ink); background: var(--ink); color: var(--on-ink); cursor: pointer; transition: transform .15s ease, background .15s ease; }
+.landing .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 22px; border-radius: 999px; white-space: nowrap; font: 600 15px/1 var(--sans); text-decoration: none; border: 1.5px solid var(--ink); background: var(--ink); color: var(--on-ink); cursor: pointer; transition: transform .15s ease, background .15s ease; }
 .landing .btn:hover { transform: translateY(-1px); }
 .landing .btn.ghost { background: transparent; color: var(--ink); }
 .landing .btn.ghost:hover { background: var(--panel); }
@@ -122,6 +122,9 @@ html:has(.landing) { scroll-behavior: smooth; }
 .landing .steps { margin-top: 56px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(24px, 4vw, 56px); counter-reset: s; }
 .landing .step { border-top: 2px solid var(--ink); padding-top: 22px; }
 .landing .step::before { counter-increment: s; content: counter(s); display: block; font: 700 14px/1 var(--mono); color: var(--garnet); margin-bottom: 18px; }
+.landing .steps.cards { gap: clamp(16px, 2.4vw, 28px); }
+.landing .steps.cards .step { background: var(--chip); border: 1px solid var(--line); border-radius: 14px; padding: 28px; box-shadow: 0 1px 3px rgba(11,31,58,.06); transition: translate .2s ease, border-color .2s ease; }
+.landing .steps.cards .step:hover { border-color: var(--blue); translate: 0 -4px; }
 .landing .step h3 { font-size: 1.6rem; letter-spacing: -0.025em; }
 .landing .step p { margin-top: 12px; color: var(--ink-2); font-size: 16px; }
 
@@ -216,7 +219,7 @@ html:has(.landing) { scroll-behavior: smooth; }
 .landing .hero { padding-top: calc(68px + clamp(32px, 5vw, 64px)); }
 @media (prefers-reduced-motion: no-preference) {
   @supports (animation-timeline: scroll()) {
-    @keyframes landing-pill { to { max-width: 1040px; background-color: var(--ink); border-radius: 999px; padding-inline: 24px; } }
+    @keyframes landing-pill { to { max-width: 1040px; background-color: var(--ink); border-radius: 999px; padding-inline: var(--pill-pad, 24px); } }
     @keyframes landing-onblue { to { color: var(--on-ink); } }
     @keyframes landing-btnghost { to { background: transparent; border-color: rgba(245, 246, 249, .55); color: var(--on-ink); } }
     @keyframes landing-btnblue { to { background: var(--on-ink); border-color: var(--on-ink); color: var(--ink); } }
@@ -280,3 +283,21 @@ html:has(.landing) { scrollbar-color: #3A5278 #0B1F3A; }
 .landing .contact-link:hover { background: var(--panel-2); }
 
 @media (max-width: 520px) { .landing .nav .btn.ghost { display: none; } }
+
+/* Air between sections, slim frame around the screens, colored bands, floating header margin. */
+.landing .hero { padding-bottom: clamp(120px, 16vw, 240px); }
+.landing .band { padding-bottom: clamp(120px, 16vw, 240px); }
+.landing .stage, .landing .feat .stage { padding: 8px 8px 0; border-radius: 16px; }
+.landing .stage .screen { border-radius: 10px 10px 0 0; }
+.landing .band.blue { background: var(--blue); color: var(--on-ink); padding-block: clamp(96px, 12vw, 160px); }
+.landing .band.blue .copy p { color: rgba(245, 246, 249, .82); }
+.landing .band.blue .biz li { background: rgba(255, 255, 255, .12); color: var(--on-ink); }
+.landing .band.tint { background: #E3ECF8; padding-block: clamp(96px, 12vw, 160px); }
+.landing .nav .w { width: calc(100% - 24px); }
+@media (max-width: 520px) {
+  .landing { --pill-pad: 12px; }
+  .landing .nav .w { height: 60px; gap: 8px; }
+  .landing .nav .btn { min-height: 38px; padding: 0 14px; font-size: 14px; }
+  .landing .brand { gap: 8px; font-size: 14px; letter-spacing: 0.1em; }
+  .landing .brand img { height: 30px; }
+}

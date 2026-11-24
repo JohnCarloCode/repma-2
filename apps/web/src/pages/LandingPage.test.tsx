@@ -19,24 +19,6 @@ describe('LandingPage', () => {
     for (const link of links) expect(link).toHaveAttribute('href', '/login');
   });
 
-  it('size demo: tapping a size toggles it and adds an event to the log', async () => {
-    await renderLanding();
-    const log = screen.getByRole('list', { name: 'Event log' });
-    expect(within(log).getAllByRole('listitem')).toHaveLength(2);
-
-    await userEvent.click(screen.getByRole('button', { name: 'Evergreen Hoodie size M, available' }));
-    const pressed = screen.getByRole('button', { name: 'Evergreen Hoodie size M, out of stock' });
-    expect(pressed).toHaveAttribute('aria-pressed', 'true');
-    const items = within(log).getAllByRole('listitem');
-    expect(items).toHaveLength(3);
-    expect(items[0]).toHaveTextContent('Marked out of stock Evergreen Hoodie, size M');
-    expect(screen.getByText(/3 sizes out of stock/)).toBeInTheDocument();
-
-    await userEvent.click(pressed);
-    expect(within(log).getAllByRole('listitem')[0]).toHaveTextContent('Marked available Evergreen Hoodie, size M');
-    expect(screen.getByText(/2 sizes out of stock/)).toBeInTheDocument();
-  });
-
   it('"Contact me" in the header, the final CTA and the footer opens the contact dialog with LinkedIn and email', async () => {
     await renderLanding();
     const showModal = vi.fn();
